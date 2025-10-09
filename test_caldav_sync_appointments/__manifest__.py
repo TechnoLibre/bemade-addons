@@ -8,7 +8,7 @@
 Test CalDAV Sync Appointments Integration
 =========================================
 
-This module contains tests for the integration between CalDAV sync and the 
+This module contains tests for the integration between CalDAV sync and the
 Appointments app. It verifies that appointment events are properly handled
 during CalDAV synchronization operations.
 
@@ -20,6 +20,7 @@ This is a test-only module and should not be installed in production.
         'caldav_sync',
         'appointment',
     ],
+    'license': "LGPL-3",
     'installable': True,
     'auto_install': False,
     'application': False,

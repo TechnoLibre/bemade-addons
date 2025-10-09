@@ -27,5 +27,5 @@
     'depends': ['hr_payroll'],
     'data': ['views/hr_payslip_views.xml'],
     'installable': True,
-    'auto_install': True,
+    'auto_install': False,
 }
