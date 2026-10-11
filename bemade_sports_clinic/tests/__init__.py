@@ -141,3 +141,8 @@ from . import test_app_shell_player_status
 from . import test_app_shell_player_inline
 from . import test_app_shell_team_changes
 from . import test_digest_snapshot_grouping
+from . import test_app_shell_injury_inline
+from . import test_app_shell_player_layout
+from . import test_note_authorship
+from . import test_app_shell_list_filters
+from . import test_app_shell_team_add_player

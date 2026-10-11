@@ -1289,11 +1289,11 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         chips = [('', env._("All"), _url(event_type=''), not event_type)]
         chips += [(key, label, _url(event_type=key), key == event_type)
                   for key, label in event_types.items()]
-        rows = []
-        for event in values['events']:
+
+        def _row(event):
             staff = values['assigned_staff_by_event'].get(event.id)
             sudo = event.sudo()
-            rows.append({
+            return {
                 'id': event.id,
                 'title': event.name,
                 'subtitle': ' · '.join(part for part in (
@@ -1305,8 +1305,43 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'kind': event_types.get(sudo.event_type, ''),
                 'cancelled': sudo.state == 'cancelled',
                 'url': '/my/event/%s' % event.id,
-            })
+            }
+
+        rows = [_row(event) for event in values['events']]
+        # Owner review 2026-10-11: the legacy portal's views and filters are
+        # back — « All / My events / Unassigned / Missing timesheets » and a
+        # filter panel (organization, team, professional, dates, cancelled,
+        # sort, group by), the legacy route doing the filtering.
+        user = env.user
+        view_type = values.get('view_type') or 'all'
+        view_labels = (env._("All"), env._("My events"), env._("Unassigned"), env._("Missing timesheets"))
+        view_keys = ['all', 'my', 'unassigned']
+        if (user.has_group('bemade_sports_clinic.group_portal_treatment_professional')
+                or user.has_group('bemade_sports_clinic.group_sports_clinic_treatment_professional')):
+            view_keys.append('missing_timesheets')
+        view_over = {
+            'all': {'view_type': 'all', 'assigned_user_id': ''},
+            'my': {'view_type': 'my', 'assigned_user_id': user.id},
+            'unassigned': {'view_type': 'unassigned', 'assigned_user_id': ''},
+            'missing_timesheets': {'view_type': 'missing_timesheets', 'assigned_user_id': user.id,
+                                   'no_default_dates': '1'},
+        }
+        views = [(key, dict(zip(('all', 'my', 'unassigned', 'missing_timesheets'), view_labels))[key],
+                  _url(**view_over[key]), key == view_type) for key in view_keys]
+        groups = []
+        if values.get('group_by') and values.get('grouped_events'):
+            groups = [{'key': str(group['key']), 'label': group['label'],
+                       'rows': [_row(event) for event in group['events']]}
+                      for group in values['grouped_events']]
+        filters_open = any(values.get(key) for key in (
+            'organization_id', 'team_id', 'assigned_user_id', 'date_from', 'show_cancelled', 'group_by',
+            'search')) or (values.get('sortby') not in (None, '', 'date', 'date_desc'))
         return {
+            'sc_event_views': views,
+            'sc_event_view': view_type,
+            'sc_event_groups': groups,
+            'sc_event_type': event_type or '',
+            'sc_event_filters_open': filters_open,
             'sc_event_segments': segments,
             'sc_event_segment': segment,
             'sc_event_chips': chips,

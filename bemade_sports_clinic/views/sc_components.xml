@@ -313,9 +313,9 @@
     <template id="sc_note_card" name="App shell: note card">
         <article class="o_sc_card o_sc_note_card" t-att-data-sc-note-id="note.id">
             <div class="o_sc_meta o_sc_note_meta">
-                <span t-field="note.date"/>
+                <span t-out="note.portal_when_label"/>
                 <span>·</span>
-                <span class="o_sc_note_author" t-att-title="note.sudo().user_id.name" t-out="note.author_initials"/>
+                <span class="o_sc_note_author" t-out="note.sudo().user_id.name"/>
                 <t t-if="note.injury_id">
                     <span>·</span>
                     <a t-if="injury_url" t-att-href="injury_url" t-out="note.injury_id.diagnosis or note.injury_id.display_name"/>

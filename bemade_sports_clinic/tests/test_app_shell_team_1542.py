@@ -126,34 +126,25 @@ class TestAppShellTeam1542(AppShellCommon):
 
     # -- UC-T3 -----------------------------------------------------------
     def test_primary_action_per_role(self):
+        """Owner review 2026-10-11: « Add a player » / « Request an addition »
+        are inline cards at the top of the Players tab (details:
+        test_app_shell_team_add_player), no longer app-bar actions."""
         self._switch(True)
-        self._login_tp()
-        _text, tree = self._get(self.url)
-        add = tree.xpath('//header//a[@data-sc-action="team.add_player"]')
-        self.assertTrue(add)
-        self.assertEqual(add[0].get('href'), '/my/team/%s/player/add_link' % self.team_a.id)
-        self.assertFalse(tree.xpath('//dialog[@id="sc_request_add_sheet"]'))
-
+        for login, card in ((self._login_tp, 'team.add_player'), (self._login_coach, 'team.request_add'),
+                            (self._login_itp, 'team.add_player')):
+            login()
+            _text, tree = self._get(self.url)
+            self.assertIsNotNone(self._shell(tree))
+            self.assertFalse(tree.xpath('//header//*[@data-sc-action="team.add_player"]'))
+            self.assertFalse(tree.xpath('//header//*[@data-sc-action="team.request_add"]'))
+            panel = self._panel(tree, 'players')
+            self.assertTrue(panel.xpath('.//details[@data-sc-section="%s"]' % card), card)
+            other = 'team.request_add' if card == 'team.add_player' else 'team.add_player'
+            self.assertFalse(panel.xpath('.//details[@data-sc-section="%s"]' % other), other)
         self._login_coach()
         _text, tree = self._get(self.url)
-        self.assertFalse(tree.xpath('//*[@data-sc-action="team.add_player"]'))
-        req = tree.xpath('//header//button[@data-sc-action="team.request_add"]')
-        self.assertTrue(req)
-        self.assertEqual(req[0].get('data-sc-sheet-open'), 'sc_request_add_sheet')
-        form = tree.xpath('//dialog[@id="sc_request_add_sheet"]//form')
-        self.assertEqual(form[0].get('action'),
-                         '/my/team/%s/player/request_add' % self.team_a.id)
-
-        # Task 1577: an internal therapist has the portal therapist's
-        # primary action — add directly, no request sheet.
-        self._login_itp()
-        _text, tree = self._get(self.url)
-        self.assertIsNotNone(self._shell(tree))
-        add = tree.xpath('//header//a[@data-sc-action="team.add_player"]')
-        self.assertTrue(add)
-        self.assertEqual(add[0].get('href'), '/my/team/%s/player/add_link' % self.team_a.id)
-        self.assertFalse(tree.xpath('//*[@data-sc-action="team.request_add"]'))
-        self.assertFalse(tree.xpath('//dialog[@id="sc_request_add_sheet"]'))
+        form = self._panel(tree, 'players').xpath('.//details[@data-sc-section="team.request_add"]//form')
+        self.assertEqual(form[0].get('action'), '/my/team/%s/player/request_add' % self.team_a.id)
 
     # -- UC-T4 -----------------------------------------------------------
     def test_announcement_controls_per_role(self):

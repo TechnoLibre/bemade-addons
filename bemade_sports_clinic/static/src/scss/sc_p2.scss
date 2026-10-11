@@ -446,3 +446,101 @@ $sc-p2-laptop: 992px;
         padding: var(--sc-space-2) var(--sc-space-3);
     }
 }
+
+// Player Injuries tab (owner decision 2026-10-11): the inline « Add
+// Injury » card and the expandable injury cards.
+.o_sc_app {
+    // Therapists answer « Can coaches see this injury? » first; the
+    // diagnosis and « Create » appear once a choice is made (no default).
+    .o_sc_injury_add {
+        .o_sc_injury_add_diag {
+            display: flex;
+            flex-direction: column;
+            gap: var(--sc-space-3);
+
+            &.o_sc_after_choice {
+                display: none;
+            }
+        }
+
+        form:has(input[name="coach_visibility"]:checked) .o_sc_injury_add_diag.o_sc_after_choice {
+            display: flex;
+        }
+    }
+
+    .o_sc_choice {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
+    .o_sc_choice_options {
+        display: flex;
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-sm);
+        overflow: hidden;
+    }
+
+    .o_sc_choice_option {
+        flex: 1;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--sc-tap);
+        padding: 0 12px;
+        background: var(--sc-surface);
+        color: var(--sc-fg);
+        font-weight: 600;
+        cursor: pointer;
+
+        + .o_sc_choice_option {
+            border-left: 1px solid var(--sc-line);
+        }
+
+        input {
+            position: absolute;
+            opacity: 0;
+            inset: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        &:has(input:checked) {
+            background: var(--sc-accent);
+            color: var(--sc-accent-fg);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--sc-secondary);
+            outline-offset: -2px;
+        }
+    }
+
+    .o_sc_injury_item.o_sc_edit_card {
+        gap: 0;
+    }
+}
+
+// Grouped lists (events, timesheets: « Group by », owner review 2026-10-11).
+.o_sc_app {
+    .o_sc_group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-2);
+
+        + .o_sc_group {
+            margin-top: var(--sc-space-3);
+        }
+    }
+
+    .o_sc_group_title {
+        margin: 0;
+        font-size: var(--sc-text-xs);
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--sc-fg-2);
+    }
+}

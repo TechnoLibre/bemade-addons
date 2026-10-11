@@ -166,7 +166,7 @@ class TestAppShellPlayer1539(PlayersCommon1539):
         self.assertIsNotNone(self._shell(tree))
         self.assertNotIn('id="playerTabs"', text)
         self.assertEqual(tree.xpath('//nav[@data-sc-tabs]/a/@data-sc-tab'),
-                         ['overview', 'injuries', 'info', 'contacts', 'documents', 'activities'])
+                         ['injuries', 'info', 'documents', 'activities'])
         for secret in ('Hidden synthetic injury', 'Internal synthetic text',
                        'TP-only synthetic remark', 'Synthetic allergy',
                        'Synthetic team note', '2010'):
@@ -178,7 +178,7 @@ class TestAppShellPlayer1539(PlayersCommon1539):
         # « Report Injury » for coaches too, with the team context kept —
         # inline on the Injuries tab since the owner review of 2026-10-10.
         _text, tree = self._get(self.url + '&team_id=%s' % self.team_a.id)
-        form = tree.xpath('//details[@id="sc_new_injury"]//form[@data-sc-form="injury.new"]')[0]
+        form = tree.xpath('//details[@id="sc_new_injury"]//form[@data-sc-form="injury.quick"]')[0]
         self.assertEqual(form.xpath('.//input[@name="team_context_id"]/@value'), [str(self.team_a.id)])
 
     def test_therapist_tabs_and_fields(self):
@@ -186,8 +186,7 @@ class TestAppShellPlayer1539(PlayersCommon1539):
         self._login_tp()
         text, tree = self._get(self.url)
         self.assertEqual(tree.xpath('//nav[@data-sc-tabs]/a/@data-sc-tab'),
-                         ['overview', 'injuries', 'info', 'contacts', 'documents', 'notes',
-                          'activities'])
+                         ['injuries', 'info', 'documents', 'notes', 'activities'])
         owl = self._owl_fields(tree)
         self.assertEqual(owl['sc_status']['inputType'], 'segmented')
         self.assertTrue(owl['sc_status']['instant'])
@@ -197,19 +196,20 @@ class TestAppShellPlayer1539(PlayersCommon1539):
             self.assertIn(visible, text, visible)
         # Legacy #patient-info / #team-info open the Info tab.
         aliases = tree.xpath('//nav[@data-sc-tabs]/a[@data-sc-tab="info"]/@data-sc-tab-aliases')
-        self.assertEqual(aliases, ['patient-info team-info'])
+        self.assertEqual(aliases, ['patient-info team-info contacts'])
 
     def test_tab_deep_link(self):
         self._switch(True)
         self._login_tp()
         _text, tree = self._get(self.url + '&tab=notes')
         self.assertIsNone(self._panel(tree, 'notes').get('hidden'))
-        self.assertEqual(self._panel(tree, 'overview').get('hidden'), 'hidden')
-        # A tab the viewer does not have falls back to the overview.
+        self.assertEqual(self._panel(tree, 'injuries').get('hidden'), 'hidden')
+        # A tab the viewer does not have falls back to Injuries (owner
+        # review 2026-10-11: no Overview tab).
         self._login_coach()
         _text, tree = self._get(self.url + '&tab=notes')
         self.assertIsNone(self._panel(tree, 'notes'))
-        self.assertIsNone(self._panel(tree, 'overview').get('hidden'))
+        self.assertIsNone(self._panel(tree, 'injuries').get('hidden'))
 
     def test_removal_sheets(self):
         self._switch(True)

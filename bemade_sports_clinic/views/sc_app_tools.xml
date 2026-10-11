@@ -22,7 +22,7 @@
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
             <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters">
-                <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id) else None">
+                <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id or organization_id or group_by or (sortby and sortby != 'date')) else None">
                     <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'filter'"/></t>
                         <span>Filters</span>
@@ -49,6 +49,35 @@
                                 </t>
                             </select>
                         </div>
+                        <!-- Owner review 2026-10-11: the legacy portal's other filters. -->
+                        <div class="o_sc_field">
+                            <label for="sc_ts_org" class="o_sc_field_label">Organization</label>
+                            <select id="sc_ts_org" name="organization_id" class="o_sc_input o_sc_select">
+                                <option value="">All organizations</option>
+                                <t t-foreach="organizations" t-as="org_opt">
+                                    <option t-att-value="org_opt.id" t-att-selected="'selected' if organization_id == org_opt.id else None" t-out="org_opt.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_sc_field">
+                            <label for="sc_ts_sort" class="o_sc_field_label">Sort by</label>
+                            <select id="sc_ts_sort" name="sortby" class="o_sc_input o_sc_select">
+                                <option value="date" t-att-selected="'selected' if (not sortby or sortby == 'date') else None">Date (asc)</option>
+                                <option value="date_desc" t-att-selected="'selected' if sortby == 'date_desc' else None">Date (desc)</option>
+                                <option value="team" t-att-selected="'selected' if sortby == 'team' else None">Team</option>
+                                <option value="org" t-att-selected="'selected' if sortby == 'org' else None">Organization</option>
+                                <option value="state" t-att-selected="'selected' if sortby == 'state' else None">Status</option>
+                            </select>
+                        </div>
+                        <div class="o_sc_field">
+                            <label for="sc_ts_group" class="o_sc_field_label">Group by</label>
+                            <select id="sc_ts_group" name="group_by" class="o_sc_input o_sc_select">
+                                <option value="" t-att-selected="'selected' if not group_by else None">None</option>
+                                <option value="date" t-att-selected="'selected' if group_by == 'date' else None">Date</option>
+                                <option value="organization" t-att-selected="'selected' if group_by == 'organization' else None">Organization</option>
+                                <option value="team" t-att-selected="'selected' if group_by == 'team' else None">Team</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="o_sc_form_actions">
                         <a href="/my/sc/timesheets" class="o_sc_btn o_sc_btn_ghost">Reset</a>
@@ -57,7 +86,17 @@
                 </details>
             </form>
 
-            <div t-if="sc_timesheet_rows" class="o_sc_list" data-sc-section="timesheets.list">
+            <div t-if="sc_timesheet_groups" class="o_sc_list" data-sc-section="timesheets.list">
+                <section t-foreach="sc_timesheet_groups" t-as="group" class="o_sc_group" t-att-data-sc-group="group['key']">
+                    <h3 class="o_sc_group_title" t-out="group['label']"/>
+                    <t t-foreach="group['rows']" t-as="row">
+                        <t t-call="bemade_sports_clinic.sc_timesheet_card">
+                            <t t-set="show_event" t-value="True"/>
+                        </t>
+                    </t>
+                </section>
+            </div>
+            <div t-elif="sc_timesheet_rows" class="o_sc_list" data-sc-section="timesheets.list">
                 <t t-foreach="sc_timesheet_rows" t-as="row">
                     <t t-call="bemade_sports_clinic.sc_timesheet_card">
                         <t t-set="show_event" t-value="True"/>

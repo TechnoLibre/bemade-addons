@@ -11,7 +11,7 @@ from odoo.tools import format_date
 from .access_control_mixin import AccessControlMixin
 from ..models import sc_app_roles
 from .app_shell import AppShellMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -201,6 +201,25 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             
         # Check if the current user is a treatment professional
         is_treatment_prof = self._is_treatment_professional()
+
+        # Owner decision 2026-10-11: the app shell's inline « Add Injury »
+        # card posts the coach visibility (therapists: required, no default)
+        # and the diagnosis only; today's date; it lands back on the
+        # player's Injuries tab with the new injury open for editing.
+        sc_inline = bool(post.get('sc_inline')) and self._sc_app_shell_active()
+        if sc_inline:
+            injuries_url = self._sc_inline_injuries_url(patient, post, clinic_event)
+            visibility = post.get('coach_visibility')
+            if is_treatment_prof and visibility not in ('visible', 'hidden'):
+                return request.redirect(self._url_with_query(injuries_url, 'error=injury_visibility'))
+            if not (post.get('diagnosis') or '').strip():
+                return request.redirect(self._url_with_query(injuries_url, 'error=injury_diagnosis'))
+            post = dict(
+                post,
+                diagnosis=post['diagnosis'].strip(),
+                injury_date=fields.Date.to_string(fields.Date.context_today(patient)),
+                hidden_from_coaches='1' if visibility == 'hidden' else '',
+            )
         
         # Prepare values for injury creation
         vals = {
@@ -282,6 +301,10 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # « Back to player » keeps the clinic context (task 1410).
         return_url = self._with_clinic(return_url, clinic_event)
 
+        if sc_inline:
+            return request.redirect(self._url_with_query(
+                injuries_url, 'created=%s' % injury.id) + '#injury-%s' % injury.id)
+
         # Task 1412: created FROM a clinic (the form's return_url is a clinic
         # page) ⇒ go straight back there, same patient, the new card in view.
         # Every other caller keeps the « created » page below.
@@ -304,6 +327,49 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                                'bemade_sports_clinic.sc_app_injury_created', values)
         
     # _check_access_to_injury method now inherited from AccessControlMixin
+
+    SC_UNDO_CREATE_MINUTES = 2
+
+    def _sc_inline_injuries_url(self, patient, post, clinic_event=None):
+        """The player page's Injuries tab, with the team / clinic context."""
+        url = '/my/player?player_id=%s' % patient.id
+        try:
+            team_id = int(post.get('team_context_id') or post.get('team_id') or 0)
+        except (TypeError, ValueError):
+            team_id = 0
+        if team_id and team_id in patient.sudo().team_ids.ids:
+            url += '&team_id=%s' % team_id
+        url = self._with_clinic(url, clinic_event)
+        return self._url_with_query(url, 'tab=injuries')
+
+    @http.route(['/my/injury/<int:injury_id>/undo-create'], type='http', auth='user',
+                website=True, methods=['POST'])
+    def undo_injury_create(self, injury_id, **post):
+        """« Undo » of the inline « Add Injury » (owner decision 2026-10-11):
+        the creator, within SC_UNDO_CREATE_MINUTES of creating it, deletes
+        an injury that carries no treatment note or document yet. Anything
+        else is refused (delete it from its page instead)."""
+        try:
+            injury = self._check_access_to_injury(injury_id)
+        except (UserError, AccessError, MissingError):
+            return request.redirect('/my/players')
+        patient = injury.patient_id
+        url = self._sc_inline_injuries_url(patient, post, self._clinic_context(post))
+        record = injury.sudo()
+        deadline = fields.Datetime.now() - timedelta(minutes=self.SC_UNDO_CREATE_MINUTES)
+        allowed = (
+            record.create_uid == request.env.user
+            and record.create_date and record.create_date >= deadline
+            and not record.treatment_note_ids
+            and not record.document_ids
+        )
+        if not allowed:
+            _logger.info("Undo of injury %s refused for user %s", injury.id, request.env.user.id)
+            return request.redirect(self._url_with_query(url, 'error=undo_expired'))
+        record.unlink()
+        patient._compute_is_injured()
+        patient._compute_stage()
+        return request.redirect(self._url_with_query(url, 'success=injury_undone'))
 
     def _sanitize_filename(self, name):
         """Return an ASCII-safe filename for HTTP headers/storage.

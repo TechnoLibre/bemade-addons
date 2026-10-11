@@ -673,7 +673,7 @@ class PlayerManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         patient = self._check_access_to_patient(patient_id)
         if self._sc_app_shell_active():
             # Owner review 2026-10-10: added inline on the Contacts tab.
-            return request.redirect(self._sc_player_tab_url(patient.id, 'contacts'))
+            return request.redirect(self._sc_player_tab_url(patient.id, 'info'))
             
         # Task 1544: same-site paths only (rendered as a link, then posted back).
         return_url = self._safe_return_url(
@@ -761,7 +761,7 @@ class PlayerManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         patient = self._check_access_to_patient(contact.patient_id.id)
         if self._sc_app_shell_active():
             # Owner review 2026-10-10: edited inline on the Contacts tab.
-            return request.redirect(self._sc_player_tab_url(patient.id, 'contacts'))
+            return request.redirect(self._sc_player_tab_url(patient.id, 'info'))
             
         # Task 1544: same-site paths only (rendered as a link, then posted back).
         return_url = self._safe_return_url(

@@ -4,12 +4,12 @@ Synthetic fixtures only.
 Acceptance criteria covered here:
 
 * UC-PS1 Saving the play status (``sc_status``) answers the player's new
-  stage chip (tone + label), so the page updates the hero's status pill in
-  place — no reload (the browser half is the ``sc_status_pill_refresh``
-  tour).
-* UC-PS2 The hero's status pill is addressable
-  (``data-sc-stage-chip="<player id>"``) and its tone follows the stage:
-  red (injured), yellow (practice), green (available).
+  stage (tone + label) for whatever on the page shows it — no reload (the
+  browser half is the ``sc_status_pill_refresh`` tour: the header's
+  selector saves in place).
+* UC-PS2 Owner review 2026-10-11: the page header carries the play-status
+  selector in place of the status pill; it shows the player's current
+  status (the pressed choice).
 * UC-PS3 The « no match, practice » choice reads « Contact practice »
   (fr: « Pratique contact »), not « Practice only ».
 * UC-PS5 Training recommendation history (like the team announcement's):
@@ -24,8 +24,9 @@ Acceptance criteria covered here:
 * UC-PS6 The player page's injuries list: current injuries (active,
   unverified) first, then resolved ones; each group by injury date, newest
   first.
-* UC-PS4 The app bar shows « #12 First Last » with « team · position »
-  as its context line.
+* UC-PS4 The app bar shows « #12 Last, First » (owner review 2026-10-11:
+  the same order as the hero below it and every list) with « team ·
+  position » as its context line.
 """
 import json
 
@@ -57,11 +58,14 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
             'csrf_token': self._csrf(),
         }, allow_redirects=False)
 
-    def _hero_chip(self):
+    def _hero_status(self):
         _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
-        chips = tree.xpath('//*[@data-sc-stage-chip="%s"]' % self.player.id)
-        self.assertEqual(len(chips), 1)
-        return chips[0]
+        self.assertFalse(tree.xpath('//*[@data-sc-stage-chip]'))
+        props = [json.loads(p) for p in tree.xpath(
+            '//*[@data-sc-section="player.hero"]//owl-component/@props')]
+        status = [p for p in props if p.get('field') == 'sc_status']
+        self.assertEqual(len(status), 1)
+        return status[0]
 
     # -- UC-PS1 ----------------------------------------------------------
     def test_status_save_answers_the_stage_chip(self):
@@ -75,11 +79,11 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
             self.assertTrue(stage['label'], value)
 
     # -- UC-PS2 ----------------------------------------------------------
-    def test_hero_chip_is_addressable_and_toned(self):
+    def test_header_status_selector(self):
         self._login_tp()
-        self.assertIn('o_sc_chip_green', self._hero_chip().get('class'))
+        self.assertEqual(self._hero_status()['value'], 'yes:yes')
         self.player.write({'match_status': 'no', 'practice_status': 'no'})
-        self.assertIn('o_sc_chip_red', self._hero_chip().get('class'))
+        self.assertEqual(self._hero_status()['value'], 'no:no')
 
     # -- UC-PS3 ----------------------------------------------------------
     def test_contact_practice_label(self):
@@ -93,7 +97,9 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
         self._login_tp()
         _text, tree = self._get('/my/player?player_id=%s&team_id=%s' % (self.player.id, self.team_a.id))
         title = tree.xpath('//*[contains(@class, "o_sc_appbar_title_text")]')[0].text_content().strip()
-        self.assertEqual(title, '#12 %s' % self.player.name)
+        # Owner review 2026-10-11: « #12 Last, First », as the hero below it.
+        self.assertEqual(title, self.player._portal_list_name())
+        self.assertIn(', ', title)
         context = tree.xpath('//*[contains(@class, "o_sc_appbar_context")]')[0].text_content().strip()
         self.assertEqual(context, '%s · Linebacker' % self.team_a.name)
 
@@ -113,11 +119,11 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
         read-only field renders it server-side; a therapist's autosave field
         draws it in the browser from its props (the tour clicks it)."""
         links = tree.xpath(
-            '//*[@data-sc-section="player.status"]'
+            '//*[@data-sc-section="player.training"]'
             '//*[contains(@class, "o_sc_field_label")]'
             '//*[@data-sc-sheet-open="sc_training_history_sheet"][contains(@class, "o_sc_link_btn")]')
         fields_ = [json.loads(c.get('props')) for c in tree.xpath(
-            '//*[@data-sc-section="player.status"]//owl-component')]
+            '//*[@data-sc-section="player.training"]//owl-component')]
         owl = [f for f in fields_ if f.get('field') == 'training_recommendation'
                and f.get('historySheet') == 'sc_training_history_sheet' and f.get('historyLabel')]
         self.assertEqual(len(links) + len(owl), 1)
@@ -129,7 +135,7 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
 
     def test_training_recommendation_history(self):
         self._login_tp()
-        _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
+        _text, tree = self._get('/my/player?player_id=%s&tab=info' % self.player.id)
         self._history_link(tree)  # always present, even with no history
         url = '/my/player/%s/training-history' % self.player.id
         _text, tree = self._get(url)
@@ -184,7 +190,7 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
 class TestAppShellPlayerStatusTour(PlayerStatusCommon):
 
     def test_training_history_refresh(self):
-        self.start_tour('/my/player?player_id=%s' % self.player.id,
+        self.start_tour('/my/player?player_id=%s&tab=info' % self.player.id,
                         'sc_training_history_refresh', login='pc.tp@example.com')
 
     def test_status_pill_refresh(self):

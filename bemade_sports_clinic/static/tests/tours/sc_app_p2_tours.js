@@ -38,29 +38,29 @@ tours.add("sc_1539_players_to_player", {
             expectUnloadPage: true,
         },
         {
-            content: "Player page: « Aperçu » panel shown",
-            trigger: 'section[data-sc-tab-panel="overview"]:not([hidden])',
-        },
-        {
-            content: "Switch to « Blessures » in place",
-            trigger: '[data-sc-tabs] a[data-sc-tab="injuries"]',
-            run: "click",
-        },
-        {
+            content: "Player page: it opens on « Blessures » (owner review 2026-10-11)",
             trigger: 'section[data-sc-tab-panel="injuries"]:not([hidden]) [data-sc-injury-id]',
-            run() {
-                assert(window.location.search.includes("tab=injuries"), "?tab= kept in the URL");
-                const overview = document.querySelector('section[data-sc-tab-panel="overview"]');
-                assert(overview.hidden, "overview still shown");
-            },
         },
         {
-            content: "Switch to « Infos »",
+            content: "Switch to « Infos » in place",
             trigger: '[data-sc-tabs] a[data-sc-tab="info"]',
             run: "click",
         },
         {
             trigger: 'section[data-sc-tab-panel="info"]:not([hidden]) [data-sc-section="player.info.teams"]',
+            run() {
+                assert(window.location.search.includes("tab=info"), "?tab= kept in the URL");
+                const injuries = document.querySelector('section[data-sc-tab-panel="injuries"]');
+                assert(injuries.hidden, "injuries still shown");
+            },
+        },
+        {
+            content: "Back to « Blessures »",
+            trigger: '[data-sc-tabs] a[data-sc-tab="injuries"]',
+            run: "click",
+        },
+        {
+            trigger: 'section[data-sc-tab-panel="injuries"]:not([hidden]) [data-sc-injury-id]',
         },
     ],
 });
@@ -199,29 +199,120 @@ tours.add("sc_1539_activity_complete", {
 
 // ------------------- player status: the hero pill follows the save (2026-10-10)
 tours.add("sc_status_pill_refresh", {
+    // Owner review 2026-10-11: the status selector lives in the page header
+    // (in place of the status pill) and saves in place.
     steps: () => [
         {
-            content: "Available: the hero pill is green; mark the page to detect a reload",
-            trigger: "[data-sc-stage-chip].o_sc_chip_green",
+            content: "Available: « Match + practice » pressed in the header; mark the page to detect a reload",
+            trigger: '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="yes:yes"][aria-pressed="true"]',
             run() {
                 window.__scPillNoReload = true;
             },
         },
         {
             content: "Pick « No play »",
-            trigger: '.o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="no:no"]',
+            trigger: '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="no:no"]',
             run: "click",
         },
         {
-            content: "Saved",
+            content: "Saved in place (no reload)",
             trigger:
-                '.o_sc_autosave[data-sc-field="sc_status"][data-sc-state="saved"] button[data-sc-value="no:no"][aria-pressed="true"]',
-        },
-        {
-            content: "The hero pill turned red in place (no reload)",
-            trigger: "[data-sc-stage-chip].o_sc_chip_red",
+                '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"][data-sc-state="saved"] button[data-sc-value="no:no"][aria-pressed="true"]',
             run() {
                 if (!window.__scPillNoReload) {
+                    throw new Error("the page reloaded");
+                }
+            },
+        },
+    ],
+});
+
+// ------------- player page: inline « Add Injury », then « Undo »
+tours.add("sc_injury_inline_create", {
+    steps: () => [
+        {
+            content: "Open « Add Injury »",
+            trigger: 'details#sc_new_injury > summary',
+            run: "click",
+        },
+        {
+            content: "Only the visibility question first: no diagnosis yet",
+            trigger: 'details#sc_new_injury[open] [data-sc-step="visibility"]',
+            run() {
+                const diag = document.querySelector('details#sc_new_injury [data-sc-step="diagnosis"]');
+                if (diag.offsetParent !== null) {
+                    throw new Error("the diagnosis shows before the visibility choice");
+                }
+            },
+        },
+        {
+            content: "Answer « No, hide it »",
+            trigger: 'details#sc_new_injury label.o_sc_choice_option:has(input[value="hidden"])',
+            run: "click",
+        },
+        {
+            content: "The diagnosis appears; type it",
+            trigger: 'details#sc_new_injury [data-sc-step="diagnosis"] input[name="diagnosis"]:visible',
+            run: "edit Synthetic tour ankle",
+        },
+        {
+            content: "Create",
+            trigger: 'details#sc_new_injury button[data-sc-action="injury.create"]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "The new injury is open in edit mode, with « Undo » offered",
+            trigger: '.o_sc_injury_item[data-sc-created-injury][open] [data-sc-edit-view="edit"]:not([hidden])',
+        },
+        {
+            content: "Undo",
+            trigger: '.o_sc_toast:not([hidden]) [data-sc-toast-action]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "Back on the Injuries tab, the injury is gone",
+            trigger: 'section[data-sc-tab-panel="injuries"]:not([hidden])',
+            run() {
+                if ([...document.querySelectorAll(".o_sc_injury_item")].some((el) => el.textContent.includes("Synthetic tour ankle"))) {
+                    throw new Error("the undone injury is still listed");
+                }
+            },
+        },
+    ],
+});
+
+// ------------- player page: « Resolved » fills the resolution date in place
+tours.add("sc_injury_resolve_date", {
+    steps: () => [
+        {
+            content: "The injury is open; mark the page and edit it",
+            trigger: ".o_sc_injury_item[open] [data-sc-edit-toggle]",
+            run(helpers) {
+                window.__scResolveNoReload = true;
+                helpers.click();
+            },
+        },
+        {
+            content: "No resolution date yet",
+            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input',
+            run() {
+                if (this.anchor.value) {
+                    throw new Error(`resolution date already set: ${this.anchor.value}`);
+                }
+            },
+        },
+        {
+            content: "Resolve",
+            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="stage"] button[data-sc-value="resolved"]',
+            run: "click",
+        },
+        {
+            content: "The resolution date shows at once (no reload)",
+            trigger: `.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input:value(${new Date().getFullYear()})`,
+            run() {
+                if (!window.__scResolveNoReload) {
                     throw new Error("the page reloaded");
                 }
             },
@@ -234,7 +325,7 @@ tours.add("sc_training_history_refresh", {
     steps: () => [
         {
             content: "Open the (empty) training history; mark the page to detect a reload",
-            trigger: '[data-sc-section="player.status"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
+            trigger: '[data-sc-section="player.training"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
             run(helpers) {
                 window.__scTrainingNoReload = true;
                 helpers.click();
@@ -267,7 +358,7 @@ tours.add("sc_training_history_refresh", {
         },
         {
             content: "Open the history again",
-            trigger: '[data-sc-section="player.status"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
+            trigger: '[data-sc-section="player.training"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
             run: "click",
         },
         {

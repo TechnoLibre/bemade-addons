@@ -31,7 +31,7 @@ function app() {
 
 // ---------------------------------------------------------------- toast
 let toastTimer = null;
-function showToast(message, actionLabel, action) {
+function showToast(message, actionLabel, action, duration) {
     const root = app();
     const toast = root && root.querySelector(".o_sc_toast");
     if (!toast) {
@@ -57,7 +57,7 @@ function showToast(message, actionLabel, action) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
         toast.hidden = true;
-    }, actionLabel ? 8000 : 4000);
+    }, duration || (actionLabel ? 8000 : 4000));
 }
 
 document.addEventListener("sc:toast", (ev) => {
@@ -76,6 +76,11 @@ document.addEventListener("sc:saved", (ev) => {
     if (result.display !== undefined) {
         for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${field}"]`)) {
             el.textContent = result.display || "—";
+        }
+    }
+    for (const [name, shown] of Object.entries(result.also || {})) {
+        for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${name}"]`)) {
+            el.textContent = shown.display || "—";
         }
     }
     const card = ev.target && ev.target.closest && ev.target.closest("[data-sc-edit-card]");
@@ -110,6 +115,32 @@ document.addEventListener("sc:saved", (ev) => {
         }
     }
 });
+
+// A just-created injury (inline « Add Injury », owner decision 2026-10-11):
+// « Injury created · Undo » for the undo window (the server enforces it
+// too), and the address loses ?created= so a reload opens the injury
+// without offering the undo again.
+const SC_UNDO_CREATE_MS = 2 * 60 * 1000;
+function offerUndoCreate() {
+    const card = document.querySelector(".o_sc_app [data-sc-created-injury]");
+    const form = card && card.querySelector('form[data-sc-form="injury.undo"]');
+    if (!form) {
+        return;
+    }
+    showToast(form.dataset.scToastMessage, form.dataset.scToastAction, () => form.submit(), SC_UNDO_CREATE_MS);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("created")) {
+        url.searchParams.set("injury", url.searchParams.get("created"));
+        url.searchParams.delete("created");
+        window.history.replaceState(window.history.state, "", url.toString());
+    }
+    card.scrollIntoView({ block: "start" });
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", offerUndoCreate);
+} else {
+    offerUndoCreate();
+}
 
 // A link to « …#<details id> » opens that inline card (e.g. Overview's
 // « Add Injury » → the Injuries tab's card), owner review 2026-10-10.
