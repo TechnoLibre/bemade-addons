@@ -178,7 +178,7 @@ class TestAppShellPlayer1539(PlayersCommon1539):
         # « Report Injury » for coaches too, with the team context kept —
         # inline on the Injuries tab since the owner review of 2026-10-10.
         _text, tree = self._get(self.url + '&team_id=%s' % self.team_a.id)
-        form = tree.xpath('//details[@id="sc_new_injury"]//form[@data-sc-form="injury.new"]')[0]
+        form = tree.xpath('//details[@id="sc_new_injury"]//form[@data-sc-form="injury.quick"]')[0]
         self.assertEqual(form.xpath('.//input[@name="team_context_id"]/@value'), [str(self.team_a.id)])
 
     def test_therapist_tabs_and_fields(self):

@@ -924,6 +924,17 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         ctx_qs = values['ctx_qs']
         base_url = '/my/player?player_id=%s%s' % (player.id, ctx_qs)
         can_activities = is_tp or user.has_group('bemade_sports_clinic.group_portal_team_coach')
+        # Inline injury cards (owner decision 2026-10-11): ?created=<id> opens
+        # the new injury in edit mode (with its « Undo »), ?injury=<id> opens
+        # one in read mode.
+        def _int_arg(name):
+            try:
+                return int(kw.get(name) or 0)
+            except (TypeError, ValueError):
+                return 0
+        created_id = _int_arg('created')
+        opened_id = _int_arg('injury') or created_id
+        tp_view = bool(is_tp and user._sc_app_roles() & sc_app_roles.TP)
 
         def _injury_row(injury):
             when = (format_date(env, injury.injury_date) if injury.injury_date
@@ -937,6 +948,11 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'chip': injury_stages.get(injury.stage, ''),
                 'hidden': bool(injury.hidden_from_coaches),
                 'url': '/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs),
+                'injury': injury,
+                'open': injury.id == opened_id,
+                'created': injury.id == created_id and injury.create_uid == user,
+                'consent_todo': tp_view and not injury.parental_consent,
+                'diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
             }
 
         # Owner review 2026-10-10: current injuries (active, unverified)
@@ -1017,6 +1033,11 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_player_chip': stage_labels.get(stage, ''),
             'sc_player_team': values['team'] or player.team_ids[:1],
             'sc_injury_rows': [_injury_row(i) for i in injuries],
+            'sc_is_tp_view': tp_view,
+            'sc_injury_stage_options': list(
+                env['sports.patient.injury']._fields['stage']._description_selection(env)),
+            # Labels first, keys zipped in (babel's extractor, see app_shell).
+            'sc_visibility_options': list(zip(('0', '1'), (env._("Coaches"), env._("Hidden")))),
             'sc_active_injury_rows': [_injury_row(i) for i in active],
             'sc_player_events': events,
             'sc_status_options': self._sc_status_options(),
@@ -1065,6 +1086,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'activity_done': env._("Activity marked as done."),
             'activity_cancelled': env._("Activity cancelled."),
             'injury_deleted': env._("Injury deleted."),
+            'injury_undone': env._("Injury creation undone."),
             'player_updated': env._("Player updated."),
         }.get(kw.get('success'))
         error = {
@@ -1077,5 +1099,8 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'upload_failed': env._("The upload failed."),
             'missing_fields': env._("Please fill in all required fields."),
             'invalid_user': env._("You cannot assign this activity to that user."),
+            'injury_visibility': env._("Please choose whether coaches can see this injury."),
+            'injury_diagnosis': env._("Please enter a diagnosis."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
         }.get(kw.get('error'))
         return {'success': success, 'error': error}

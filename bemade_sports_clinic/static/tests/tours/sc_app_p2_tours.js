@@ -229,6 +229,62 @@ tours.add("sc_status_pill_refresh", {
     ],
 });
 
+// ------------- player page: inline « Add Injury », then « Undo »
+tours.add("sc_injury_inline_create", {
+    steps: () => [
+        {
+            content: "Open « Add Injury »",
+            trigger: 'details#sc_new_injury > summary',
+            run: "click",
+        },
+        {
+            content: "Only the visibility question first: no diagnosis yet",
+            trigger: 'details#sc_new_injury[open] [data-sc-step="visibility"]',
+            run() {
+                const diag = document.querySelector('details#sc_new_injury [data-sc-step="diagnosis"]');
+                if (diag.offsetParent !== null) {
+                    throw new Error("the diagnosis shows before the visibility choice");
+                }
+            },
+        },
+        {
+            content: "Answer « No, hide it »",
+            trigger: 'details#sc_new_injury label.o_sc_choice_option:has(input[value="hidden"])',
+            run: "click",
+        },
+        {
+            content: "The diagnosis appears; type it",
+            trigger: 'details#sc_new_injury [data-sc-step="diagnosis"] input[name="diagnosis"]:visible',
+            run: "edit Synthetic tour ankle",
+        },
+        {
+            content: "Create",
+            trigger: 'details#sc_new_injury button[data-sc-action="injury.create"]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "The new injury is open in edit mode, with « Undo » offered",
+            trigger: '.o_sc_injury_item[data-sc-created-injury][open] [data-sc-edit-view="edit"]:not([hidden])',
+        },
+        {
+            content: "Undo",
+            trigger: '.o_sc_toast:not([hidden]) [data-sc-toast-action]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "Back on the Injuries tab, the injury is gone",
+            trigger: 'section[data-sc-tab-panel="injuries"]:not([hidden])',
+            run() {
+                if ([...document.querySelectorAll(".o_sc_injury_item")].some((el) => el.textContent.includes("Synthetic tour ankle"))) {
+                    throw new Error("the undone injury is still listed");
+                }
+            },
+        },
+    ],
+});
+
 // ------------- player page: training history refreshes without a reload
 tours.add("sc_training_history_refresh", {
     steps: () => [

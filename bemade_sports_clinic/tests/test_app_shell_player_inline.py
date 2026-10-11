@@ -43,9 +43,10 @@ Acceptance criteria covered here:
   button opening a dialog.
 * UC-10 New injury follows the same UX: no « New injury » action in the app
   bar; an inline « Add Injury » card (« Report Injury » for a coach) at the
-  top of the Injuries tab — the same draft fields and create route, coming
-  back to the Injuries tab; the Overview's « Active injuries » header links
-  to it.
+  top of the Injuries tab, posting to the same create route and coming back
+  to the Injuries tab; the Overview's « Active injuries » header links to
+  it. (Its steps, visibility first then diagnosis + « Create », and the
+  inline injury cards: test_app_shell_injury_inline.)
 """
 from urllib.parse import parse_qs, urlparse
 
@@ -279,15 +280,11 @@ class TestPlayerInline(PlayerInlineCommon):
             panel = tree.xpath('//section[@data-sc-tab-panel="injuries"]')[0]
             card = panel.xpath('.//details[@id="sc_new_injury"][@data-sc-section="injury.new"]')
             self.assertEqual(len(card), 1)
-            form = card[0].xpath('.//form[@data-sc-form="injury.new"]')[0]
+            form = card[0].xpath('.//form[@data-sc-form="injury.quick"]')[0]
             self.assertEqual(form.get('action'), '/my/patient/injury/create')
-            self.assertEqual(form.get('data-sc-draft-prefix'),
-                             'sports.patient.%s.new_injury.' % self.player.id)
-            back = form.xpath('.//input[@name="return_url"]/@value')[0]
-            self.assertIn('tab=injuries', back)
+            self.assertEqual(form.xpath('.//input[@name="sc_inline"]/@value'), ['1'])
             self.assertEqual(form.xpath('.//input[@name="team_context_id"]/@value'), [str(self.team_a.id)])
-            props = ' '.join(self._fields_in(form))
-            self.assertIn('"diagnosis"', props)
+            self.assertTrue(form.xpath('.//input[@name="diagnosis"]'))
             link = tree.xpath('//*[@data-sc-section="player.active_injuries"]//a[contains(@href, "#sc_new_injury")]')
             self.assertEqual(len(link), 1)
 

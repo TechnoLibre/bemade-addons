@@ -255,6 +255,19 @@ def _injury_read(injury, field):
     return AppShellPortal._sc_save_value(injury, field, raw=True)
 
 
+def _injury_display(injury, field):
+    """The read view of an inline injury card (owner decision 2026-10-11):
+    the virtual date reads « N/A » or the date; visibility reads in words."""
+    env = injury.env
+    if field == 'sc_injury_date':
+        if injury.injury_date_na:
+            return env._("N/A")
+        return format_date(env, injury.injury_date) if injury.injury_date else ''
+    if field == 'hidden_from_coaches':
+        return env._("Hidden from coaches") if injury.hidden_from_coaches else env._("Visible to coaches")
+    return None
+
+
 def _injury_write(ctrl, injury, field, value):
     """/my/injury/save's rules, one field at a time (task 1539)."""
     roles = request.env.user._sc_app_roles()
@@ -396,6 +409,7 @@ SAVE_REGISTRY = {
         'check': _injury_check,
         'write': _injury_write,
         'read': _injury_read,
+        'display': _injury_display,
     },
     'sports.treatment.note': {
         'fields': {'note': _TP_ROLES, 'date': _TP_ROLES},

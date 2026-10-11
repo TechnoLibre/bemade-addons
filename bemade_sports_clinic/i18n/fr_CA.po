@@ -4093,6 +4093,7 @@ msgstr "Total de la couverture"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_recurrence_wizard
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Create"
 msgstr "Créer"
 
@@ -4511,6 +4512,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Date of Injury"
 msgstr "Date de la blessure"
 
@@ -4711,6 +4713,7 @@ msgstr "Diagnostic (p. ex. claquage des ischio-jambiers)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Diagnosis/Description"
 msgstr "Diagnostic/Description"
 
@@ -5493,6 +5496,7 @@ msgstr "Externe"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "External Notes"
 msgstr "Notes externes"
 
@@ -6306,6 +6310,7 @@ msgstr "Notes internes"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Internal Notes (Medical Staff Only)"
 msgstr "Notes internes (Personnel médical uniquement)"
 
@@ -7044,11 +7049,13 @@ msgid "My order"
 msgstr "Mon ordre"
 
 #. module: bemade_sports_clinic
+#. odoo-python
 #. odoo-javascript
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__injury_date_na
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_create_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_form_body
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "N/A"
 msgstr "S/O"
 
@@ -8125,6 +8132,7 @@ msgstr "Organisation parente (calculée basé sur l'équipe)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Parental Consent"
 msgstr "Consentement parental"
 
@@ -8897,6 +8905,7 @@ msgstr "Statut pratique"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Predicted Resolution Date"
 msgstr "Date prévue de résolution"
 
@@ -9580,6 +9589,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__resolution_date
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Resolution Date"
 msgstr "Date de résolution"
 
@@ -14067,6 +14077,7 @@ msgstr "Effacer les filtres"
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 msgid "Coaches"
 msgstr "Entraîneurs"
 
@@ -14138,12 +14149,15 @@ msgstr "Routage HTTP"
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 msgid "Hidden"
 msgstr "Masquée"
 
 #. module: bemade_sports_clinic
+#. odoo-python
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Hidden from coaches"
 msgstr "Masquée aux entraîneurs"
 
@@ -14166,6 +14180,7 @@ msgstr "Blessure supprimée."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Injury status"
 msgstr "Statut de la blessure"
 
@@ -14409,6 +14424,7 @@ msgstr "Aujourd'hui (%(count)s)"
 #. module: bemade_sports_clinic
 #. odoo-javascript
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Undo"
 msgstr "Annuler"
 
@@ -14420,11 +14436,13 @@ msgstr "Téléverser"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Visibility"
 msgstr "Visibilité"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Visibility changed"
 msgstr "Visibilité modifiée"
 
@@ -14570,3 +14588,68 @@ msgstr "Aucun historique d'annonces pour l'instant."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_training_history_list
 msgid "No training recommendation history yet."
 msgstr "Aucun historique de recommandations d'entraînement pour l'instant."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Can coaches see this injury?"
+msgstr "Les entraîneurs peuvent-ils voir cette blessure ?"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "<span>Yes</span>"
+msgstr "<span>Oui</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "<span>No, hide it</span>"
+msgstr "<span>Non, la masquer</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Report"
+msgstr "Signaler"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Consent to complete"
+msgstr "Consentement à compléter"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Treatment notes, documents and history"
+msgstr "Notes de traitement, documents et historique"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Injury created"
+msgstr "Blessure créée"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+msgid "Injury creation undone."
+msgstr "Création de la blessure annulée."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+msgid "Please choose whether coaches can see this injury."
+msgstr "Indiquez si les entraîneurs peuvent voir cette blessure."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+msgid "Please enter a diagnosis."
+msgstr "Saisissez un diagnostic."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+msgid "This injury can no longer be undone; delete it from its page."
+msgstr "Cette blessure ne peut plus être annulée ; supprimez-la depuis sa page."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Visible to coaches"
+msgstr "Visible aux entraîneurs"
