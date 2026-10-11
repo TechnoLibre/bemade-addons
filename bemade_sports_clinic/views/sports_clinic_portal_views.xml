@@ -688,6 +688,17 @@
                     <span class="fw-bold">Internal notes:</span>
                     <span style="white-space: pre-wrap;" t-esc="inj['internal_notes']"/>
                 </div>
+                <!-- App shell detail (owner layout 2026-10-11): this injury's
+                     own changes inside its card. Absent on the legacy card. -->
+                <div t-if="inj.get('items')" class="mt-2 o_sc_injury_changes">
+                    <t t-call="bemade_sports_clinic.dashboard_change_items">
+                        <t t-set="items" t-value="inj['items']"/>
+                        <t t-set="synopsis" t-value="False"/>
+                        <t t-set="show_position" t-value="False"/>
+                        <t t-set="position" t-value="False"/>
+                        <t t-set="hide_injury_suffix" t-value="True"/>
+                    </t>
+                </div>
             </div>
         </template>
 
@@ -969,7 +980,7 @@
                              recordset; a stored digest snapshot (task 1267) carries
                              a plain `injury_diagnosis` string instead (no recordset
                              survives serialization), so prefer that when present. -->
-                        <t t-if="it['category'] != 'new_injury'">
+                        <t t-if="it['category'] != 'new_injury' and not hide_injury_suffix">
                             <t t-set="digest_diag" t-value="it.get('injury_diagnosis') or (it['injury'].diagnosis if it.get('injury') else False)"/>
                             <t t-if="digest_diag">
                                 <span class="text-muted small"> — <t t-esc="digest_diag"/></span>

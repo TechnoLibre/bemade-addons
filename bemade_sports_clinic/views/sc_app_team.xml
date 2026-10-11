@@ -70,42 +70,84 @@
             <section class="o_sc_tab_panel" data-sc-tab-panel="dashboard" role="tabpanel"
                      t-att-hidden="None if sc_active_tab == 'dashboard' else 'hidden'">
 
-                <!-- Team announcement (task 1270): all-staff, TP-authored. -->
-                <t t-if="team.announcement">
-                    <div t-attf-class="o_sc_card o_sc_announcement #{'o_sc_announcement_expired' if team.announcement_is_expired else ''}"
-                         data-sc-section="team.announcement">
+                <!-- Team announcement (task 1270): all-staff, TP-authored.
+                     Owner review 2026-10-11: a labelled section with its
+                     « History » link (always) in the header; the card is an
+                     edit card — ONE pencil reveals the compose form (a LOCAL
+                     draft while typing, sc_autosave_field draft mode;
+                     « Publier » posts the unchanged PRG form) and an archive
+                     icon sits next to it. -->
+                <section class="o_sc_section" data-sc-section="team.announcement.area">
+                    <h2 class="o_sc_section_header">
+                        <span>Team announcement</span>
+                        <button type="button" class="o_sc_section_more o_sc_link_btn"
+                                data-sc-sheet-open="sc_announcement_history_sheet">History</button>
+                    </h2>
+                    <div t-attf-class="o_sc_card o_sc_edit_card o_sc_announcement #{'o_sc_announcement_expired' if team.announcement_is_expired else ''} #{'' if team.announcement else 'o_sc_announcement_none'}"
+                         data-sc-edit-card="announcement" data-sc-section="team.announcement">
                         <div class="o_sc_announcement_head">
                             <span class="o_sc_announcement_title">
                                 <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'megaphone'"/></t>
-                                <strong>Team announcement</strong>
+                                <t t-if="team.announcement_is_expired" t-call="bemade_sports_clinic.sc_status_chip">
+                                    <t t-set="tone" t-value="'ghost'"/>
+                                    <t t-set="label">Expired</t>
+                                </t>
                             </span>
-                            <t t-if="team.announcement_is_expired" t-call="bemade_sports_clinic.sc_status_chip">
-                                <t t-set="tone" t-value="'ghost'"/>
-                                <t t-set="label">Expired</t>
+                            <span t-if="sc_show_compose" class="o_sc_card_icons">
+                                <t t-set="sc_edit_label">Edit</t>
+                                <t t-set="sc_archive_label">Archive</t>
+                                <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1"
+                                        aria-expanded="false" t-att-aria-label="sc_edit_label" t-att-title="sc_edit_label">
+                                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                                </button>
+                                <form t-if="team.announcement" t-attf-action="/my/team/#{team.id}/announcement/dismiss"
+                                      method="post" class="o_sc_inline_form" data-sc-section="team.announcement.archive">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <button type="submit" class="o_sc_icon_btn" t-att-aria-label="sc_archive_label" t-att-title="sc_archive_label">
+                                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'archive'"/></t>
+                                    </button>
+                                </form>
+                            </span>
+                        </div>
+                        <div data-sc-edit-view="read">
+                            <t t-if="team.announcement">
+                                <p class="o_sc_pre o_sc_announcement_body" t-out="team.announcement"/>
+                                <p t-if="sc_announcement_deadline" class="o_sc_meta">
+                                    <span>Valid until:</span> <t t-out="sc_announcement_deadline"/>
+                                </p>
+                            </t>
+                            <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
+                                <t t-set="message">No team announcement.</t>
                             </t>
                         </div>
-                        <p class="o_sc_pre o_sc_announcement_body" t-out="team.announcement"/>
-                        <p t-if="sc_announcement_deadline" class="o_sc_meta">
-                            <span>Valid until:</span> <t t-out="sc_announcement_deadline"/>
-                        </p>
-                        <div class="o_sc_card_actions">
-                            <button t-if="sc_announcement_history" type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm"
-                                    data-sc-sheet-open="sc_announcement_history_sheet">
-                                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'history'"/></t>
-                                <span>History</span>
-                            </button>
-                            <form t-if="sc_show_compose" t-attf-action="/my/team/#{team.id}/announcement/dismiss"
-                                  method="post" class="o_sc_inline_form" data-sc-section="team.announcement.archive">
-                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <button type="submit" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm">Archive</button>
-                            </form>
+                        <div t-if="sc_show_compose" data-sc-edit-view="edit" hidden="hidden"
+                             data-sc-section="team.announcement.edit">
+                            <t t-call="bemade_sports_clinic.sc_banner">
+                                <t t-set="tone" t-value="'warn'"/>
+                                Visible to all team staff (coaches included) and sent by email — do not include any confidential medical information about a player.
+                            </t>
+                        <form t-attf-action="/my/team/#{team.id}/announcement" method="post" class="o_sc_form"
+                              data-sc-draft-form="1">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <t t-set="sc_ann_label">Announcement</t>
+                            <t t-set="sc_ann_placeholder">Write an announcement for all team staff…</t>
+                            <t t-set="sc_deadline_label">Valid until (optional)</t>
+                            <owl-component name="bemade_sports_clinic.sc_autosave_field"
+                                           t-att-props="json.dumps({'mode': 'draft', 'name': 'announcement', 'inputType': 'textarea', 'inputId': 'sc_team_announcement', 'label': sc_ann_label, 'placeholder': sc_ann_placeholder, 'value': team.announcement or '', 'draftKey': 'sports.team.%s.announcement' % team.id})"/>
+                            <owl-component name="bemade_sports_clinic.sc_autosave_field"
+                                           t-att-props="json.dumps({'mode': 'draft', 'name': 'announcement_deadline', 'inputType': 'date', 'inputId': 'sc_team_announcement_deadline', 'label': sc_deadline_label, 'value': team.announcement_deadline and team.announcement_deadline.strftime('%Y-%m-%d') or '', 'draftKey': 'sports.team.%s.announcement_deadline' % team.id})"/>
+                            <div class="o_sc_form_actions">
+                                <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="team.announcement.publish">Publish</button>
+                                <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-edit-done="1">Cancel</button>
+                            </div>
+                        </form>
                         </div>
                     </div>
-                    <t t-if="sc_announcement_history" t-call="bemade_sports_clinic.sc_sheet">
+                    <t t-call="bemade_sports_clinic.sc_sheet">
                         <t t-set="sheet_id" t-value="'sc_announcement_history_sheet'"/>
                         <t t-set="title">Announcement history</t>
                         <t t-set="lazy_url" t-value="False"/>
-                        <ol class="o_sc_history">
+                        <ol t-if="sc_announcement_history" class="o_sc_history">
                             <li t-foreach="sc_announcement_history" t-as="h">
                                 <div class="o_sc_meta">
                                     <span t-field="h.note_datetime"/> · <t t-out="h.author_id.name"/> ·
@@ -117,37 +159,11 @@
                                 <p class="o_sc_pre" t-out="h.body"/>
                             </li>
                         </ol>
+                        <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
+                            <t t-set="message">No announcement history yet.</t>
+                        </t>
                     </t>
-                </t>
-
-                <!-- Compose / edit: a LOCAL draft on the device while typing
-                     (sc_autosave_field, draft mode); « Publier » posts the
-                     existing PRG form unchanged. -->
-                <details t-if="sc_show_compose" class="o_sc_card o_sc_disclosure" data-sc-section="team.announcement.edit">
-                    <summary class="o_sc_disclosure_summary">
-                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'megaphone'"/></t>
-                        <span t-if="team.announcement">Edit announcement</span>
-                        <span t-else="">Post a team announcement</span>
-                    </summary>
-                    <t t-call="bemade_sports_clinic.sc_banner">
-                        <t t-set="tone" t-value="'warn'"/>
-                        Visible to all team staff (coaches included) and sent by email — do not include any confidential medical information about a player.
-                    </t>
-                    <form t-attf-action="/my/team/#{team.id}/announcement" method="post" class="o_sc_form"
-                          data-sc-draft-form="1">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <t t-set="sc_ann_label">Announcement</t>
-                        <t t-set="sc_ann_placeholder">Write an announcement for all team staff…</t>
-                        <t t-set="sc_deadline_label">Valid until (optional)</t>
-                        <owl-component name="bemade_sports_clinic.sc_autosave_field"
-                                       t-att-props="json.dumps({'mode': 'draft', 'name': 'announcement', 'inputType': 'textarea', 'inputId': 'sc_team_announcement', 'label': sc_ann_label, 'placeholder': sc_ann_placeholder, 'value': team.announcement or '', 'draftKey': 'sports.team.%s.announcement' % team.id})"/>
-                        <owl-component name="bemade_sports_clinic.sc_autosave_field"
-                                       t-att-props="json.dumps({'mode': 'draft', 'name': 'announcement_deadline', 'inputType': 'date', 'inputId': 'sc_team_announcement_deadline', 'label': sc_deadline_label, 'value': team.announcement_deadline and team.announcement_deadline.strftime('%Y-%m-%d') or '', 'draftKey': 'sports.team.%s.announcement_deadline' % team.id})"/>
-                        <div class="o_sc_form_actions">
-                            <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="team.announcement.publish">Publish</button>
-                        </div>
-                    </form>
-                </details>
+                </section>
 
                 <div class="o_sc_stats" data-sc-section="team.stats">
                     <t t-call="bemade_sports_clinic.sc_stat_tile">
@@ -177,17 +193,21 @@
                         <div t-if="sc_dashboard_rows" class="o_sc_list">
                             <t t-foreach="sc_dashboard_rows" t-as="row">
                                 <details t-if="row['changed']" class="o_sc_expand" t-att-data-sc-player-id="row['id']"
-                                         t-attf-data-sc-lazy-url="/my/player/#{row['id']}/recent-changes">
+                                         t-attf-data-sc-lazy-url="/my/player/#{row['id']}/recent-changes?detail=1">
                                     <summary class="o_sc_entity_row">
                                         <span t-attf-class="o_sc_dot o_sc_tone_#{row['dot']}" aria-hidden="true"/>
                                         <span class="o_sc_row_text">
                                             <span class="o_sc_row_title" t-out="row['title']"/>
                                             <span t-if="row['subtitle']" class="o_sc_row_subtitle" t-out="row['subtitle']"/>
+                                            <t t-call="bemade_sports_clinic.sc_player_status_line">
+                                                <t t-set="row_status" t-value="row['status']"/>
+                                                <t t-set="row_changed" t-value="True"/>
+                                            </t>
                                         </span>
                                         <span class="o_sc_row_trailing">
-                                            <t t-call="bemade_sports_clinic.sc_status_chip">
-                                                <t t-set="tone" t-value="'mauve'"/>
-                                                <t t-set="label">New</t>
+                                            <t t-if="row['pending_removal']" t-call="bemade_sports_clinic.sc_status_chip">
+                                                <t t-set="tone" t-value="'ghost'"/>
+                                                <t t-set="label">Removal pending</t>
                                             </t>
                                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'down'"/></t>
                                         </span>
@@ -205,9 +225,10 @@
                                     <t t-set="title" t-value="row['title']"/>
                                     <t t-set="subtitle" t-value="row['subtitle']"/>
                                     <t t-set="row_attrs" t-value="{'data-sc-player-id': row['id']}"/>
-                                    <t t-call="bemade_sports_clinic.sc_status_chip">
-                                        <t t-set="tone" t-value="row['dot']"/>
-                                        <t t-set="label" t-value="row['chip']"/>
+                                    <t t-set="row_status" t-value="row['status']"/>
+                                    <t t-if="row['pending_removal']" t-call="bemade_sports_clinic.sc_status_chip">
+                                        <t t-set="tone" t-value="'ghost'"/>
+                                        <t t-set="label">Removal pending</t>
                                     </t>
                                 </t>
                             </t>
@@ -230,9 +251,10 @@
                                         <t t-set="title" t-value="row['title']"/>
                                         <t t-set="subtitle" t-value="row['subtitle']"/>
                                         <t t-set="row_attrs" t-value="{'data-sc-player-id': row['id']}"/>
-                                        <t t-call="bemade_sports_clinic.sc_status_chip">
-                                            <t t-set="tone" t-value="row['dot']"/>
-                                            <t t-set="label" t-value="row['chip']"/>
+                                        <t t-set="row_status" t-value="row['status']"/>
+                                        <t t-if="row['pending_removal']" t-call="bemade_sports_clinic.sc_status_chip">
+                                            <t t-set="tone" t-value="'ghost'"/>
+                                            <t t-set="label">Removal pending</t>
                                         </t>
                                     </t>
                                 </t>
@@ -316,13 +338,10 @@
                             <t t-set="title" t-value="row['title']"/>
                             <t t-set="subtitle" t-value="row['subtitle']"/>
                             <t t-set="row_attrs" t-value="{'data-sc-player-id': row['id']}"/>
+                            <t t-set="row_status" t-value="row['status']"/>
                             <t t-if="row['pending_removal']" t-call="bemade_sports_clinic.sc_status_chip">
                                 <t t-set="tone" t-value="'ghost'"/>
                                 <t t-set="label">Removal pending</t>
-                            </t>
-                            <t t-call="bemade_sports_clinic.sc_status_chip">
-                                <t t-set="tone" t-value="row['dot']"/>
-                                <t t-set="label" t-value="row['chip']"/>
                             </t>
                         </t>
                     </t>
@@ -480,6 +499,62 @@
                 </main>
             </body>
         </html>
+    </template>
+
+    <!-- Owner review 2026-10-11: the expanded recent-changes row carries the
+         legacy card's detail, from /my/player/<id>/recent-changes?detail=1
+         (values: sports.patient._sc_change_detail). Order: training
+         recommendation, predicted return, last consultation, the player's
+         non-injury changes, then the injuries, each with its own changes.
+         Reuses the legacy injury card and change list. -->
+    <template id="sc_player_change_detail" name="App shell: player change detail">
+        <div class="o_sc_change_detail">
+            <div t-if="player.training_recommendation" class="text-muted small d-flex align-items-start mb-1">
+                <i class="fa fa-graduation-cap mt-1" title="Training Recommendation"/>
+                <span class="ms-1 o_sc_pre" t-esc="player.training_recommendation"/>
+            </div>
+            <div t-if="player.stage != 'healthy'" class="text-muted small d-flex align-items-center mb-1">
+                <i class="fa fa-clock-o" title="Estimated Return"/>
+                <span class="ms-1">Predicted return:</span>
+                <span t-if="player.predicted_return_date" class="ms-1" t-field="player.predicted_return_date" t-options="{'widget': 'date'}"/>
+                <span t-else="" class="ms-1">—</span>
+            </div>
+            <div class="text-muted small d-flex align-items-center mb-2">
+                <i class="fa fa-stethoscope" title="Last Consultation Date"/>
+                <span class="ms-1">Last consultation:</span>
+                <span class="ms-1" t-field="player.last_consultation_date" t-options="{'widget': 'date'}"/>
+            </div>
+            <div t-if="items" class="o_sc_recent_changes_content mb-2">
+                <div class="mb-1">
+                    <span class="badge bg-warning text-dark o_sc_recent_heading">
+                        <i class="fa fa-bolt me-1" aria-hidden="true"/>recent changes
+                    </span>
+                </div>
+                <t t-call="bemade_sports_clinic.dashboard_change_items">
+                    <t t-set="synopsis" t-value="False"/>
+                    <t t-set="show_position" t-value="False"/>
+                    <t t-set="position" t-value="False"/>
+                </t>
+            </div>
+            <t t-if="active_injuries">
+                <h3 class="o_sc_change_detail_sub">Active injuries</h3>
+                <t t-foreach="active_injuries" t-as="inj">
+                    <t t-call="bemade_sports_clinic.portal_card_injury_detail">
+                        <t t-set="team" t-value="False"/>
+                        <t t-set="changed" t-value="inj['changed']"/>
+                    </t>
+                </t>
+            </t>
+            <t t-if="resolved_injuries">
+                <h3 class="o_sc_change_detail_sub">Resolved injuries</h3>
+                <t t-foreach="resolved_injuries" t-as="inj">
+                    <t t-call="bemade_sports_clinic.portal_card_injury_detail">
+                        <t t-set="team" t-value="False"/>
+                        <t t-set="changed" t-value="inj['changed']"/>
+                    </t>
+                </t>
+            </t>
+        </div>
     </template>
 
 </odoo>

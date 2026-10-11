@@ -1524,6 +1524,90 @@ class Patient(models.Model):
             details.append(detail)
         return details
 
+    def _sc_change_detail(self, role, is_treatment_prof, cutoff=None):
+        """The app shell's expanded recent-changes detail (owner layout
+        2026-10-11): every injury change grouped under its injury, the rest in
+        a general list.
+
+        Returns ``{'items': [...], 'active_injuries': [...],
+        'resolved_injuries': [...]}``; each injury dict is a
+        ``_card_injury_detail`` plus ``items`` (its changes) and ``changed``.
+        Active injuries come most recently changed first, unchanged ones last
+        (latest injury first); resolved injuries appear only with changes.
+        Injuries are read as the CURRENT user, hidden-from-coaches ones dropped
+        for a coach, and the change feed is role-gated, so a coach never gets a
+        hidden injury or an internal note.
+        """
+        self.ensure_one()
+        if cutoff is None:
+            cutoff = self._dashboard_window_cutoff()
+        general, by_injury = [], {}
+        for item in self._dashboard_change_items(role, cutoff):
+            injury = item.get("injury")
+            if injury:
+                by_injury.setdefault(injury.id, []).append(item)
+            else:
+                general.append(item)
+        visible = self.injury_ids
+        if role == "coach":
+            visible = visible.filtered(lambda i: not i.hidden_from_coaches)
+        last_change = self._sc_injury_last_change(visible, cutoff)
+
+        def detail(injury):
+            values = self._card_injury_detail(injury, cutoff)
+            if not is_treatment_prof:
+                values["internal_notes"] = ""
+            values["items"] = by_injury.get(injury.id, [])
+            values["changed"] = bool(values["items"])
+            return values
+
+        def recency(injury):
+            when = last_change.get(injury.id) if injury.id in by_injury else None
+            return (bool(when), when or datetime.min,
+                    injury.injury_date or date.min, injury.id)
+
+        active = visible.filtered(lambda i: i.stage != "resolved")
+        active = active.filtered(
+            lambda i: i.stage == "active" or i.id in by_injury)
+        resolved = visible.filtered(
+            lambda i: i.stage == "resolved" and i.id in by_injury)
+        return {
+            "items": general,
+            "active_injuries": [
+                detail(i) for i in active.sorted(recency, reverse=True)],
+            "resolved_injuries": [
+                detail(i) for i in resolved.sorted(recency, reverse=True)],
+        }
+
+    @api.model
+    def _sc_injury_last_change(self, injuries, cutoff):
+        """``{injury_id: datetime}`` of each injury's latest tracked change or
+        note update in the window (creation counts for a new injury)."""
+        last = {}
+
+        def bump(injury_id, when):
+            if when and (injury_id not in last or when > last[injury_id]):
+                last[injury_id] = when
+
+        for injury in injuries:
+            if injury.create_date and injury.create_date >= cutoff:
+                bump(injury.id, injury.create_date)
+        messages = self.env["mail.message"].sudo().search_read([
+            ("model", "=", "sports.patient.injury"),
+            ("res_id", "in", injuries.ids),
+            ("date", ">=", cutoff),
+            ("tracking_value_ids", "!=", False),
+        ], ["res_id", "date"])
+        for message in messages:
+            bump(message["res_id"], message["date"])
+        notes = self.env["sports.injury.note.history"].sudo().search_read([
+            ("injury_id", "in", injuries.ids),
+            ("note_datetime", ">=", cutoff),
+        ], ["injury_id", "note_datetime"])
+        for note in notes:
+            bump(note["injury_id"][0], note["note_datetime"])
+        return last
+
     @api.model
     def _dashboard_note_count_label(self, count):
         """Bare '<n> new note(s)' phrase (no surrounding parens), pluralised.
@@ -1969,6 +2053,41 @@ class Patient(models.Model):
                     "title": _("Duplicate jersey number"),
                     "message": rec._jersey_duplicate_message(duplicates),
                 })
+
+    # App shell player rows: the legacy card's distinct Match / Practice
+    # badges (tone + icon) and active-injury count (owner review 2026-10-11).
+    _SC_MATCH_PILLS = {"yes": ("green", "fa-check"), "no": ("red", "fa-ban")}
+    _SC_PRACTICE_PILLS = {
+        "yes": ("green", "fa-check"),
+        "no_contact": ("yellow", "fa-exclamation-triangle"),
+        "no": ("red", "fa-ban"),
+    }
+
+    def _sc_row_status(self):
+        """Status line of ONE player row: ``{'pills': [match, practice],
+        'injuries': n}``, each pill ``{label, tone, icon, title}``."""
+        self.ensure_one()
+        env = self.env
+
+        def pill(field_name, label, tones):
+            value = self[field_name]
+            tone, icon = tones.get(value, ("ghost", ""))
+            labels = dict(self._fields[field_name]._description_selection(env))
+            return {
+                "label": label,
+                "tone": tone,
+                "icon": icon,
+                "title": env._("%(what)s: %(value)s", what=label,
+                               value=labels.get(value) or env._("Unknown")),
+            }
+
+        return {
+            "pills": [
+                pill("match_status", env._("Match"), self._SC_MATCH_PILLS),
+                pill("practice_status", env._("Practice"), self._SC_PRACTICE_PILLS),
+            ],
+            "injuries": self.active_injury_count,
+        }
 
     def _portal_list_name(self, with_jersey=True):
         """« Last, First » of ONE patient for portal lists and pickers —

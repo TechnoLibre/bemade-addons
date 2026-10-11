@@ -569,7 +569,7 @@ class AppShellMixin:
             extra['options'] = AppShellMixin._sc_options(extra['options'])
         for key, value in extra.items():
             if value is not None:
-                props[key] = str(value) if key in ('hint', 'placeholder', 'undoMessage') else value
+                props[key] = str(value) if key in ('hint', 'placeholder', 'undoMessage', 'historyLabel') else value
         return json.dumps(props, default=str)
 
     @staticmethod
