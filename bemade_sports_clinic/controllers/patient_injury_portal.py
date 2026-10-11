@@ -313,18 +313,19 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             base = posted_return_url.partition('#')[0]
             return request.redirect(self._url_with_query(
                 base, 'success=injury_created') + '#clinic-injury-%s' % injury.id)
+        # Task 1579 (save-and-redirect hygiene): in the shell a create never
+        # lands on a POST result page — it redirects to the player's
+        # Injuries tab (same context) with the new injury open and its
+        # « Undo »; that page drops the device draft of the new injury
+        # (data-sc-draft-clear, task 1539) once it exists.
+        if self._sc_app_shell_active():
+            injuries_url = self._sc_inline_injuries_url(patient, post, clinic_event)
+            return request.redirect(self._url_with_query(
+                injuries_url, 'created=%s' % injury.id) + '#injury-%s' % injury.id)
         values = {
             'return_url': return_url,
         }
-        # Task 1539: the shell's landing page also drops the device draft of
-        # this new injury (data-sc-draft-clear) — only once it exists.
-        if self._sc_app_shell_active():
-            values.update({
-                'sc_created_injury': injury,
-                'sc_draft_prefix': self._sc_new_injury_prefix(patient),
-            })
-        return self._sc_render('bemade_sports_clinic.portal_injury_created',
-                               'bemade_sports_clinic.sc_app_injury_created', values)
+        return request.render('bemade_sports_clinic.portal_injury_created', values)
         
     # _check_access_to_injury method now inherited from AccessControlMixin
 

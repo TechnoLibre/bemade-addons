@@ -103,19 +103,11 @@ class User(models.Model):
         copy=False,
     )
 
-    # Task 1538: portal app shell preferences (self-writable; set from
-    # « Plus › Apparence / Navigation » and the app-bar theme toggle through
-    # /my/app/pref, which accepts these two fields only).
-    sc_nav_mode = fields.Selection(
-        selection=[
-            ("back", "Back + context"),
-            ("crumbs", "Breadcrumbs"),
-        ],
-        string="Portal App Navigation",
-        default="back",
-        required=True,
-        copy=False,
-    )
+    # Task 1538: portal app shell preference (self-writable; set from
+    # « Plus › Apparence » and the app-bar theme toggle through /my/app/pref,
+    # which accepts this field only). Task 1579 removed the navigation-mode
+    # setting: the screen width decides (back + context on a phone, the
+    # breadcrumb trail on a laptop).
     sc_theme = fields.Selection(
         selection=[
             ("dark", "Dark"),
@@ -135,7 +127,6 @@ class User(models.Model):
             "teams_sort_mode",
             "roster_sort_mode",
             "players_sort_mode",
-            "sc_nav_mode",
             "sc_theme",
         ]
 
@@ -147,7 +138,6 @@ class User(models.Model):
             "teams_sort_mode",
             "roster_sort_mode",
             "players_sort_mode",
-            "sc_nav_mode",
             "sc_theme",
         ]
 

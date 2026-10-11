@@ -4766,8 +4766,9 @@ msgid "Digest Retention (days)"
 msgstr "Rétention du sommaire (jours)"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sc_app_nav.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_team_digest_history
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team_digest_history
 msgid "Digest history"
 msgstr "Historique des sommaires"
@@ -5971,6 +5972,8 @@ msgid "History"
 msgstr "Historique"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sc_app_nav.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_breadcrumbs_sports_clinic
 msgid "Home"
 msgstr "Accueil"
@@ -6193,6 +6196,7 @@ msgstr "Blessures (audit)"
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/models/sc_app_nav.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_document__injury_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__injury_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__injury_id
@@ -13228,13 +13232,6 @@ msgid "Available"
 msgstr "Disponibles"
 
 #. module: bemade_sports_clinic
-#: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__res_users__sc_nav_mode__back
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
-
-msgid "Back + context"
-msgstr "Retour + contexte"
-
-#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/models/sc_app_roles.py:0
 msgid "Back-end"
@@ -13243,13 +13240,6 @@ msgstr "Retour au backend"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 msgid "Breadcrumb"
-msgstr "Fil d'Ariane"
-
-#. module: bemade_sports_clinic
-#: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__res_users__sc_nav_mode__crumbs
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
-
-msgid "Breadcrumbs"
 msgstr "Fil d'Ariane"
 
 #. module: bemade_sports_clinic
@@ -13363,7 +13353,6 @@ msgstr "Nom, courriel, téléphone"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
 msgid "Navigation"
 msgstr "Navigation"
 
@@ -13402,12 +13391,6 @@ msgstr "Autres documents du portail"
 
 msgid "Password and sign-in"
 msgstr "Mot de passe et connexion"
-
-#. module: bemade_sports_clinic
-#: model:ir.model.fields,field_description:bemade_sports_clinic.field_res_users__sc_nav_mode
-
-msgid "Portal App Navigation"
-msgstr "Navigation de l'application du portail"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_res_users__sc_theme
@@ -14084,11 +14067,6 @@ msgid "All (%(count)s)"
 msgstr "Toutes (%(count)s)"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_created
-msgid "Back to the player"
-msgstr "Retour au joueur"
-
-#. module: bemade_sports_clinic
 #. odoo-javascript
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
 msgid "Change saved"
@@ -14197,11 +14175,6 @@ msgstr "Masquée aux entraîneurs"
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 msgid "Info"
 msgstr "Infos"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_created
-msgid "Injury Created"
-msgstr "Blessure créée"
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -14324,11 +14297,6 @@ msgstr ""
 "vérifié."
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_created
-msgid "Open the injury"
-msgstr "Ouvrir la blessure"
-
-#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/task_management_portal.py:0
 msgid "Overdue (%(count)s)"
@@ -14415,11 +14383,6 @@ msgstr "Envoyer la demande"
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 msgid "The file is too large (10 MB maximum)."
 msgstr "Le fichier est trop volumineux (10 Mo maximum)."
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_created
-msgid "The injury has been recorded."
-msgstr "La blessure a été enregistrée."
 
 #. module: bemade_sports_clinic
 #. odoo-python

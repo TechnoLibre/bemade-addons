@@ -130,10 +130,7 @@
     <template id="sc_app_clinic" name="Sports Clinic App: clinic">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="event.name"/>
-            <t t-set="sc_context" t-value="sc_nav_labels['clinic']"/>
             <t t-set="sc_active_nav" t-value="'clinic'"/>
-            <t t-set="sc_parent_url" t-value="'/my/clinics'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['clinic'], '/my/clinics')]"/>
             <t t-set="sc_add_label">Add a patient</t>
             <t t-set="sc_primary_action" t-value="{'sheet': 'sc_clinic_add_sheet', 'label': sc_add_label, 'key': 'clinic.add'}"/>
 

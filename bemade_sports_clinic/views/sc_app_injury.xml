@@ -92,10 +92,7 @@
             <t t-else="">
                 <t t-set="sc_title">Report Injury</t>
             </t>
-            <t t-set="sc_context" t-value="patient._portal_heading_name()"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_parent_url" t-value="return_url"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players'), (patient._portal_list_name(), return_url)]"/>
             <t t-if="error" t-call="bemade_sports_clinic.sc_banner">
                 <t t-set="tone" t-value="'warn'"/>
                 <t t-out="error"/>
@@ -110,27 +107,6 @@
         </t>
     </template>
 
-    <!-- The « created » landing (POST /my/patient/injury/create): drops the
-         device draft of the new injury, links back to the player. -->
-    <template id="sc_app_injury_created" name="Sports Clinic App: injury created">
-        <t t-call="bemade_sports_clinic.sc_app_layout">
-            <t t-set="sc_title">Injury Created</t>
-            <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_parent_url" t-value="return_url"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players')]"/>
-            <div t-att-data-sc-draft-clear="sc_draft_prefix" hidden="hidden"/>
-            <t t-call="bemade_sports_clinic.sc_banner">
-                <t t-set="title">Injury Created</t>
-                The injury has been recorded.
-            </t>
-            <div class="o_sc_actions_row">
-                <a t-if="sc_created_injury" t-attf-href="/my/injury/edit?injury_id=#{sc_created_injury.id}"
-                   class="o_sc_btn o_sc_btn_ghost" data-sc-action="injury.open">Open the injury</a>
-                <a t-att-href="return_url" class="o_sc_btn o_sc_btn_primary" data-sc-action="injury.back">Back to the player</a>
-            </div>
-        </t>
-    </template>
-
     <!-- /my/injury/edit?injury_id=<id> (shell): every field saved when the
          user leaves it (/my/app/save — one note-history row per changed note
          field); status and visibility save on click, with « Annuler ». -->
@@ -138,10 +114,7 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_injury_fallback">Injury</t>
             <t t-set="sc_title" t-value="injury.diagnosis or sc_injury_fallback"/>
-            <t t-set="sc_context" t-value="injury.patient_id._portal_heading_name()"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_parent_url" t-value="return_url"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players'), (injury.patient_id._portal_list_name(), return_url)]"/>
             <t t-set="sc_flash" t-value="sc_injury_flash"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <t t-call="bemade_sports_clinic.sc_banner">
@@ -241,11 +214,7 @@
     <template id="sc_app_treatment_notes" name="Sports Clinic App: treatment notes">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Treatment Notes</t>
-            <t t-set="sc_context" t-value="patient._portal_heading_name()"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_player_back" t-value="'/my/player?player_id=%s%s' % (patient.id, ctx_qs or '')"/>
-            <t t-set="sc_parent_url" t-value="sc_player_back"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players'), (patient._portal_list_name(), sc_player_back)]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <div t-if="success == 'note_added'" t-att-data-sc-draft-clear="sc_note_draft_prefix" hidden="hidden"/>
             <t t-if="is_treatment_prof" t-call="bemade_sports_clinic.sc_note_add_form">
@@ -274,11 +243,7 @@
     <template id="sc_app_note_history" name="Sports Clinic App: note history">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Note History</t>
-            <t t-set="sc_context" t-value="injury.diagnosis or patient._portal_heading_name()"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_injury_back" t-value="'/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs or '')"/>
-            <t t-set="sc_parent_url" t-value="sc_injury_back"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players'), (patient._portal_list_name(), '/my/player?player_id=%s' % patient.id), (injury.diagnosis or patient.name, sc_injury_back)]"/>
             <nav t-if="is_treatment_prof" class="o_sc_segmented" role="group" aria-label="Scope filter" data-sc-section="history.scope">
                 <a t-att-href="'/my/injury/%s/notes/history?scope=all%s' % (injury.id, ctx_qs or '')"
                    t-att-aria-pressed="'true' if scope == 'all' else 'false'">All</a>
@@ -311,11 +276,7 @@
     <template id="sc_app_injury_documents" name="Sports Clinic App: injury documents">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Documents</t>
-            <t t-set="sc_context" t-value="injury.diagnosis or patient._portal_heading_name()"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_injury_back" t-value="'/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs or '')"/>
-            <t t-set="sc_parent_url" t-value="sc_injury_back"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players'), (patient._portal_list_name(), '/my/player?player_id=%s' % patient.id), (injury.diagnosis or patient.name, sc_injury_back)]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <details t-if="is_treatment_prof and sc_can('documents.upload')" class="o_sc_card o_sc_disclosure"
                      data-sc-section="documents.upload">

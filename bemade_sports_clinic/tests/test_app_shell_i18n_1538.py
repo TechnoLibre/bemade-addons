@@ -73,8 +73,8 @@ class TestAppShellI18n1538(AppShellCommon):
         self._switch(True)
         self._login_tp()
         text = self._fr('/my/app/more')
-        for term in ('Apparence', 'Sombre', 'Clair', 'Navigation',
-                     'Retour + contexte', "Fil d'Ariane", 'Mon compte', 'Sécurité',
+        # Task 1579: no « Navigation » setting any more.
+        for term in ('Apparence', 'Sombre', 'Clair', 'Mon compte', 'Sécurité',
                      'Événements et calendrier', 'Bloc-notes', 'Feuilles de temps',
                      'Déconnexion'):
             self.assertIn(term, text.replace('&#39;', "'"), term)

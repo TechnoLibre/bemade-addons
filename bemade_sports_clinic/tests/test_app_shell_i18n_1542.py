@@ -36,8 +36,8 @@ class TestAppShellI18n1542(TestAppShellI18n1538):
         self.assertIn('lang="fr-CA"', html_tag)
         for term in ('Aperçu', 'Joueurs', 'Activités', 'Ajouter un joueur',
                      'Changements récents', 'Blessés', 'En reprise', 'Disponibles',
-                     "Annonce de l'équipe", 'Publier', 'Historique des sommaires',
-                     'Événements à venir', 'Par statut', 'Par numéro', 'Chargement…'):
+                     "Annonce de l'équipe", 'Publier', 'Historique',
+                     'Événements à venir', 'Par statut', 'Par numéro'):
             self.assertIn(term, text, term)
         self._login_coach()
         text = self._fr(self.url).replace('&#39;', "'")

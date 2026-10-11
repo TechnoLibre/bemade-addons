@@ -155,9 +155,12 @@ tours.add("sc_1539_new_injury_draft", {
             expectUnloadPage: true,
         },
         {
-            content: "Created landing: the draft is gone",
-            trigger: '[data-sc-action="injury.back"]',
+            // Task 1579: no « created » POST-result page any more — the
+            // player's Injuries tab (the canonical page) is the landing.
+            content: "Landed on the player's injuries: the draft is gone",
+            trigger: '.o_sc_app [data-sc-tab-panel="injuries"]:not([hidden])',
             run() {
+                assert(window.location.pathname === "/my/player", window.location.href);
                 assert(draftKeys("new_injury.").length === 0, `drafts left: ${draftKeys()}`);
             },
         },
@@ -428,8 +431,16 @@ tours.add("sc_player_inline_edit", {
             },
         },
         {
+            // Task 1579: the context line is the PHONE's (hidden on a
+            // laptop, where this tour runs): check its text, not visibility.
             content: "The app bar context follows",
-            trigger: '.o_sc_appbar_context:contains("Safety")',
+            trigger: '[data-sc-edit-card="identity"] [data-sc-edit-view="read"]',
+            run() {
+                const context = document.querySelector(".o_sc_appbar_context");
+                if (!context || !context.textContent.includes("Safety")) {
+                    throw new Error(`context line reads « ${context && context.textContent} »`);
+                }
+            },
         },
     ],
 });

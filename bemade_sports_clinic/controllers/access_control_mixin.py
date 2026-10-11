@@ -20,6 +20,8 @@
 from odoo import http, _, fields
 from odoo.exceptions import UserError, AccessError, MissingError
 from odoo.http import request
+
+from ..models import sc_app_nav
 from datetime import datetime, time
 import logging
 import pytz
@@ -536,22 +538,14 @@ class AccessControlMixin:
             return None
 
     @staticmethod
-    def _safe_return_url(value, fallback):
+    def _safe_return_url(value, fallback, prefixes=None):
         """``value`` if it is a same-site relative path, else ``fallback``
         (task 1544: no open redirect through a posted ``return_url``).
 
-        Accepted: ``/…`` only. Refused: empty / non-string, a scheme
-        (``https://…``, ``javascript:…``), protocol-relative ``//…``, any
-        backslash (browsers read ``/\\evil`` as ``//evil``), and any control
-        character (browsers drop tab/newline, so ``/<TAB>/evil`` would become
-        ``//evil``). A plain space is allowed (search-filter return URLs)."""
-        if not value or not isinstance(value, str):
-            return fallback
-        if (not value.startswith('/') or value.startswith('//')
-                or '\\' in value
-                or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in value)):
-            return fallback
-        return value
+        Task 1579: ONE validator for the whole addon —
+        ``models/sc_app_nav.safe_return_url`` (same rule as before, plus the
+        optional ``prefixes`` the events pages restrict themselves to)."""
+        return sc_app_nav.safe_return_url(value, fallback, prefixes=prefixes)
 
     @classmethod
     def _local_return_url(cls, value, default):

@@ -42,14 +42,14 @@ from odoo.tools import file_open, format_date, format_datetime
 
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
-from ..models import sc_app_roles
+from ..models import sc_app_nav, sc_app_roles
 from .access_control_mixin import AccessControlMixin
 
 APP_SHELL_PARAM = 'bemade_sports_clinic.app_shell_enabled'
 _TRUTHY = ('1', 'true', 'yes', 'on')
 # The ONLY fields /my/app/pref may write, with their allowed values.
+# Task 1579: no navigation setting any more — the screen width decides.
 PREF_FIELDS = {
-    'sc_nav_mode': ('back', 'crumbs'),
     'sc_theme': ('dark', 'light'),
 }
 # ---------------------------------------------------------------------------
@@ -492,8 +492,12 @@ class AppShellMixin:
             items.append(item)
         return items
 
-    def _sc_app_values(self, values):
-        """``values`` + everything ``sc_app_layout`` needs."""
+    def _sc_app_values(self, values, page=None):
+        """``values`` + everything ``sc_app_layout`` needs. ``page`` is the
+        app template (``module.template``): its navigation — back target,
+        context line, crumb trail — comes from the parent registry
+        (``models/sc_app_nav.py``, task 1579); without it the page is top
+        level."""
         user = request.env.user
         roles = user._sc_app_roles()
         ctx = {'booking_card_enable': self._sc_booking_enabled()}
@@ -515,7 +519,6 @@ class AppShellMixin:
             'sc_plus': plus,
             'sc_nav_labels': labels,
             'sc_theme': user.sc_theme or 'dark',
-            'sc_nav_mode': user.sc_nav_mode or 'back',
             'sc_current_url': path + ('?' + query if query else ''),
             'sc_search_url': '/my/players' if any(t['key'] == 'players' for t in rail) else False,
             'sc_user_initials': initials or '?',
@@ -534,6 +537,15 @@ class AppShellMixin:
             'sc_draft_props': self._sc_draft_props,
         }
         shell.update(values)
+        nav = sc_app_nav.resolve(
+            (page or '').rpartition('.')[2], shell, request.env,
+            request_url=shell['sc_current_url'],
+            request_return_url=request.httprequest.args.get('return_url'))
+        shell.update({
+            'sc_parent_url': nav['parent_url'],
+            'sc_crumbs': nav['crumbs'],
+            'sc_context': nav['context'],
+        })
         return shell
 
     def _sc_player_tab_url(self, patient_id, tab, team_id=None, clinic=None):
@@ -610,7 +622,7 @@ class AppShellMixin:
     def _sc_render(self, legacy_template, app_template, values):
         """THE per-page switch: the app template in the shell, else today's."""
         if app_template and self._sc_app_shell_active():
-            return request.render(app_template, self._sc_app_values(values))
+            return request.render(app_template, self._sc_app_values(values, app_template))
         return request.render(legacy_template, values)
 
     # ------------------------------------------------------------------
@@ -723,7 +735,8 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return super().home(**kw)
         values = self._prepare_portal_layout_values()
         values.update(self._sc_home_values())
-        return request.render('bemade_sports_clinic.sc_app_home', self._sc_app_values(values))
+        return request.render('bemade_sports_clinic.sc_app_home',
+                              self._sc_app_values(values, 'sc_app_home'))
 
     def _sc_home_values(self):
         env = request.env
@@ -826,7 +839,8 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect('/my/home')
         values = self._prepare_portal_layout_values()
         values['page_name'] = 'sc_app_more'
-        return request.render('bemade_sports_clinic.sc_app_more', self._sc_app_values(values))
+        return request.render('bemade_sports_clinic.sc_app_more',
+                              self._sc_app_values(values, 'sc_app_more'))
 
     # ------------------------------------------------------------------
     # /my/app/pref — the two self-service preferences, nothing else
@@ -834,7 +848,8 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     @http.route(['/my/app/pref'], type='http', auth='user', website=True,
                 methods=['POST'], multilang=False)
     def sc_app_pref(self, **post):
-        """Set ``sc_nav_mode`` / ``sc_theme`` on the CALLER's own record.
+        """Set ``sc_theme`` on the CALLER's own record (task 1579: the
+        navigation mode setting is gone).
 
         CSRF is enforced by the http POST route. Any other field, a bad value
         or another user's id is refused and nothing is written. A caller that
@@ -854,10 +869,7 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         user.write(dict(post))
         accept = request.httprequest.headers.get('Accept', '')
         if 'application/json' in accept:
-            return request.make_json_response({
-                'sc_nav_mode': user.sc_nav_mode,
-                'sc_theme': user.sc_theme,
-            })
+            return request.make_json_response({'sc_theme': user.sc_theme})
         return request.redirect(self._safe_return_url(redirect, '/my/app/more'))
 
     # ------------------------------------------------------------------
@@ -1096,7 +1108,7 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         values = self._prepare_portal_layout_values()
         values['page_name'] = 'sc_app_install'
         return request.render('bemade_sports_clinic.sc_app_install',
-                              self._sc_app_values(values))
+                              self._sc_app_values(values, 'sc_app_install'))
 
 
 _validate_save_registry(SAVE_REGISTRY)

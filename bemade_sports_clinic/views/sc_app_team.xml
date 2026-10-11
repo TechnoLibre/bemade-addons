@@ -7,8 +7,9 @@
     Rendered only with the system switch on (controllers/app_shell.py
     _sc_render). Today's portal_my_team_players and the shared legacy
     partials (portal_patient_card, dashboard_change_items, activity_list_table,
-    the digest templates) are NOT modified: the recent-changes rows and the
-    digest-history sheet lazy-load the SAME fragment routes. Task 1539: the
+    the digest templates) are NOT modified: the recent-changes rows
+    lazy-load the SAME fragment routes (task 1579: « History » opens the
+    digest list page, the digest-history sheet is gone). Task 1539: the
     Activities tab uses the shell's activity list and sheets
     (sc_app_activities.xml) instead of the legacy partials.
 
@@ -22,10 +23,7 @@
     <template id="sc_app_team" name="Sports Clinic App: team">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="team.name"/>
-            <t t-set="sc_context" t-value="sc_team_org or sc_nav_labels['teams']"/>
             <t t-set="sc_active_nav" t-value="'teams'"/>
-            <t t-set="sc_parent_url" t-value="'/my/teams'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], '/my/teams')]"/>
             <t t-set="sc_show_add" t-value="sc_can_add_directly and sc_can('team.add_player')"/>
             <t t-set="sc_show_request" t-value="not sc_can_add_directly and sc_can('team.request_add')"/>
             <t t-set="sc_show_activities" t-value="can_view_activities and sc_can('team.activities')"/>
@@ -181,8 +179,12 @@
                     <section class="o_sc_section" data-sc-section="team.recent_changes">
                         <h2 class="o_sc_section_header">
                             <span>Recent changes <small class="o_sc_section_sub" t-out="sc_window_label"/></span>
-                            <button type="button" class="o_sc_section_more o_sc_link_btn"
-                                    data-sc-sheet-open="sc_digest_history_sheet">History</button>
+                            <!-- Task 1579 (owner decision 2026-10-11): straight to
+                                 the full digest list, no popup; back steps up
+                                 snapshot → list → this page. -->
+                            <a t-attf-href="/my/team/#{team.id}/digest-history"
+                               class="o_sc_section_more o_sc_link_btn"
+                               data-sc-action="team.digest_history">History</a>
                         </h2>
                         <div t-if="sc_dashboard_rows" class="o_sc_list">
                             <t t-foreach="sc_dashboard_rows" t-as="row">
@@ -302,11 +304,6 @@
                     </div>
                 </div>
 
-                <t t-call="bemade_sports_clinic.sc_sheet">
-                    <t t-set="sheet_id" t-value="'sc_digest_history_sheet'"/>
-                    <t t-set="title">Digest history</t>
-                    <t t-set="lazy_url" t-value="'/my/team/%s/digest-history/recent?back=/my/team/%s' % (team.id, team.id)"/>
-                </t>
             </section>
 
             <!-- ============================= Players ============================= -->
@@ -499,9 +496,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Install the app</t>
             <t t-set="sc_active_nav" t-value="'more'"/>
-            <t t-set="sc_parent_url" t-value="'/my/app/more'"/>
-            <t t-set="sc_context" t-value="sc_nav_labels['more']"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['more'], '/my/app/more')]"/>
 
             <div class="o_sc_card o_sc_install_hero" data-sc-install="1">
                 <img src="/bemade_sports_clinic/static/src/img/sc_icon_192.png" alt="" width="56" height="56" class="o_sc_install_icon"/>

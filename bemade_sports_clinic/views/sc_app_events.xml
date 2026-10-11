@@ -27,8 +27,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['events']"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-set="sc_parent_url" t-value="sc_events_back_url or '/my/app/more'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], sc_events_back_url)] if sc_events_back_url else [(sc_nav_labels['more'], '/my/app/more')]"/>
             <t t-if="can_edit">
                 <t t-set="sc_create_label">New event</t>
                 <t t-set="sc_primary_action" t-value="{'url': '/my/event/create', 'label': sc_create_label, 'key': 'events.create'}"/>
@@ -180,8 +178,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['events']"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-set="sc_parent_url" t-value="sc_events_back_url or '/my/app/more'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], sc_events_back_url)] if sc_events_back_url else [(sc_nav_labels['more'], '/my/app/more')]"/>
             <t t-call="bemade_sports_clinic.sc_event_segments">
                 <t t-set="active" t-value="'calendar'"/>
             </t>
@@ -288,10 +284,7 @@
     <template id="sc_app_event" name="Sports Clinic App: event">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="event.name"/>
-            <t t-set="sc_context" t-value="sc_nav_labels['events']"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-set="sc_parent_url" t-value="return_url or '/my/events'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'] if (return_url or '').startswith('/my/home') else sc_nav_labels['events'], return_url or '/my/events')]"/>
             <t t-if="can_add_timesheet">
                 <t t-set="sc_ts_label">Add My Timesheet</t>
                 <t t-set="sc_primary_action" t-value="{'sheet': 'sc_ts_add_sheet', 'label': sc_ts_label, 'key': 'timesheet.add', 'icon': 'timesheet'}"/>
@@ -397,15 +390,11 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-if="sc_form_mode == 'edit'">
                 <t t-set="sc_title">Edit Event</t>
-                <t t-set="sc_context" t-value="event.name"/>
             </t>
             <t t-else="">
                 <t t-set="sc_title">New event</t>
-                <t t-set="sc_context" t-value="sc_nav_labels['events']"/>
             </t>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-set="sc_parent_url" t-value="sc_form['cancel_url']"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['events'], '/my/events')]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
             <form t-att-action="sc_form['action']" method="post" class="o_sc_form" data-sc-form="event.form" data-sc-event-form="1">

@@ -1433,14 +1433,10 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
           per-record ir.rules until the team link exists; only then does
           _check_access_to_patient grant the user full record access.
         """
-        return_url = post.get('return_url') or '/my/players'
-        # Only ever redirect to a same-site, absolute path (reject scheme-relative
-        # '//host' and backslash tricks to avoid an open redirect).
-        if (not isinstance(return_url, str)
-                or not return_url.startswith('/')
-                or return_url.startswith('//')
-                or '\\' in return_url):
-            return_url = '/my/players'
+        # Only ever redirect to a same-site, absolute path (the shared
+        # validator, task 1579: no scheme, '//host', backslash or control
+        # character — no open redirect).
+        return_url = self._safe_return_url(post.get('return_url'), '/my/players')
 
         user = request.env.user
         is_tp_admin = self._is_tp_or_system()

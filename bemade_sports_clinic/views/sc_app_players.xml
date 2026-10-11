@@ -186,28 +186,21 @@
     <template id="sc_app_player" name="Sports Clinic App: player">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="player._portal_heading_name()"/>
-            <!-- « Team · position » under « #12 First Last » (owner review 2026-10-10). -->
+            <!-- « Team · position » under « #12 First Last » (owner review
+                 2026-10-10): the context line comes from the parent registry
+                 (task 1579); the team part is kept here for its live update. -->
             <t t-set="sc_heading_team" t-value="sc_player_team.name if sc_player_team else sc_nav_labels['players']"/>
-            <t t-set="sc_context" t-value="' · '.join(part for part in (sc_heading_team, player.position) if part)"/>
             <!-- An Identity save updates the title / context in place. -->
             <t t-set="sc_heading_live" t-value="True"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-if="team">
-                <t t-set="sc_parent_url" t-value="'/my/team?team_id=%s&amp;tab=players' % team.id"/>
-                <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], '/my/teams'), (team.name, '/my/team?team_id=%s' % team.id)]"/>
-            </t>
-            <t t-elif="clinic_event">
-                <t t-set="sc_parent_url" t-value="'/my/clinic/%s' % clinic_event.id"/>
-                <t t-set="sc_crumbs" t-value="[(sc_nav_labels['clinic'], '/my/clinics'), (clinic_event.name, '/my/clinic/%s' % clinic_event.id)]"/>
-            </t>
-            <t t-else="">
-                <t t-set="sc_parent_url" t-value="'/my/players'"/>
-                <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players')]"/>
-            </t>
 
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <div t-if="sc_flash and sc_flash.get('success') and note_success == 'note_added'"
                  t-att-data-sc-draft-clear="sc_note_draft_prefix" hidden="hidden"/>
+            <!-- Task 1579: a create from the full « new injury » page lands here
+                 (no POST result page): its device draft goes once it exists. -->
+            <div t-if="sc_created_draft_clear"
+                 t-att-data-sc-draft-clear="sc_new_injury_prefix" hidden="hidden"/>
             <!-- Task 1421: soft duplicate-number warning after a save. -->
             <t t-if="jersey_warning" t-call="bemade_sports_clinic.sc_banner">
                 <t t-set="tone" t-value="'warn'"/>
@@ -887,10 +880,7 @@
     <template id="sc_app_player_create" name="Sports Clinic App: player create">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Create a player</t>
-            <t t-set="sc_context" t-value="sc_nav_labels['players']"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
-            <t t-set="sc_parent_url" t-value="'/my/players'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['players'], '/my/players')]"/>
             <t t-if="error" t-call="bemade_sports_clinic.sc_banner">
                 <t t-set="tone" t-value="'warn'"/>
                 <t t-out="error"/>
