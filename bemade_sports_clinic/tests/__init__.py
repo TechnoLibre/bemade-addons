@@ -150,3 +150,4 @@ from . import test_app_shell_nav_1579
 from . import test_app_shell_tours_1579
 from . import test_app_shell_history_1581
 from . import test_app_shell_tours_1581
+from . import test_app_shell_pencil

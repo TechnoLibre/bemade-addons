@@ -84,7 +84,7 @@ tours.add("sc_1581_notes_fresh", {
         {
             content: "« History » next to the External Notes label",
             trigger:
-                '.o_sc_autosave[data-sc-field="external_notes"] .o_sc_field_label .o_sc_link_btn[data-sc-sheet-open="sc_note_history_sheet"]',
+                '[data-sc-edit-card="injury-notes"] .o_sc_edit_card_head .o_sc_link_btn[data-sc-sheet-open="sc_note_history_sheet"]',
             run(helpers) {
                 window.__sc1581NoReload = true;
                 return helpers.click();
@@ -117,6 +117,11 @@ tours.add("sc_1581_notes_fresh", {
             run: "click",
         },
         {
+            content: "Edit the notes card (pencil)",
+            trigger: '[data-sc-edit-card="injury-notes"] button[data-sc-edit-toggle]',
+            run: "click",
+        },
+        {
             content: "Type an external note",
             trigger: '.o_sc_autosave[data-sc-field="external_notes"] textarea',
             run: `edit ${NOTE}`,
@@ -135,7 +140,7 @@ tours.add("sc_1581_notes_fresh", {
         {
             content: "Open the history again",
             trigger:
-                '.o_sc_autosave[data-sc-field="external_notes"] .o_sc_link_btn[data-sc-sheet-open="sc_note_history_sheet"]',
+                '[data-sc-edit-card="injury-notes"] .o_sc_edit_card_head .o_sc_link_btn[data-sc-sheet-open="sc_note_history_sheet"]',
             run: "click",
         },
         {

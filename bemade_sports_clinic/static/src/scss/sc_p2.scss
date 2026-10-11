@@ -544,3 +544,26 @@ $sc-p2-laptop: 992px;
         color: var(--sc-fg-2);
     }
 }
+
+// Pencil edit paradigm (owner review 2026-10-11): note cards and stacked
+// read views (long notes under their label).
+.o_sc_app {
+    .o_sc_note_body {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--sc-space-2);
+
+        .o_sc_note_text {
+            flex: 1;
+            margin: 0;
+        }
+    }
+
+    .o_sc_kv_stacked {
+        grid-template-columns: minmax(0, 1fr);
+
+        dd {
+            margin-bottom: var(--sc-space-2);
+        }
+    }
+}

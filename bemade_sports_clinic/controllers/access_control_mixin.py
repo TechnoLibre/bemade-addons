@@ -208,6 +208,25 @@ class AccessControlMixin:
         ], order='name')
         return self._admin_or_staffed_teams(staffed)
 
+    def _activity_edit_access(self, activity):
+        """May the current user edit ``activity`` — /my/activity/update's rule
+        (the assignee, or staff of the related patient / team / event's
+        teams). Shared with the app shell's inline save (owner review
+        2026-10-11)."""
+        env = http.request.env
+        if activity.user_id == env.user:
+            return True
+        record = env[activity.res_model].browse(activity.res_id) if activity.res_model in (
+            'sports.patient', 'sports.team', 'sports.event') else None
+        if not record or not record.exists():
+            return False
+        teams = self._activity_scope_teams()
+        if activity.res_model == 'sports.patient':
+            return bool(teams & record.team_ids)
+        if activity.res_model == 'sports.team':
+            return bool(teams & record)
+        return bool(teams & record.team_ids)
+
     @classmethod
     def _activity_scope_teams(cls):
         """The teams whose activities the viewer lists / acts on (task 1577

@@ -117,12 +117,12 @@ class TestAppShellActivities1539(AppShellCommon):
         select = form.xpath('.//select[@name="user_id"]')[0]
         self.assertEqual(select.get('data-sc-assignee-select'), '1')
         self.assertIsNotNone(select.get('data-sc-no-access'))
-        _text, tree = self._get('/my/activity/%s/edit' % self.act_player.id)
-        form = tree.xpath('//form[@data-sc-form="activity.form"]')[0]
-        self.assertEqual(form.get('action'), '/my/activity/update')
-        self.assertEqual(form.xpath('.//input[@name="summary"]/@value'), ['Player task'])
+        # Owner review 2026-10-11: the activity is edited in place (pencil
+        # card, test_app_shell_pencil UC-PE5); the edit page leads there.
+        resp = self.url_open('/my/activity/%s/edit' % self.act_player.id, allow_redirects=False)
+        self.assertIn(resp.status_code, (302, 303))
         _text, tree = self._get('/my/activity/%s' % self.act_player.id)
-        self.assertTrue(tree.xpath('//*[@data-sc-section="activity.detail"]'))
+        self.assertTrue(tree.xpath('//*[@data-sc-section="activity.detail"][@data-sc-edit-card="activity"]'))
         form = tree.xpath('//dialog[@id="sc_activity_complete_sheet"]//form')[0]
         self.assertEqual(form.xpath('.//input[@name="return_url"]/@value'),
                          ['/my/player?player_id=%s' % self.player.id])

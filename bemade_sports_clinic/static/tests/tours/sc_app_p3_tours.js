@@ -67,9 +67,10 @@ tours.add("sc_1540_clinic", {
         },
         {
             content: "The note is on the file",
-            trigger: '[data-sc-section="clinic.dossier.note_list"] .o_sc_note_card textarea',
+            trigger: '[data-sc-section="clinic.dossier.note_list"] .o_sc_note_card .o_sc_note_text',
             run() {
-                // The author's own note is an autosave field (a textarea).
+                // The author's own note reads as text with a pencil (owner
+                // review 2026-10-11); its autosave field is in the edit view.
                 const texts = [...document.querySelectorAll(".o_sc_note_card textarea, .o_sc_note_card .o_sc_note_text")]
                     .map((el) => el.value || el.textContent);
                 assert(texts.some((text) => text.includes(NOTE)), `notes: ${texts}`);

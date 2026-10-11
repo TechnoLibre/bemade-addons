@@ -3639,6 +3639,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_player_removal_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -3741,6 +3742,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "City"
 msgstr "Ville"
 
@@ -4068,6 +4070,7 @@ msgstr "Durée de la couverture (heures)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic._timesheet_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_fields
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
 msgid "Coverage End"
 msgstr "Fin de la couverture"
 
@@ -4090,6 +4093,7 @@ msgstr "Produit de couverture (facture client)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic._timesheet_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_fields
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
 msgid "Coverage Start"
 msgstr "Début de la couverture"
 
@@ -4705,6 +4709,7 @@ msgstr "Description détaillée de l'événement"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_breadcrumbs_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_injury_view_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_view_list_embedded
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 msgid "Details"
 msgstr "Détails"
 
@@ -4968,6 +4973,10 @@ msgstr "Chaque partenaire ne peut être lié qu'à une seule équipe."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_edit_card_head
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_card
 msgid "Edit"
 msgstr "Modifier"
 
@@ -5091,6 +5100,7 @@ msgstr "Activer les anciens courriels par changement"
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_recurrence_preview__date_end
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__date_end
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "End"
 msgstr "Fin"
 
@@ -5206,6 +5216,7 @@ msgstr "Escalader les notes rapides en souffrance"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_notepad_links
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_timesheet_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_search
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 msgid "Event"
 msgstr "Événement"
 
@@ -6213,6 +6224,7 @@ msgstr "Blessures (audit)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_notepad_links
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_search
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 msgid "Injury"
 msgstr "Blessure"
 
@@ -7173,6 +7185,7 @@ msgstr "Nouvelle blessure"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "New venue"
 msgstr "Nouveau lieu"
 
@@ -8494,6 +8507,7 @@ msgstr "Matchs autorisés"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_notepad_links
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 msgid "Player"
 msgstr "Joueur"
 
@@ -9889,6 +9903,7 @@ msgstr "Enregistrer les modifications"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "Save Venue"
 msgstr "Enregistrer le lieu"
 
@@ -10413,6 +10428,7 @@ msgstr "Horodaté la première fois que la ligne passe à « Vu »."
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_recurrence_preview__date_start
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__date_start
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Start"
 msgstr "Début"
 
@@ -10522,6 +10538,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "Street"
 msgstr "Rue"
 
@@ -10570,6 +10587,7 @@ msgstr "Soumis : modifiable; Facturé : lecture seule"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.activity_list_table
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_add_sheet
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activity_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activity_detail
 msgid "Summary"
 msgstr "Résumé"
 
@@ -10636,6 +10654,7 @@ msgstr "Touchez de nouveau pour retirer"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_staff_grant_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_team_digest_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 msgid "Team"
 msgstr "Équipe"
 
@@ -11784,6 +11803,7 @@ msgstr "Durée du déplacement (heures)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic._timesheet_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_fields
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
 msgid "Travel End"
 msgstr "Fin du déplacement"
 
@@ -11806,6 +11826,7 @@ msgstr "Produit de déplacement (facture client)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic._timesheet_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_fields
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
 msgid "Travel Start"
 msgstr "Début du déplacement"
 
@@ -12272,6 +12293,7 @@ msgstr "Lieu"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "Venue Name"
 msgstr "Nom du lieu"
 
@@ -12966,6 +12988,7 @@ msgstr "Votre inscription est jumelée à votre dossier d'athlète; l'accès est
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
 msgid "ZIP"
 msgstr "Code postal"
 
@@ -14441,6 +14464,7 @@ msgstr "Équipes modifiées"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Add a team…"
 msgstr "Ajouter une équipe…"
 
@@ -14678,3 +14702,8 @@ msgstr "Créer un nouveau joueur"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 msgid "<span>Request a player addition</span>"
 msgstr "<span>Demander l'ajout d'un joueur</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+msgid "Add a therapist…"
+msgstr "Ajouter un thérapeute…"

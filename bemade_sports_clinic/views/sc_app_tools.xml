@@ -163,13 +163,41 @@
 
     <!-- A note card. Variables: row, archived. -->
     <template id="sc_quick_note_card" name="App shell: quick note card">
-        <article class="o_sc_card o_sc_quick_note" t-att-data-sc-quick-note-id="row['id']" t-att-id="'note-%s' % row['id']">
-            <p class="o_sc_meta" t-out="row['when']"/>
-            <p class="o_sc_note_text" t-out="row['note']"/>
-            <div t-if="row['chips']" class="o_sc_chips">
-                <t t-foreach="row['chips']" t-as="chip">
-                    <span class="o_sc_chip o_sc_chip_ghost" t-out="chip"/>
+        <!-- Owner review 2026-10-11: the pencil edit paradigm — an open note
+             is edited in place (was an « Edit » sheet with « Save »). -->
+        <article t-attf-class="o_sc_card o_sc_quick_note #{'o_sc_edit_card' if not archived else ''}"
+                 t-att-data-sc-quick-note-id="row['id']" t-att-id="'note-%s' % row['id']"
+                 t-att-data-sc-edit-card="('quick-note-%s' % row['id']) if not archived else None" data-sc-edit-reload="1">
+            <div class="o_sc_edit_card_head">
+                <p class="o_sc_meta" t-out="row['when']"/>
+                <t t-if="not archived">
+                    <t t-set="sc_edit_label">Edit</t>
+                    <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1" aria-expanded="false"
+                            t-att-aria-label="sc_edit_label" t-att-title="sc_edit_label" data-sc-action="note.edit">
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                    </button>
                 </t>
+            </div>
+            <div data-sc-edit-view="read">
+                <p class="o_sc_note_text o_sc_pre" t-out="row['note']"/>
+                <div t-if="row['chips']" class="o_sc_chips">
+                    <t t-foreach="row['chips']" t-as="chip">
+                        <span class="o_sc_chip o_sc_chip_ghost" t-out="chip"/>
+                    </t>
+                </div>
+            </div>
+            <div t-if="not archived" class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                <t t-set="lbl">Note</t>
+                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(row['record'], 'note', lbl, 'textarea')"/></t>
+                <t t-set="lbl">Team</t>
+                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(row['record'], 'team_id', lbl, 'select', options=sc_qn_options['team_id'])"/></t>
+                <t t-set="lbl">Player</t>
+                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(row['record'], 'patient_id', lbl, 'select', options=sc_qn_options['patient_id'])"/></t>
+                <t t-set="lbl">Injury</t>
+                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(row['record'], 'injury_id', lbl, 'select', options=sc_qn_options['injury_id'])"/></t>
+                <t t-set="lbl">Event</t>
+                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(row['record'], 'event_id', lbl, 'select', options=sc_qn_options['event_id'])"/></t>
+                <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
             </div>
             <div class="o_sc_card_actions">
                 <t t-if="archived">
@@ -183,8 +211,6 @@
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                         <button type="submit" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" data-sc-action="note.archive">Done</button>
                     </form>
-                    <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" t-att-data-sc-sheet-open="'sc_qn_edit_%s' % row['id']"
-                            data-sc-action="note.edit">Edit</button>
                 </t>
                 <button type="button" class="o_sc_btn o_sc_btn_danger o_sc_btn_sm" t-att-data-sc-sheet-open="'sc_qn_delete_%s' % row['id']"
                         data-sc-action="note.delete">Delete</button>
@@ -198,26 +224,6 @@
             <t t-set="hidden" t-value="{}"/>
             <t t-set="confirm_label">Delete</t>
             <t t-set="danger" t-value="True"/>
-        </t>
-        <t t-if="not archived" t-call="bemade_sports_clinic.sc_sheet">
-            <t t-set="sheet_id" t-value="'sc_qn_edit_%s' % row['id']"/>
-            <t t-set="title">Edit the note</t>
-            <t t-set="lazy_url" t-value="False"/>
-            <form t-att-action="'/my/notepad/%s/update' % row['id']" method="post" class="o_sc_form" data-sc-form="note.update">
-                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                <div class="o_sc_field">
-                    <label class="o_sc_field_label" t-att-for="'sc_qn_text_%s' % row['id']">Note</label>
-                    <textarea name="note" t-att-id="'sc_qn_text_%s' % row['id']" class="o_sc_input o_sc_textarea" rows="4" required="required" t-out="row['note']"/>
-                </div>
-                <t t-call="bemade_sports_clinic.sc_notepad_links">
-                    <t t-set="prefix" t-value="'sc_qn_%s' % row['id']"/>
-                    <t t-set="selected" t-value="row['links']"/>
-                </t>
-                <div class="o_sc_form_actions">
-                    <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-close="1">Cancel</button>
-                    <button type="submit" class="o_sc_btn o_sc_btn_primary">Save</button>
-                </div>
-            </form>
         </t>
     </template>
 

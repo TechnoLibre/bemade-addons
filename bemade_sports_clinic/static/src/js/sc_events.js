@@ -37,6 +37,21 @@ async function createVenue(form) {
         if (!result || !result.success) {
             throw new Error((result && result.error) || "");
         }
+        // The event page's pencil card (owner review 2026-10-11): save the
+        // new venue on the event, then reload so the card shows it.
+        if (form.dataset.scVenueEvent) {
+            await scFetch(`/my/app/save/sports.event/${form.dataset.scVenueEvent}`, {
+                method: "POST",
+                data: {
+                    field: "venue_id",
+                    value: String(result.id),
+                    old_value: form.dataset.scVenueEventVenue || "",
+                },
+                toast: false,
+            });
+            window.location.reload();
+            return;
+        }
         const select = document.querySelector("select[data-sc-venue-select]");
         if (select) {
             const option = document.createElement("option");

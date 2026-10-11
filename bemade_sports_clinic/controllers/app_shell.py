@@ -38,7 +38,7 @@ from odoo import Command, _, fields, http
 from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 from odoo.http import request
 from odoo.modules.module import get_manifest
-from odoo.tools import file_open, format_date, format_datetime
+from odoo.tools import file_open, format_date, format_datetime, html2plaintext, plaintext2html
 
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
@@ -123,6 +123,213 @@ def _date_value(value):
         return fields.Date.to_date(value)
     except (TypeError, ValueError):
         raise ValidationError(_("Please enter a valid date.")) from None
+
+
+# -- mail.activity (owner review 2026-10-11: the activity page's pencil card) --
+def _activity_check(ctrl, activity):
+    if not ctrl._activity_edit_access(activity):
+        raise AccessError(_("You do not have access to this activity."))
+
+
+def _activity_permission(ctrl, activity):
+    return ctrl._activity_edit_access(activity)
+
+
+def _activity_write(ctrl, activity, field, value):
+    """/my/activity/update's rules, one field at a time; sudo (coaches hold a
+    read-only mail.activity ACL — the access check is the authorization)."""
+    record = activity.sudo()
+    if field == 'summary':
+        value = (value or '').strip()
+        if not value:
+            raise ValidationError(_("Please fill in all required fields."))
+        record.write({'summary': value})
+    elif field == 'date_deadline':
+        day = _date_value(value)
+        if not day:
+            raise ValidationError(_("Please fill in all required fields."))
+        record.write({'date_deadline': day})
+    elif field == 'note':
+        record.write({'note': plaintext2html(value) if (value or '').strip() else False})
+    elif field == 'user_id':
+        try:
+            user = request.env['res.users'].browse(int(value))
+        except (TypeError, ValueError):
+            user = request.env['res.users']
+        if user != record.user_id:
+            if user not in ctrl._activity_assignable_users_for(request.env.user):
+                raise ValidationError(_("You cannot assign this activity to that user."))
+            record.write({'user_id': user.id})
+    return {}
+
+
+def _activity_read(activity, field):
+    activity = activity.sudo()
+    if field == 'note':
+        return html2plaintext(activity.note or '').strip()
+    if field == 'user_id':
+        return activity.user_id.id or False
+    if field == 'date_deadline':
+        return fields.Date.to_string(activity.date_deadline) if activity.date_deadline else ''
+    return activity[field] or ''
+
+
+def _activity_display(activity, field):
+    activity = activity.sudo()
+    if field == 'note':
+        return html2plaintext(activity.note or '').strip()
+    if field == 'user_id':
+        return activity.user_id.name or ''
+    return None
+
+
+# -- sports.quick.note (owner review 2026-10-11: notepad pencil cards) -------
+_QUICK_NOTE_LINKS = ('team_id', 'patient_id', 'injury_id', 'event_id')
+
+
+def _quick_note_portal():
+    from .quick_note_portal import QuickNotePortal
+    return QuickNotePortal()
+
+
+def _quick_note_check(ctrl, note):
+    portal = _quick_note_portal()
+    portal._check_quick_note_access()
+    portal._get_own_note(note.id)
+
+
+def _quick_note_permission(ctrl, note):
+    return note.sudo().user_id == request.env.user
+
+
+def _quick_note_write(ctrl, note, field, value):
+    """/my/notepad/<id>/update's rules, one field at a time: a non-empty
+    text; a link id outside the therapist's pickers is dropped."""
+    portal = _quick_note_portal()
+    record = portal._get_own_note(note.id)
+    if field == 'note':
+        if not (value or '').strip():
+            raise ValidationError(_("Please enter a note."))
+        record.write({'note': value})
+    else:
+        vals = portal._clean_link_vals({field: str(value or '')}, portal._quick_note_pickers())
+        record.write({field: vals[field]})
+    return {}
+
+
+def _quick_note_display(note, field):
+    note = note.sudo()
+    if field == 'patient_id':
+        return note.patient_id._portal_list_name() if note.patient_id else ''
+    if field == 'injury_id':
+        return note.injury_id.display_name or ''
+    return None
+
+
+# -- sports.event.timesheet (owner review 2026-10-11: timesheet pencil cards) -
+_TIMESHEET_TIMES = ('travel_start', 'coverage_start', 'coverage_end', 'travel_end')
+
+
+def _timesheet_check(ctrl, timesheet):
+    """/my/sc/timesheet/<id>/edit's rules: a therapist, their OWN timesheet,
+    never once invoiced."""
+    if not ctrl._is_tp_or_system():
+        raise AccessError(_("You don't have permission to edit timesheets."))
+    if timesheet.sudo().user_id != request.env.user:
+        raise AccessError(_("You can only edit your own timesheets."))
+    if timesheet.sudo().state == 'invoiced':
+        raise UserError(_('This timesheet is invoiced and cannot be edited.'))
+
+
+def _timesheet_write(ctrl, timesheet, field, value):
+    timesheet.write({field: ctrl._parse_portal_datetime(value) if value else False})
+    return {}
+
+
+def _timesheet_read(timesheet, field):
+    return AppShellPortal._sc_local_input(timesheet[field])
+
+
+def _timesheet_display(timesheet, field):
+    value = timesheet[field]
+    return format_datetime(timesheet.env, value, tz=request.env.user.tz or None,
+                           dt_format='EEE d MMM · HH:mm') if value else ''
+
+
+# -- sports.event (owner review 2026-10-11: the event page's pencil card) -----
+_EVENT_TIMES = ('date_start', 'date_end', 'therapist_start', 'therapist_end')
+
+
+def _csv_ids(value):
+    try:
+        return [int(part) for part in str(value or '').split(',') if part.strip()]
+    except ValueError:
+        raise ValidationError(_("Invalid value.")) from None
+
+
+def _event_check(ctrl, event):
+    """/my/event/<id>/save's rule: therapists (portal or internal) and
+    system admins only; record rules still apply to the write."""
+    user = request.env.user
+    if not (user.has_group('bemade_sports_clinic.group_portal_treatment_professional')
+            or user.has_group('bemade_sports_clinic.group_sports_clinic_treatment_professional')
+            or user.has_group('base.group_system')):
+        raise AccessError(_("You don't have permission to edit events."))
+
+
+def _event_write(ctrl, event, field, value):
+    if field == 'name':
+        value = (value or '').strip()
+        if not value:
+            raise ValidationError(_("Please fill in all required fields."))
+        event.write({'name': value})
+    elif field == 'event_type':
+        event.write({'event_type': value})
+    elif field in _EVENT_TIMES:
+        if not value:
+            raise ValidationError(_("Please fill in all required fields."))
+        event.write({field: ctrl._parse_portal_datetime(value)})
+    elif field == 'venue_id':
+        event.write({'venue_id': int(value) if value else False})
+    elif field == 'description':
+        text = (value or '').strip()
+        event.write({'description': plaintext2html(text) if text else False})
+    elif field == 'team_ids':
+        ids = _csv_ids(value)
+        # Only when it changed (the save route's rule: an unchanged m2m still
+        # runs the team record rules).
+        if set(ids) != set(event.sudo().team_ids.ids):
+            event.write({'team_ids': [Command.set(ids)]})
+    elif field == 'assigned_staff_ids':
+        # sudo: portal users cannot read other users (the save route's rule;
+        # access enforced by the check).
+        event.sudo().write({'assigned_staff_ids': [Command.set(_csv_ids(value))]})
+    return {}
+
+
+def _event_read(event, field):
+    event = event.sudo()
+    if field in _EVENT_TIMES:
+        return AppShellPortal._sc_local_input(event[field])
+    if field in ('team_ids', 'assigned_staff_ids'):
+        return ','.join(str(i) for i in event[field].ids)
+    if field == 'venue_id':
+        return event.venue_id.id or ''
+    if field == 'description':
+        return html2plaintext(event.description or '').strip()
+    return event[field] or ''
+
+
+def _event_display(event, field):
+    event = event.sudo()
+    if field in _EVENT_TIMES:
+        return format_datetime(event.env, event[field], tz=request.env.user.tz or None,
+                               dt_format='EEE d MMM · HH:mm') if event[field] else ''
+    if field in ('team_ids', 'assigned_staff_ids'):
+        return ', '.join(event[field].mapped('name'))
+    if field == 'description':
+        return html2plaintext(event.description or '').strip()
+    return None
 
 
 # -- sports.patient ----------------------------------------------------------
@@ -419,6 +626,41 @@ SAVE_REGISTRY = {
         'sudo_write': True,
         'permission': _note_permission,
     },
+    'mail.activity': {
+        'fields': {
+            'summary': _STAFF_ROLES, 'date_deadline': _STAFF_ROLES,
+            'user_id': _STAFF_ROLES, 'note': _STAFF_ROLES,
+        },
+        'check': _activity_check,
+        'write': _activity_write,
+        'read': _activity_read,
+        'display': _activity_display,
+        'sudo_write': True,
+        'permission': _activity_permission,
+    },
+    'sports.quick.note': {
+        'fields': {name: _TP_ROLES for name in ('note',) + _QUICK_NOTE_LINKS},
+        'check': _quick_note_check,
+        'write': _quick_note_write,
+        'display': _quick_note_display,
+        'sudo_write': True,
+        'permission': _quick_note_permission,
+    },
+    'sports.event.timesheet': {
+        'fields': {name: _TP_ROLES for name in _TIMESHEET_TIMES},
+        'check': _timesheet_check,
+        'write': _timesheet_write,
+        'read': _timesheet_read,
+        'display': _timesheet_display,
+    },
+    'sports.event': {
+        'fields': {name: _TP_ROLES for name in (
+            'name', 'event_type', 'venue_id', 'team_ids', 'assigned_staff_ids', 'description') + _EVENT_TIMES},
+        'check': _event_check,
+        'write': _event_write,
+        'read': _event_read,
+        'display': _event_display,
+    },
     'sports.patient.contact': {
         'fields': {
             'name': _STAFF_ROLES, 'contact_type': _STAFF_ROLES,
@@ -703,6 +945,7 @@ class AppShellMixin:
                 'travel_end': self._sc_local_input(ts.travel_end),
             },
             'editable': ts.state != 'invoiced' and own,
+            'record': ts,
             'event_url': '/my/event/%s' % event.id,
         }
 

@@ -62,8 +62,8 @@ class TestAppShellI18n1540(TestAppShellI18n1538):
         for term in ('À venir', 'Passées', 'Calendrier', 'Nouvel événement'):
             self.assertIn(term, text, term)
         text = self._fr('/my/event/%s' % self.event.id).replace('&#39;', "'")
-        for term in ('Ajouter ma feuille de temps', 'Mes feuilles de temps', "Modifier l'événement",
-                     'Heures de couverture'):
+        for term in ('Ajouter ma feuille de temps', 'Mes feuilles de temps', 'Nouveau lieu',
+                     'Heures de couverture', 'Nouveau lieu'):
             self.assertIn(term, text, term)
         text = self._fr('/my/event/create').replace('&#39;', "'")
         for term in ("Début de l'événement", 'Nouveau lieu', 'Nom du lieu', 'À déterminer'):
