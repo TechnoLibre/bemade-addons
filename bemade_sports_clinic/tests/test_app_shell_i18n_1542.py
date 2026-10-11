@@ -41,7 +41,7 @@ class TestAppShellI18n1542(TestAppShellI18n1538):
             self.assertIn(term, text, term)
         self._login_coach()
         text = self._fr(self.url).replace('&#39;', "'")
-        for term in ('Demander un ajout', "Demander l'ajout d'un joueur", 'Envoyer la demande'):
+        for term in ("Demander l'ajout d'un joueur", 'Envoyer la demande'):
             self.assertIn(term, text, term)
 
     def test_install_and_offline_in_french(self):

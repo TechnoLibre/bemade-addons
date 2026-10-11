@@ -145,3 +145,4 @@ from . import test_app_shell_injury_inline
 from . import test_app_shell_player_layout
 from . import test_note_authorship
 from . import test_app_shell_list_filters
+from . import test_app_shell_team_add_player

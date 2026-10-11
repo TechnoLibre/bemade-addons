@@ -439,6 +439,40 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'status': player._sc_row_status(),
         }
 
+    def _sc_add_player_search(self, team):
+        """The inline « Add a player » search (owner review 2026-10-11): the
+        add_link page's lookup (therapists may FIND any patient by name / date
+        of birth, archived ones too — sudo, name / DOB only) on the team page's
+        ?add_first= / ?add_last= / ?add_dob=. None when no search was made."""
+        args = request.httprequest.args
+        if not any(key in args for key in ('add_first', 'add_last', 'add_dob')):
+            return None
+        first = (args.get('add_first') or '').strip()
+        last = (args.get('add_last') or '').strip()
+        dob = (args.get('add_dob') or '').strip()
+        result = {'first': first, 'last': last, 'dob': dob, 'rows': [], 'error': False}
+        if not (first or last):
+            result['error'] = _('Provide at least a first or last name to search')
+            return result
+        domain = [('first_name', 'ilike', '%%%s%%' % first if first else '%'),
+                  ('last_name', 'ilike', '%%%s%%' % last if last else '%')]
+        if dob:
+            try:
+                domain.append(('date_of_birth', '=', fields.Date.to_date(dob)))
+            except ValueError:
+                result['error'] = _('Please enter a valid Date of Birth (YYYY-MM-DD).')
+                return result
+        Patient = request.env['sports.patient'].sudo().with_context(active_test=False)
+        for patient in Patient.search(domain, order='active desc, last_name, first_name', limit=20):
+            result['rows'].append({
+                'id': patient.id,
+                'label': patient._portal_list_name(),
+                'dob': format_date(request.env, patient.date_of_birth) if patient.date_of_birth else '',
+                'active': bool(patient.active),
+                'on_team': team in patient.team_ids,
+            })
+        return result
+
     def _sc_team_values(self, team, values):
         """Shell-only render values for ``sc_app_team`` — built from the
         legacy values (same role filtering), never re-deriving them."""
@@ -478,11 +512,13 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'url': '/my/event/%s' % event.id,
         } for event in values['upcoming_events']]
         can_add_directly = self._is_tp_or_system()
+        add_search = self._sc_add_player_search(team) if can_add_directly else None
         org = team.sudo().parent_id.name or ''
         history = team.note_history_ids
         return {
             'sc_team_org': org,
             'sc_dashboard_rows': dashboard_rows,
+            'sc_add_search': add_search,
             'sc_watch_rows': watch_rows,
             'sc_roster_rows': roster_rows,
             'sc_upcoming_rows': upcoming_rows,
@@ -1286,11 +1322,21 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             existing_id_str = post.get('existing_id')
             existing_id = int(existing_id_str) if (existing_id_str and str(existing_id_str).isdigit()) else False
 
+            # Owner review 2026-10-11: the app shell's inline « Add a player »
+            # links a chosen result (existing_id) or, with force_new, creates
+            # exactly the typed player (no fuzzy re-match), then lands on the
+            # Players tab / the new player's page.
+            sc_inline = bool(post.get('sc_inline')) and self._sc_app_shell_active()
+            force_new = sc_inline and bool(post.get('force_new'))
+            if force_new and not (first_name and last_name):
+                raise UserError(_('First name and last name are required'))
             # Only require basic identity fields when creating/searching, not when linking an explicit existing_id
             if not existing_id and not (first_name or last_name):
                 raise UserError(_('Provide at least a first or last name'))
             if existing_id:
                 existing = Patient.with_context(active_test=False).browse(existing_id).exists()
+            elif force_new:
+                existing = Patient.browse([])
             else:
                 # Try to find existing by name + optional dob (allow partials on whichever provided)
                 like_first = f"%{first_name}%" if first_name else "%"
@@ -1314,6 +1360,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     existing.write({'team_ids': [(4, team.id)]})
                     action_taken.append('added to team')
 
+                if sc_inline:
+                    success = 'player_reactivated' if 'reactivated' in action_taken else 'player_added_to_team'
+                    return request.redirect(f"/my/team?team_id={team.id}&tab=players&success={success}")
                 request.session['notification'] = {
                     'type': 'success',
                     'title': _('Player Linked'),
@@ -1337,6 +1386,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 vals['practice_status'] = post.get('practice_status')
 
             patient = request.env['sports.patient']._create_portal_patient(vals)
+            if sc_inline:
+                return request.redirect(
+                    f"/my/player?player_id={patient.id}&team_id={team.id}&tab=info")
 
             request.session['notification'] = {
                 'type': 'success',

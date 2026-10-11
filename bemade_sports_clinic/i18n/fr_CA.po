@@ -9925,6 +9925,7 @@ msgstr "Filtre de portée"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_teams
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 msgid "Search"
 msgstr "Rechercher"
 
@@ -14726,3 +14727,48 @@ msgstr "Mes événements"
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 msgid "Missing timesheets"
 msgstr "Feuilles de temps manquantes"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "<span>Add a player</span>"
+msgstr "<span>Ajouter un joueur</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Date of birth (optional)"
+msgstr "Date de naissance (facultatif)"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "<span>Archived</span>"
+msgstr "<span>Archivé</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "On the team"
+msgstr "Dans l'équipe"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Add to team"
+msgstr "Ajouter à l'équipe"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Reactivate and add"
+msgstr "Réactiver et ajouter"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "No matching player."
+msgstr "Aucun joueur correspondant."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Create a new player"
+msgstr "Créer un nouveau joueur"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "<span>Request a player addition</span>"
+msgstr "<span>Demander l'ajout d'un joueur</span>"

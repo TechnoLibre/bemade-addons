@@ -30,14 +30,8 @@
             <t t-set="sc_show_request" t-value="not sc_can_add_directly and sc_can('team.request_add')"/>
             <t t-set="sc_show_activities" t-value="can_view_activities and sc_can('team.activities')"/>
             <t t-set="sc_show_compose" t-value="sc_can_edit_announcement and sc_can('team.announcement.edit')"/>
-            <t t-if="sc_show_add">
-                <t t-set="sc_add_label">Add a player</t>
-                <t t-set="sc_primary_action" t-value="{'url': '/my/team/%s/player/add_link' % team.id, 'label': sc_add_label, 'key': 'team.add_player'}"/>
-            </t>
-            <t t-elif="sc_show_request">
-                <t t-set="sc_request_label">Request an addition</t>
-                <t t-set="sc_primary_action" t-value="{'sheet': 'sc_request_add_sheet', 'label': sc_request_label, 'key': 'team.request_add'}"/>
-            </t>
+            <!-- Owner review 2026-10-11: « Add a player » / « Request an
+                 addition » are inline cards at the top of the Players tab. -->
 
             <!-- Flash messages (same sources as the legacy page). -->
             <t t-if="request.session.get('notification')">
@@ -318,6 +312,127 @@
             <!-- ============================= Players ============================= -->
             <section class="o_sc_tab_panel" data-sc-tab-panel="players" role="tabpanel"
                      t-att-hidden="None if sc_active_tab == 'players' else 'hidden'">
+                <details t-if="sc_show_add" class="o_sc_card o_sc_disclosure" id="sc_add_player"
+                         data-sc-section="team.add_player" t-att-open="'open' if sc_add_search else None">
+                    <summary class="o_sc_disclosure_summary" data-sc-action="team.add_player">
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                        <span>Add a player</span>
+                    </summary>
+                    <form method="get" action="/my/team" class="o_sc_form" data-sc-form="player.search">
+                        <input type="hidden" name="team_id" t-att-value="team.id"/>
+                        <input type="hidden" name="tab" value="players"/>
+                        <div class="o_sc_filter_grid">
+                            <div class="o_sc_field">
+                                <label class="o_sc_field_label" for="sc_add_first">First name</label>
+                                <input type="text" id="sc_add_first" name="add_first" class="o_sc_input" autocomplete="off"
+                                       t-att-value="sc_add_search and sc_add_search['first'] or ''"/>
+                            </div>
+                            <div class="o_sc_field">
+                                <label class="o_sc_field_label" for="sc_add_last">Last name</label>
+                                <input type="text" id="sc_add_last" name="add_last" class="o_sc_input" autocomplete="off"
+                                       t-att-value="sc_add_search and sc_add_search['last'] or ''"/>
+                            </div>
+                            <div class="o_sc_field">
+                                <label class="o_sc_field_label" for="sc_add_dob">Date of birth (optional)</label>
+                                <input type="date" id="sc_add_dob" name="add_dob" class="o_sc_input"
+                                       t-att-value="sc_add_search and sc_add_search['dob'] or ''"/>
+                            </div>
+                        </div>
+                        <div class="o_sc_form_actions">
+                            <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="player.search">Search</button>
+                        </div>
+                    </form>
+                    <t t-if="sc_add_search">
+                        <t t-if="sc_add_search['error']" t-call="bemade_sports_clinic.sc_banner">
+                            <t t-set="tone" t-value="'warn'"/>
+                            <t t-out="sc_add_search['error']"/>
+                        </t>
+                        <t t-else="">
+                            <div t-if="sc_add_search['rows']" class="o_sc_list" data-sc-section="team.add_player.results">
+                                <div t-foreach="sc_add_search['rows']" t-as="res" class="o_sc_entity_row o_sc_entity_row_static"
+                                     data-sc-add-result="1" t-att-data-sc-player-id="res['id']">
+                                    <span class="o_sc_row_lead"><t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'players'"/></t></span>
+                                    <span class="o_sc_row_text">
+                                        <span class="o_sc_row_title" t-out="res['label']"/>
+                                        <span class="o_sc_row_subtitle">
+                                            <t t-out="res['dob']"/>
+                                            <t t-if="not res['active']"><t t-if="res['dob']"> · </t><span>Archived</span></t>
+                                        </span>
+                                    </span>
+                                    <span class="o_sc_row_trailing">
+                                        <span t-if="res['on_team'] and res['active']" class="o_sc_chip o_sc_chip_ghost" data-sc-on-team="1">On the team</span>
+                                        <form t-else="" t-attf-action="/my/team/#{team.id}/player/add" method="post"
+                                              class="o_sc_inline_form" data-sc-form="player.link">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <input type="hidden" name="existing_id" t-att-value="res['id']"/>
+                                            <input type="hidden" name="sc_inline" value="1"/>
+                                            <button t-if="res['active']" type="submit" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm"
+                                                    data-sc-action="player.link">Add to team</button>
+                                            <button t-else="" type="submit" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm"
+                                                    data-sc-action="player.reactivate">Reactivate and add</button>
+                                        </form>
+                                    </span>
+                                </div>
+                            </div>
+                            <p t-else="" class="o_sc_empty">No matching player.</p>
+                            <form t-attf-action="/my/team/#{team.id}/player/add" method="post" class="o_sc_form" data-sc-form="player.create">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="sc_inline" value="1"/>
+                                <input type="hidden" name="force_new" value="1"/>
+                                <div class="o_sc_filter_grid">
+                                    <div class="o_sc_field">
+                                        <label class="o_sc_field_label" for="sc_new_first">First name</label>
+                                        <input type="text" id="sc_new_first" name="first_name" class="o_sc_input" required="required"
+                                               t-att-value="sc_add_search['first']"/>
+                                    </div>
+                                    <div class="o_sc_field">
+                                        <label class="o_sc_field_label" for="sc_new_last">Last name</label>
+                                        <input type="text" id="sc_new_last" name="last_name" class="o_sc_input" required="required"
+                                               t-att-value="sc_add_search['last']"/>
+                                    </div>
+                                    <div class="o_sc_field">
+                                        <label class="o_sc_field_label" for="sc_new_dob">Date of birth (optional)</label>
+                                        <input type="date" id="sc_new_dob" name="date_of_birth" class="o_sc_input"
+                                               t-att-value="sc_add_search['dob']"/>
+                                    </div>
+                                </div>
+                                <div class="o_sc_form_actions">
+                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="player.create">Create a new player</button>
+                                </div>
+                            </form>
+                        </t>
+                    </t>
+                </details>
+                <details t-elif="sc_show_request" class="o_sc_card o_sc_disclosure" id="sc_request_add"
+                         data-sc-section="team.request_add">
+                    <summary class="o_sc_disclosure_summary" data-sc-action="team.request_add">
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                        <span>Request a player addition</span>
+                    </summary>
+                    <form t-attf-action="/my/team/#{team.id}/player/request_add" method="post" class="o_sc_form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="o_sc_field">
+                            <label class="o_sc_field_label" for="sc_req_first_name">First name</label>
+                            <input type="text" id="sc_req_first_name" name="first_name" class="o_sc_input" required="required"/>
+                        </div>
+                        <div class="o_sc_field">
+                            <label class="o_sc_field_label" for="sc_req_last_name">Last name</label>
+                            <input type="text" id="sc_req_last_name" name="last_name" class="o_sc_input" required="required"/>
+                        </div>
+                        <div class="o_sc_field">
+                            <label class="o_sc_field_label" for="sc_req_dob">Date of birth</label>
+                            <input type="date" id="sc_req_dob" name="date_of_birth" class="o_sc_input" required="required"/>
+                        </div>
+                        <div class="o_sc_field">
+                            <label class="o_sc_field_label" for="sc_req_reason">Reason</label>
+                            <textarea id="sc_req_reason" name="reason" class="o_sc_input" rows="3"
+                                      placeholder="Explain why this player should be added"/>
+                        </div>
+                        <div class="o_sc_form_actions">
+                            <button type="submit" class="o_sc_btn o_sc_btn_primary">Send the request</button>
+                        </div>
+                    </form>
+                </details>
                 <t t-if="sc_pending_count and can_remove_on_team and sc_can('team.pending_removals')"
                    t-call="bemade_sports_clinic.sc_banner">
                     <t t-set="tone" t-value="'warn'"/>
@@ -376,36 +491,6 @@
                 </t>
             </section>
 
-            <!-- Coach: « Demander un ajout » — the existing request route. -->
-            <t t-if="sc_show_request" t-call="bemade_sports_clinic.sc_sheet">
-                <t t-set="sheet_id" t-value="'sc_request_add_sheet'"/>
-                <t t-set="title">Request a player addition</t>
-                <t t-set="lazy_url" t-value="False"/>
-                <form t-attf-action="/my/team/#{team.id}/player/request_add" method="post" class="o_sc_form">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <div class="o_sc_field">
-                        <label class="o_sc_field_label" for="sc_req_first_name">First name</label>
-                        <input type="text" id="sc_req_first_name" name="first_name" class="o_sc_input" required="required"/>
-                    </div>
-                    <div class="o_sc_field">
-                        <label class="o_sc_field_label" for="sc_req_last_name">Last name</label>
-                        <input type="text" id="sc_req_last_name" name="last_name" class="o_sc_input" required="required"/>
-                    </div>
-                    <div class="o_sc_field">
-                        <label class="o_sc_field_label" for="sc_req_dob">Date of birth</label>
-                        <input type="date" id="sc_req_dob" name="date_of_birth" class="o_sc_input" required="required"/>
-                    </div>
-                    <div class="o_sc_field">
-                        <label class="o_sc_field_label" for="sc_req_reason">Reason</label>
-                        <textarea id="sc_req_reason" name="reason" class="o_sc_input" rows="3"
-                                  placeholder="Explain why this player should be added"/>
-                    </div>
-                    <div class="o_sc_form_actions">
-                        <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-close="1">Cancel</button>
-                        <button type="submit" class="o_sc_btn o_sc_btn_primary">Send the request</button>
-                    </div>
-                </form>
-            </t>
         </t>
     </template>
 
