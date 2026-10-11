@@ -548,6 +548,26 @@ class AppShellMixin:
         })
         return shell
 
+    @staticmethod
+    def _sc_history_entry(when, author, body, action=None, tone=None, state=None, **extra):
+        """Task 1581: ONE history entry (``sc_history_entry``) — the date-time
+        in the treatment notes' format (« d MMM y HH:mm », viewer's tz), the
+        author's full name, an optional action chip (label + tone), the body
+        (empty = « Cleared ») and an optional state (``archived``)."""
+        body = (body or '').strip()
+        when_label = (request.env['sports.treatment.note']._portal_datetime(when)
+                      if when else '')
+        entry = {
+            'when': when_label,
+            'author': author or '',
+            'action': str(action) if action else '',
+            'tone': tone or 'ghost',
+            'body': body,
+            'state': state or ('' if body else 'cleared'),
+        }
+        entry.update(extra)
+        return entry
+
     def _sc_player_tab_url(self, patient_id, tab, team_id=None, clinic=None):
         """The player page on ``tab``, with the team / clinic context."""
         url = '/my/player?player_id=%s' % patient_id

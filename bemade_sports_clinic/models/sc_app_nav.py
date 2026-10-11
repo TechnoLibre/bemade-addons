@@ -372,8 +372,6 @@ PAGES = {page.key: page for page in (
          url=lambda v: '/my/injury/edit?injury_id=%s%s' % (v['injury'].id, _ctx_qs(v)),
          label=_injury_label, parent=_player_parent, context=_heading),
     Page('sc_app_treatment_notes', parent=_player_parent, context=_heading),
-    Page('sc_app_note_history', parent=_injury_parent,
-         context=lambda v: _name(v['injury'], 'diagnosis') or _heading(v)),
     Page('sc_app_injury_documents', parent=_injury_parent,
          context=lambda v: _name(v['injury'], 'diagnosis') or _heading(v)),
     # -- clinics -------------------------------------------------------

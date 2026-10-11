@@ -171,6 +171,38 @@
         <p class="o_sc_empty" t-out="message"/>
     </template>
 
+    <!-- Task 1581: ONE history entry for every history of the shell (team
+         announcement, training recommendation, injury notes):
+         « <date> <time> · <Full Name> · <action chip> », then the body; an
+         empty body reads « Cleared ». Built by AppShellMixin._sc_history_entry
+         (same date-time format as the treatment notes, viewer's tz).
+         Variable: entry = {when, author, action, tone, body, state, scope?}. -->
+    <template id="sc_history_entry" name="App shell: history entry">
+        <li class="o_sc_history_entry" t-att-data-sc-history-state="entry['state'] or None"
+            t-att-data-sc-scope="entry.get('scope') or None">
+            <div class="o_sc_meta o_sc_history_meta">
+                <span class="o_sc_history_when" t-out="entry['when']"/>
+                <t t-if="entry['author']"> · <span class="o_sc_history_author" t-out="entry['author']"/></t>
+                <t t-if="entry['action']"> · <span t-attf-class="o_sc_chip o_sc_chip_#{entry['tone']}" t-out="entry['action']"/></t>
+            </div>
+            <p t-if="entry['body']" class="o_sc_pre o_sc_history_body" t-out="entry['body']"/>
+            <p t-else="" class="o_sc_muted o_sc_history_cleared">Cleared</p>
+        </li>
+    </template>
+
+    <!-- Task 1581: a history sheet's body (the lazy, fresh-on-every-open
+         fragment): optional filters (0), the entries, or the empty state.
+         Variables: entries, empty_message, section (data-sc-section). -->
+    <template id="sc_history_list" name="App shell: history list">
+        <div class="o_sc_history_fragment" t-att-data-sc-section="section or None">
+            <t t-out="0"/>
+            <ol t-if="entries" class="o_sc_history">
+                <t t-foreach="entries" t-as="entry" t-call="bemade_sports_clinic.sc_history_entry"/>
+            </ol>
+            <p t-else="" class="o_sc_empty" t-out="empty_message"/>
+        </div>
+    </template>
+
     <!-- Banner. Variables: title, tone (info|warn). Body (0) = text. -->
     <template id="sc_banner" name="App shell: banner">
         <div t-attf-class="o_sc_banner o_sc_banner_#{tone or 'info'}" role="status">

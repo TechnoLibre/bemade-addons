@@ -421,7 +421,6 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         roles = env.user._sc_app_roles()
         is_tp = values['is_treatment_prof']
         ctx_qs = values.get('ctx_qs') or ''
-        qs = ('?' + ctx_qs[1:]) if ctx_qs else ''
         consent_options = [('', '')] + list(
             Injury._fields['parental_consent']._description_selection(env))
         # Labels first, keys zipped in (babel's extractor, see app_shell).
@@ -433,7 +432,8 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
             'sc_is_tp_view': bool(is_tp and roles & sc_app_roles.TP),
             'sc_documents_url': '/my/injury/documents?injury_id=%s%s' % (injury.id, ctx_qs),
-            'sc_history_url': '/my/injury/%s/notes/history%s' % (injury.id, qs),
+            # Task 1581: the notes history sheet (fetched on every open).
+            'sc_note_history_url': '/my/injury/%s/notes/history/fragment' % injury.id,
             'sc_injury_flash': {
                 'success': env._("Injury successfully updated.")
                 if values.get('success') == 'injury_updated' else False,
@@ -958,25 +958,7 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
           _check_access_to_injury, like the neighboring injury routes.
         """
         injury = self._check_access_to_injury(injury_id)
-
-        is_treatment_prof = self._is_treatment_professional()
-
-        requested_scope = scope or 'all'
-        if requested_scope not in ('internal', 'external', 'all'):
-            requested_scope = 'all'
-        if not is_treatment_prof:
-            # Coaches only ever see external notes; ignore any tampered
-            # scope parameter outright.
-            requested_scope = 'external'
-
-        domain = [('injury_id', '=', injury.id)]
-        if requested_scope != 'all':
-            domain.append(('scope', '=', requested_scope))
-
-        # Deliberately NOT sudo: the sports.injury.note.history portal record
-        # rules re-enforce the team scoping and hide internal-scope rows from
-        # coaches even if this controller filter ever regresses.
-        histories = request.env['sports.injury.note.history'].search(domain)
+        histories, requested_scope, is_treatment_prof = self._injury_note_history(injury, scope)
 
         # Optional team navigation context for breadcrumbs (same pattern as
         # the injury-documents route; access is NOT derived from it).
@@ -1000,6 +982,11 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if clinic_event:
             ctx_qs += f'&clinic_id={clinic_event.id}'
 
+        # Task 1581: the page is retired in the app shell — the history is
+        # the injury page's sheet now; an old link lands on that page (same
+        # team / clinic context). Switch off: today's page, unchanged.
+        if self._sc_app_shell_active():
+            return request.redirect('/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs))
         values = {
             'injury': injury,
             'patient': injury.patient_id,
@@ -1012,9 +999,59 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'clinic_event': clinic_event,
             'ctx_qs': ctx_qs,
         }
-        # Task 1539: the app shell (switch on: a timeline) or today's template.
-        return self._sc_render('bemade_sports_clinic.portal_injury_note_history',
-                               'bemade_sports_clinic.sc_app_note_history', values)
+        return request.render('bemade_sports_clinic.portal_injury_note_history', values)
+
+    def _injury_note_history(self, injury, scope):
+        """(rows, scope, is_treatment_prof) of an injury's note history.
+
+        Treatment professionals see internal + external rows with an optional
+        scope filter (internal / external / all, default all); everyone else
+        (coaches) gets EXTERNAL rows only, whatever the query string says.
+        Deliberately NOT sudo: the sports.injury.note.history portal record
+        rules re-enforce the team scoping and hide internal-scope rows and
+        hidden injuries from coaches even if this filter ever regresses."""
+        is_treatment_prof = self._is_treatment_professional()
+        requested_scope = scope or 'all'
+        if requested_scope not in ('internal', 'external', 'all'):
+            requested_scope = 'all'
+        if not is_treatment_prof:
+            requested_scope = 'external'
+        domain = [('injury_id', '=', injury.id)]
+        if requested_scope != 'all':
+            domain.append(('scope', '=', requested_scope))
+        histories = request.env['sports.injury.note.history'].search(domain)
+        return histories, requested_scope, is_treatment_prof
+
+    @http.route(['/my/injury/<int:injury_id>/notes/history/fragment'], type='http',
+                auth='user', website=True, methods=['GET'])
+    def injury_note_history_fragment(self, injury_id, scope=None, **kw):
+        """Task 1581: the injury notes history sheet's body, fetched on EVERY
+        open; « All / Internal / External » chips (therapists only) re-fetch
+        it with ``?scope=``. Same access as the injury page and the retired
+        history page (coach: external rows only, never a hidden injury's)."""
+        try:
+            injury = self._check_access_to_injury(injury_id)
+        except MissingError:
+            return request.not_found()
+        except UserError as error:  # AccessError included
+            return self._forbidden(error)
+        env = request.env
+        histories, scope, is_treatment_prof = self._injury_note_history(injury, scope)
+        scope_labels = {'internal': env._("Internal"), 'external': env._("External")}
+        entries = [self._sc_history_entry(
+            row.note_datetime, row.author_id.name, row.content,
+            action=scope_labels.get(row.scope) if is_treatment_prof else None,
+            tone='mauve' if row.scope == 'internal' else 'ghost',
+            scope=row.scope,
+        ) for row in histories]
+        base = '/my/injury/%s/notes/history/fragment' % injury.id
+        return request.render('bemade_sports_clinic.sc_note_history_fragment', {
+            'entries': entries,
+            'scope': scope,
+            'is_treatment_prof': is_treatment_prof,
+            'sc_scope_urls': {key: '%s?scope=%s' % (base, key)
+                              for key in ('all', 'internal', 'external')},
+        })
 
     @http.route(['/my/injury/documents'], type='http', auth='user', website=True)
     def view_injury_documents(self, injury_id=None, team_id=None, **post):

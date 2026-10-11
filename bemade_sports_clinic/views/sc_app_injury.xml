@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Task 1539 (epic #1535) — P2 injury pages of the portal app shell: new
-    injury (device draft + « Créer »), the « created » landing, injury edit
-    (saved field by field on blur, status / visibility instant with undo),
-    treatment notes, note history and injury documents.
+    injury (device draft + « Créer »), injury edit (saved field by field on
+    blur, status / visibility instant with undo), treatment notes and injury
+    documents. Task 1579 retired the « created » landing (a create redirects
+    to the player's Injuries tab); task 1581 retired the note-history page
+    (the injury page's notes-history sheet, sc_note_history_fragment).
 
     Rendered only with the system switch on (controllers: _sc_render). The
     clinic's modal fragments (portal_injury_form_body,
@@ -162,14 +164,17 @@
                     </t>
                 </div>
                 <div class="o_sc_card o_sc_fields" data-sc-section="injury.notes">
+                    <!-- Task 1581: « History » next to each notes label opens
+                         the shared notes-history sheet (fresh on every open). -->
+                    <t t-set="sc_note_history_label">History</t>
                     <t t-set="lbl">External Notes</t>
                     <t t-call="bemade_sports_clinic.sc_field_autosave">
-                        <t t-set="props" t-value="sc_field_props(injury, 'external_notes', lbl, 'textarea', clearable=True, hint=injury.last_external_note_info or None)"/>
+                        <t t-set="props" t-value="sc_field_props(injury, 'external_notes', lbl, 'textarea', clearable=True, hint=injury.last_external_note_info or None, historySheet='sc_note_history_sheet', historyLabel=sc_note_history_label)"/>
                     </t>
                     <t t-if="sc_is_tp_view and sc_can('injury.internal_notes')">
                         <t t-set="lbl">Internal Notes (Medical Staff Only)</t>
                         <t t-call="bemade_sports_clinic.sc_field_autosave">
-                            <t t-set="props" t-value="sc_field_props(injury, 'internal_notes', lbl, 'textarea', clearable=True, hint=injury.last_internal_note_info or None)"/>
+                            <t t-set="props" t-value="sc_field_props(injury, 'internal_notes', lbl, 'textarea', clearable=True, hint=injury.last_internal_note_info or None, historySheet='sc_note_history_sheet', historyLabel=sc_note_history_label)"/>
                         </t>
                     </t>
                     <t t-if="sc_is_tp_view and sc_can('injury.visibility.edit')">
@@ -184,11 +189,13 @@
                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'documents'"/></t>
                             <span>Documents</span>
                         </a>
-                        <a t-att-href="sc_history_url" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" data-sc-action="injury.history">
-                            <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'history'"/></t>
-                            <span>Note History</span>
-                        </a>
                     </div>
+                    <t t-call="bemade_sports_clinic.sc_sheet">
+                        <t t-set="sheet_id" t-value="'sc_note_history_sheet'"/>
+                        <t t-set="title">Note History</t>
+                        <t t-set="lazy_url" t-value="sc_note_history_url"/>
+                        <t t-set="lazy_fresh" t-value="True"/>
+                    </t>
                 </div>
             </div>
             <div class="o_sc_actionbar">
@@ -237,39 +244,6 @@
         </t>
     </template>
 
-    <!-- /my/injury/<id>/notes/history (shell): the audited note snapshots
-         as a timeline. Coaches get the EXTERNAL rows only (the controller
-         forces the scope; the record rules hide internal rows as well). -->
-    <template id="sc_app_note_history" name="Sports Clinic App: note history">
-        <t t-call="bemade_sports_clinic.sc_app_layout">
-            <t t-set="sc_title">Note History</t>
-            <t t-set="sc_active_nav" t-value="'players'"/>
-            <nav t-if="is_treatment_prof" class="o_sc_segmented" role="group" aria-label="Scope filter" data-sc-section="history.scope">
-                <a t-att-href="'/my/injury/%s/notes/history?scope=all%s' % (injury.id, ctx_qs or '')"
-                   t-att-aria-pressed="'true' if scope == 'all' else 'false'">All</a>
-                <a t-att-href="'/my/injury/%s/notes/history?scope=internal%s' % (injury.id, ctx_qs or '')"
-                   t-att-aria-pressed="'true' if scope == 'internal' else 'false'">Internal</a>
-                <a t-att-href="'/my/injury/%s/notes/history?scope=external%s' % (injury.id, ctx_qs or '')"
-                   t-att-aria-pressed="'true' if scope == 'external' else 'false'">External</a>
-            </nav>
-            <ol t-if="histories" class="o_sc_timeline" data-sc-section="history.list">
-                <li t-foreach="histories" t-as="hist" t-att-data-sc-scope="hist.scope" t-att-data-sc-history-id="hist.id">
-                    <div class="o_sc_meta">
-                        <span t-field="hist.note_datetime"/> · <t t-out="hist.author_id.name"/>
-                        <t t-if="is_treatment_prof">
-                            · <span t-if="hist.scope == 'internal'" class="o_sc_chip o_sc_chip_mauve">Internal</span>
-                            <span t-else="" class="o_sc_chip o_sc_chip_ghost">External</span>
-                        </t>
-                    </div>
-                    <p t-if="(hist.content or '').strip()" class="o_sc_pre" t-out="hist.content"/>
-                    <p t-else="" class="o_sc_muted">(note cleared)</p>
-                </li>
-            </ol>
-            <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                <t t-set="message">No note history yet.</t>
-            </t>
-        </t>
-    </template>
 
     <!-- /my/injury/documents?injury_id=<id> (shell): list, download, upload
          (therapists), delete (therapists, POST + CSRF, task 1544). -->
@@ -339,6 +313,25 @@
             <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
                 <t t-set="message">No documents uploaded</t>
             </t>
+        </t>
+    </template>
+
+    <!-- Task 1581: /my/injury/<id>/notes/history/fragment — the injury notes
+         history sheet's body: the scope chips (therapists only) re-fetch it
+         inside the sheet (data-sc-sheet-refetch, sc_app_ui.js). -->
+    <template id="sc_note_history_fragment" name="App shell: injury note history">
+        <t t-set="empty_message">No note history yet.</t>
+        <t t-call="bemade_sports_clinic.sc_history_list">
+            <t t-set="section" t-value="'injury.notes.history'"/>
+            <nav t-if="is_treatment_prof" class="o_sc_segmented o_sc_segmented_full" role="group"
+                 aria-label="Scope filter" data-sc-section="history.scope">
+                <a t-att-href="sc_scope_urls['all']" data-sc-sheet-refetch="1"
+                   t-att-aria-pressed="'true' if scope == 'all' else 'false'">All notes</a>
+                <a t-att-href="sc_scope_urls['internal']" data-sc-sheet-refetch="1"
+                   t-att-aria-pressed="'true' if scope == 'internal' else 'false'">Internal notes</a>
+                <a t-att-href="sc_scope_urls['external']" data-sc-sheet-refetch="1"
+                   t-att-aria-pressed="'true' if scope == 'external' else 'false'">External notes</a>
+            </nav>
         </t>
     </template>
 

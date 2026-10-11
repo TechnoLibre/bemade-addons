@@ -1025,18 +1025,10 @@
     <!-- The training recommendation history list, fetched by the player
          page's sheet on every open (/my/player/<id>/training-history). -->
     <template id="sc_training_history_list" name="App shell: training history list">
-        <div class="o_sc_training_history">
-        <ol t-if="history" class="o_sc_history">
-            <li t-foreach="history" t-as="h">
-                <div class="o_sc_meta">
-                    <span t-out="h['when']" t-options="{'widget': 'datetime'}"/> · <t t-out="h['author']"/>
-                </div>
-                <p t-if="h['body']" class="o_sc_pre" t-out="h['body']"/>
-                <p t-else="" class="o_sc_meta">Cleared</p>
-            </li>
-        </ol>
-        <p t-else="" class="o_sc_empty">No training recommendation history yet.</p>
-        </div>
+        <t t-set="empty_message">No training recommendation history yet.</t>
+        <t t-call="bemade_sports_clinic.sc_history_list">
+            <t t-set="section" t-value="'player.training.history'"/>
+        </t>
     </template>
 
 </odoo>

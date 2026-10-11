@@ -18,7 +18,7 @@
 #
 {
     'name': 'Sports Clinic Management',
-    'version': "19.0.1.50.0",
+    'version': "19.0.1.51.0",
     'summary': 'Comprehensive sports medicine clinic management with portal access and activity tracking.',
     'description': """
 Sports Clinic Management System
@@ -91,7 +91,10 @@ holds a set of roles and every entry declares the roles it includes and
 excludes; security stays in the access rules. Back navigation and the
 breadcrumb trail come from one parent registry (``models/sc_app_nav.py``):
 back returns to the in-app page you came from (else the page's declared
-parent); phones show back + context, laptops the full trail.
+parent); phones show back + context, laptops the full trail. Every history
+(team announcement, training recommendation, injury notes) opens the same
+way: a « History » link, a sheet fetched again on every open, one entry
+format.
 
 P1b adds the team page on the shell (dashboard, players and activities
 tabs), a device draft for the team announcement (« Publier » unchanged), the

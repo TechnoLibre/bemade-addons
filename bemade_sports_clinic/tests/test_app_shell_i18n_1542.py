@@ -37,7 +37,9 @@ class TestAppShellI18n1542(TestAppShellI18n1538):
         for term in ('Aperçu', 'Joueurs', 'Activités', 'Ajouter un joueur',
                      'Changements récents', 'Blessés', 'En reprise', 'Disponibles',
                      "Annonce de l'équipe", 'Publier', 'Historique',
-                     'Événements à venir', 'Par statut', 'Par numéro'):
+                     'Événements à venir', 'Par statut', 'Par numéro',
+                     # Task 1581: the announcement history sheet is lazy.
+                     'Historique des annonces', 'Chargement…'):
             self.assertIn(term, text, term)
         self._login_coach()
         text = self._fr(self.url).replace('&#39;', "'")

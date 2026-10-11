@@ -665,8 +665,13 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             })
             response.status_code = 403
             return response
+        # Task 1581: the shared history entry (the standard the other
+        # histories now follow).
         return http.request.render('bemade_sports_clinic.sc_training_history_list', {
-            'history': player._training_recommendation_history(),
+            'entries': [
+                self._sc_history_entry(row['when'], row['author'], row['body'])
+                for row in player._training_recommendation_history()
+            ],
         })
 
     @http.route(route=['/my/player'], type='http',

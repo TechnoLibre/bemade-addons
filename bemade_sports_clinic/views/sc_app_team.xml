@@ -19,6 +19,15 @@
 -->
 <odoo>
 
+    <!-- Task 1581: /my/team/<id>/announcement/history — the announcement
+         history sheet's body (shared history entries). -->
+    <template id="sc_announcement_history_fragment" name="App shell: announcement history">
+        <t t-set="empty_message">No announcement history yet.</t>
+        <t t-call="bemade_sports_clinic.sc_history_list">
+            <t t-set="section" t-value="'team.announcement.history'"/>
+        </t>
+    </template>
+
     <!-- /my/team?team_id=<id> (shell) -->
     <template id="sc_app_team" name="Sports Clinic App: team">
         <t t-call="bemade_sports_clinic.sc_app_layout">
@@ -135,25 +144,13 @@
                         </form>
                         </div>
                     </div>
+                    <!-- Task 1581: the shared history sheet, fetched on every
+                         open (/my/team/<id>/announcement/history). -->
                     <t t-call="bemade_sports_clinic.sc_sheet">
                         <t t-set="sheet_id" t-value="'sc_announcement_history_sheet'"/>
                         <t t-set="title">Announcement history</t>
-                        <t t-set="lazy_url" t-value="False"/>
-                        <ol t-if="sc_announcement_history" class="o_sc_history">
-                            <li t-foreach="sc_announcement_history" t-as="h">
-                                <div class="o_sc_meta">
-                                    <span t-field="h.note_datetime"/> · <t t-out="h.author_id.name"/> ·
-                                    <t t-if="h.action == 'set'">Posted</t>
-                                    <t t-elif="h.action == 'edit'">Edited</t>
-                                    <t t-elif="h.action == 'dismiss'">Archived</t>
-                                    <t t-else="" t-out="h.action"/>
-                                </div>
-                                <p class="o_sc_pre" t-out="h.body"/>
-                            </li>
-                        </ol>
-                        <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                            <t t-set="message">No announcement history yet.</t>
-                        </t>
+                        <t t-set="lazy_url" t-value="'/my/team/%s/announcement/history' % team.id"/>
+                        <t t-set="lazy_fresh" t-value="True"/>
                     </t>
                 </section>
 
