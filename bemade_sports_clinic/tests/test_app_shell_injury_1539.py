@@ -170,7 +170,10 @@ class TestAppShellInjury1539(AppShellCommon):
         self.assertIn('Visible synthetic remark', text)
         self.assertNotIn('TP-only synthetic remark', text)
         self.assertFalse(tree.xpath('//*[@data-sc-action="injury.delete"]'))
-        self.assertTrue(tree.xpath('//*[@data-sc-section="injury.stage.readonly"]'))
+        # The status reads in the details card's read view (pencil paradigm).
+        read = tree.xpath('//*[@data-sc-edit-card="injury-details"]//*[@data-sc-edit-view="read"]')[0]
+        self.assertIn(self.injury.diagnosis or '', read.text_content())
+        self.assertFalse([p for p in tree.xpath('//owl-component/@props') if '"stage"' in p])
 
     # -- UC-I4 -----------------------------------------------------------
     def test_hidden_injury_never_reaches_a_coach(self):

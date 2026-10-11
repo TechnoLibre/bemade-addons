@@ -296,27 +296,52 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="activity.summary or activity.activity_type_id.name"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
-            <t t-set="sc_edit_label">Edit</t>
-            <t t-set="sc_primary_action" t-value="{'url': '/my/activity/%s/edit' % activity.id, 'label': sc_edit_label, 'key': 'activity.edit', 'icon': 'edit'}"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <t t-set="act_state" t-value="'overdue' if activity.date_deadline &lt; today_date else ('today' if activity.date_deadline == today_date else 'planned')"/>
-            <div class="o_sc_card" data-sc-section="activity.detail">
-                <div class="o_sc_chips">
-                    <span t-if="act_state == 'overdue'" class="o_sc_chip o_sc_chip_red">Overdue</span>
-                    <span t-elif="act_state == 'today'" class="o_sc_chip o_sc_chip_yellow">Today</span>
-                    <span t-else="" class="o_sc_chip o_sc_chip_ghost">Planned</span>
-                </div>
-                <dl class="o_sc_kv">
-                    <dt>Activity Type</dt><dd><span t-field="activity.activity_type_id"/></dd>
-                    <dt>Due Date</dt><dd><span t-field="activity.date_deadline" t-options="{'widget': 'date'}"/></dd>
-                    <dt>Assigned To</dt><dd><span t-field="activity.user_id"/></dd>
-                    <t t-if="related_record_name">
-                        <dt>Related Record</dt>
-                        <dd><a t-if="sc_related_url" t-att-href="sc_related_url" t-out="related_record_name"/><t t-else="" t-out="related_record_name"/></dd>
+            <!-- Owner review 2026-10-11: the pencil edit paradigm — the
+                 activity is edited in place (was a separate edit page); the
+                 type stays read-only, as the edit route always treated it. -->
+            <section t-attf-class="o_sc_card #{'o_sc_edit_card' if sc_activity_editable else ''}" data-sc-section="activity.detail"
+                     t-att-data-sc-edit-card="'activity' if sc_activity_editable else None" data-sc-edit-reload="1">
+                <div class="o_sc_edit_card_head">
+                    <span class="o_sc_chips">
+                        <span t-if="act_state == 'overdue'" class="o_sc_chip o_sc_chip_red">Overdue</span>
+                        <span t-elif="act_state == 'today'" class="o_sc_chip o_sc_chip_yellow">Today</span>
+                        <span t-else="" class="o_sc_chip o_sc_chip_ghost">Planned</span>
+                    </span>
+                    <t t-if="sc_activity_editable">
+                        <t t-set="sc_edit_label">Edit</t>
+                        <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1" aria-expanded="false"
+                                t-att-aria-label="sc_edit_label" t-att-title="sc_edit_label">
+                            <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                        </button>
                     </t>
-                </dl>
-                <div t-if="activity.note" class="o_sc_activity_note"><div t-field="activity.note"/></div>
-            </div>
+                </div>
+                <div data-sc-edit-view="read">
+                    <dl class="o_sc_kv">
+                        <dt>Summary</dt><dd><span t-att-data-sc-display="sc_display_key(activity, 'summary')" t-out="activity.summary or '—'"/></dd>
+                        <dt>Activity Type</dt><dd><span t-field="activity.activity_type_id"/></dd>
+                        <dt>Due Date</dt><dd><span t-att-data-sc-display="sc_display_key(activity, 'date_deadline')" t-field="activity.date_deadline" t-options="{'widget': 'date'}"/></dd>
+                        <dt>Assigned To</dt><dd><span t-att-data-sc-display="sc_display_key(activity, 'user_id')" t-out="activity.sudo().user_id.name"/></dd>
+                        <t t-if="related_record_name">
+                            <dt>Related Record</dt>
+                            <dd><a t-if="sc_related_url" t-att-href="sc_related_url" t-out="related_record_name"/><t t-else="" t-out="related_record_name"/></dd>
+                        </t>
+                    </dl>
+                    <div t-if="activity.note" class="o_sc_activity_note"><div t-field="activity.note"/></div>
+                </div>
+                <div t-if="sc_activity_editable" class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                    <t t-set="lbl">Summary</t>
+                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(activity, 'summary', lbl)"/></t>
+                    <t t-set="lbl">Due Date</t>
+                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(activity, 'date_deadline', lbl, 'date')"/></t>
+                    <t t-set="lbl">Assigned To</t>
+                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(activity, 'user_id', lbl, 'select', options=sc_activity_user_options)"/></t>
+                    <t t-set="lbl">Note</t>
+                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(activity, 'note', lbl, 'textarea', clearable=True)"/></t>
+                    <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
+                </div>
+            </section>
             <section t-if="attachments" class="o_sc_section">
                 <t t-call="bemade_sports_clinic.sc_section_header"><t t-set="title">Attachments</t></t>
                 <div class="o_sc_list">

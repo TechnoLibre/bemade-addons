@@ -783,6 +783,10 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     @http.route(['/my/event/<int:event_id>/edit'], type='http', auth='user', website=True)
     def edit_event_form(self, event_id, **kw):
         """Edit event form - only accessible to therapists"""
+        # Owner review 2026-10-11: in the app shell the event is edited in
+        # place (pencil card) on its page.
+        if self._sc_app_shell_active():
+            return http.request.redirect('/my/event/%s' % int(event_id))
         
         # Check access - only therapists can edit
         user = http.request.env.user
@@ -1403,7 +1407,23 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             success = env._("Timesheet deleted.")
         error = params.get('ts_error') or params.get('error')
         is_tp = self._is_tp_or_system()
+        # Owner review 2026-10-11: the pencil card's choices (as the edit
+        # page offered them: the user's teams plus the event's current ones).
+        edit_options = {}
+        if values['can_edit']:
+            teams = (self._get_accessible_teams() | event_sudo.team_ids).sudo()
+            venues = env['res.partner'].search([('is_venue', '=', True)], order='name')
+            if event_sudo.venue_id and event_sudo.venue_id not in venues:
+                venues |= event_sudo.venue_id.sudo()
+            edit_options = {
+                'types': list(env['sports.event']._fields['event_type']._description_selection(env)),
+                'venues': [('', '—')] + [(v.id, v.name) for v in venues],
+                'teams': [(t.id, t.name) for t in teams.sorted('name')],
+                'staff': [(u.id, u.name) for u in (self._get_treatment_professionals()
+                                                   | event_sudo.assigned_staff_ids).sudo().sorted('name')],
+            }
         return {
+            'sc_event_edit_options': edit_options,
             'sc_event_kind': kinds.get(event_sudo.event_type, ''),
             'sc_event_state': states.get(event_sudo.state, ''),
             'sc_event_when': self._sc_event_when(event_sudo),

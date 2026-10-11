@@ -216,9 +216,11 @@ class TestAppShellHistory1581(History1581Common):
         sheet = self._sheet(tree, 'sc_note_history_sheet')
         self.assertEqual(sheet.get('data-sc-lazy-url'), self.notes_url)
         self.assertEqual(sheet.get('data-sc-lazy-fresh'), '1')
-        notes = tree.xpath('//*[@data-sc-section="injury.notes"]//owl-component/@props')
-        with_history = [p for p in notes if '"historySheet": "sc_note_history_sheet"' in p]
-        self.assertEqual(len(with_history), 2)  # external + internal notes
+        # Pencil paradigm (owner review 2026-10-11): ONE « History » link in
+        # the notes card's head, reachable while reading.
+        links = tree.xpath('//*[@data-sc-edit-card="injury-notes"]/*[contains(@class, "o_sc_edit_card_head")]'
+                           '//*[@data-sc-sheet-open="sc_note_history_sheet"][contains(@class, "o_sc_link_btn")]')
+        self.assertEqual(len(links), 1)
 
     def test_training_trigger_and_lazy_fresh_sheet(self):
         self._login_tp()

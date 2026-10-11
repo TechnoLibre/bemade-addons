@@ -790,6 +790,10 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Check if the activity exists and user has access to it
         if not activity.exists():
             raise request.not_found()
+        # Owner review 2026-10-11: in the app shell the activity is edited
+        # in place (pencil card) on its page.
+        if self._sc_app_shell_active():
+            return request.redirect('/my/activity/%s' % activity.id)
             
         # Check access permissions using the same logic as view_activity_detail
         user = request.env.user
@@ -911,7 +915,9 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 pass
         
         # Get attachments for this activity
-        attachments = request.env['ir.attachment'].search([
+        # sudo(): the access check above is the authorization; coaches have
+        # no ir.attachment read on mail.activity (the page 403'd for them).
+        attachments = request.env['ir.attachment'].sudo().search([
             ('res_model', '=', 'mail.activity'),
             ('res_id', '=', activity.id)
         ])
@@ -939,10 +945,15 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 related_url = '/my/team?team_id=%s' % context_team.id
             elif context_event:
                 related_url = '/my/event/%s' % context_event.id
+            assignable = self._activity_assignable_users_for(request.env.user)
+            users = (assignable | activity.sudo().user_id).sorted('name')
             values.update({
                 'sc_related_url': related_url,
                 'today_date': fields.Date.context_today(request.env.user),
                 'sc_flash': self._sc_activity_flash(),
+                # Owner review 2026-10-11: the pencil card's assignee choices.
+                'sc_activity_editable': self._activity_edit_access(activity),
+                'sc_activity_user_options': [(u.id, u.name) for u in users],
             })
         return self._sc_render('bemade_sports_clinic.portal_activity_detail',
                                'bemade_sports_clinic.sc_app_activity_detail', values)

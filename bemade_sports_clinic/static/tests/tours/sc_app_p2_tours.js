@@ -69,6 +69,11 @@ tours.add("sc_1539_players_to_player", {
 tours.add("sc_1539_injury_autosave", {
     steps: () => [
         {
+            content: "Edit the notes card (pencil paradigm, owner review 2026-10-11)",
+            trigger: '[data-sc-edit-card="injury-notes"] button[data-sc-edit-toggle]',
+            run: "click",
+        },
+        {
             content: "Type an external note",
             trigger: '.o_sc_autosave[data-sc-field="external_notes"] textarea',
             run: "edit Tour 1539 synthetic external note",
@@ -81,6 +86,11 @@ tours.add("sc_1539_injury_autosave", {
         {
             content: "Saved on blur",
             trigger: '.o_sc_autosave[data-sc-field="external_notes"][data-sc-state="saved"]',
+        },
+        {
+            content: "Edit the details card (pencil)",
+            trigger: '[data-sc-edit-card="injury-details"] button[data-sc-edit-toggle]',
+            run: "click",
         },
         {
             content: "Resolve: instant save",
@@ -319,6 +329,43 @@ tours.add("sc_injury_resolve_date", {
                     throw new Error("the page reloaded");
                 }
             },
+        },
+    ],
+});
+
+// ------------- event page: the pencil card (owner review 2026-10-11)
+tours.add("sc_event_pencil", {
+    steps: () => [
+        {
+            content: "Read view first; open the pencil",
+            trigger: '[data-sc-edit-card="event"] button[data-sc-edit-toggle]',
+            run: "click",
+        },
+        {
+            content: "Rename the event",
+            trigger: '[data-sc-edit-card="event"] .o_sc_autosave[data-sc-field="name"] input',
+            run: "edit Synthetic pencil event",
+        },
+        {
+            content: "Leave the field so it saves",
+            trigger: '[data-sc-edit-card="event"] .o_sc_autosave[data-sc-field="name"] input',
+            run() {
+                this.anchor.blur();
+            },
+        },
+        {
+            content: "Saved",
+            trigger: '[data-sc-edit-card="event"] .o_sc_autosave[data-sc-field="name"][data-sc-state="saved"]',
+        },
+        {
+            content: "Done: the card reloads with the new name",
+            trigger: '[data-sc-edit-card="event"] [data-sc-edit-done]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "The title shows the new name",
+            trigger: '.o_sc_appbar_title:contains(Synthetic pencil event)',
         },
     ],
 });
