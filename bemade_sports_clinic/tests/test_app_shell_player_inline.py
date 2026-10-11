@@ -18,8 +18,9 @@ Acceptance criteria covered here:
 * UC-3 Cards and roles: any staff edits Identity and Contact; Medical and
   Teams are therapist-only (a coach gets no Medical card, a read-only Teams
   card without pencil, and the server still refuses the fields: 403).
-* UC-4 Always-live controls: play status and training recommendation stay
-  on the Overview tab, outside any edit card.
+* UC-4 Always-live controls: play status (page header) and training
+  recommendation (Info tab, owner review 2026-10-11) stay outside any edit
+  card.
 * UC-5 Teams card: a tags field (owner review 2026-10-10, not an unbounded
   checklist) — the player's teams as removable chips + a search box over the
   teams the user may assign (a few matches at a time); each add / remove
@@ -32,9 +33,10 @@ Acceptance criteria covered here:
   team / clinic context. Switch off: the legacy edit page is unchanged.
 * UC-8 Emergency contacts inline: each contact card has a pencil revealing
   autosave fields (name, relationship, mobile, email); adding is an inline
-  form on the Contacts tab that comes back to it; the old add / edit pages
-  redirect to the Contacts tab. Coaches too (owner decision 2026-10-10):
-  they see the Contacts tab with EVERY contact, add and edit them; deleting
+  form on the Info tab (the Contacts tab is gone, owner review 2026-10-11)
+  that comes back to it; the old add / edit pages redirect to the Info tab.
+  Coaches too (owner decision 2026-10-10): they see EVERY contact, add and
+  edit them; deleting
   stays with therapists (their ACL). The coach-only primary-contact card on
   the Info tab is gone.
 * UC-9 Activities follow the same UX (owner review 2026-10-10): each
@@ -44,8 +46,7 @@ Acceptance criteria covered here:
 * UC-10 New injury follows the same UX: no « New injury » action in the app
   bar; an inline « Add Injury » card (« Report Injury » for a coach) at the
   top of the Injuries tab, posting to the same create route and coming back
-  to the Injuries tab; the Overview's « Active injuries » header links to
-  it. (Its steps, visibility first then diagnosis + « Create », and the
+  to the Injuries tab. (Its steps, visibility first then diagnosis + « Create », and the
   inline injury cards: test_app_shell_injury_inline.)
 """
 from urllib.parse import parse_qs, urlparse
@@ -150,8 +151,10 @@ class TestPlayerInline(PlayerInlineCommon):
     # -- UC-4 ------------------------------------------------------------
     def test_status_and_training_stay_live(self):
         self._login_tp()
-        _text, tree = self._get(self._url(tab='overview'))
-        panel = tree.xpath('//*[@data-sc-tab-panel="overview"]')[0]
+        # Owner review 2026-10-11: the status in the header, the training
+        # recommendation on Info — both still live (no pencil).
+        _text, tree = self._get(self._url(tab='info'))
+        panel = tree.xpath('//*[@data-sc-app-shell]')[0]
         live = ' '.join(self._fields_in(panel))
         self.assertIn('"sc_status"', live)
         self.assertIn('"training_recommendation"', live)
@@ -198,7 +201,7 @@ class TestPlayerInline(PlayerInlineCommon):
     # -- UC-7 ------------------------------------------------------------
     def test_edit_page_retired(self):
         self._login_tp()
-        _text, tree = self._get(self._url(tab='overview'))
+        _text, tree = self._get(self._url(tab='injuries'))
         self.assertFalse(tree.xpath('//*[@data-sc-action="player.edit"]'))
         resp = self.url_open('/my/player/edit?patient_id=%s&team_id=%s' % (self.player.id, self.team_a.id),
                              allow_redirects=False)
@@ -220,7 +223,7 @@ class TestPlayerInline(PlayerInlineCommon):
     # -- UC-8 ------------------------------------------------------------
     def test_contacts_inline(self):
         self._login_tp()
-        _text, tree = self._get(self._url(tab='contacts'))
+        _text, tree = self._get(self._url(tab='info'))
         card = tree.xpath('//*[@data-sc-edit-card="contact-%s"]' % self.contact.id)
         self.assertEqual(len(card), 1)
         props = ' '.join(self._fields_in(card[0]))
@@ -232,23 +235,23 @@ class TestPlayerInline(PlayerInlineCommon):
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].get('action'), '/my/player/contact/save')
         back = form[0].xpath('.//input[@name="return_url"]/@value')[0]
-        self.assertTrue('tab=contacts' in back or back.endswith('#contacts'), back)
+        self.assertIn('tab=info', back)
         for url in ('/my/player/contact/add?patient_id=%s' % self.player.id,
                     '/my/player/contact/edit?contact_id=%s' % self.contact.id):
             resp = self.url_open(url, allow_redirects=False)
             self.assertIn(resp.status_code, (302, 303), url)
-            self.assertIn('tab=contacts', resp.headers['Location'], url)
+            self.assertIn('tab=info', resp.headers['Location'], url)
 
     def test_contact_inline_add_round_trip(self):
         self._login_tp()
         resp = self._post_form('/my/player/contact/save', {
             'patient_id': self.player.id, 'name': 'Synthetic Guardian',
             'contact_type': 'father', 'mobile': '555-0100', 'email': '',
-            'return_url': self._url(tab='contacts'),
+            'return_url': self._url(tab='info'),
         })
         self.assertIn(resp.status_code, (302, 303))
         location = resp.headers['Location']
-        self.assertTrue('tab=contacts' in location or location.endswith('#contacts'), location)
+        self.assertIn('tab=info', location)
         self.assertTrue(self.env['sports.patient.contact'].search_count(
             [('patient_id', '=', self.player.id), ('name', '=', 'Synthetic Guardian')]))
 
@@ -285,8 +288,6 @@ class TestPlayerInline(PlayerInlineCommon):
             self.assertEqual(form.xpath('.//input[@name="sc_inline"]/@value'), ['1'])
             self.assertEqual(form.xpath('.//input[@name="team_context_id"]/@value'), [str(self.team_a.id)])
             self.assertTrue(form.xpath('.//input[@name="diagnosis"]'))
-            link = tree.xpath('//*[@data-sc-section="player.active_injuries"]//a[contains(@href, "#sc_new_injury")]')
-            self.assertEqual(len(link), 1)
 
     def test_coach_contacts_tab(self):
         second = self.env['sports.patient.contact'].create({
@@ -294,9 +295,8 @@ class TestPlayerInline(PlayerInlineCommon):
         })
         self._login_coach()
         _text, tree = self._get(self._url(tab='info'))
-        self.assertFalse(tree.xpath('//*[@data-sc-section="player.info.emergency"]'))
-        self.assertIn('contacts', tree.xpath('//nav[@data-sc-tabs]//a/@data-sc-tab'))
-        _text, tree = self._get(self._url(tab='contacts'))
+        # Owner review 2026-10-11: the contacts are on the Info tab.
+        self.assertNotIn('contacts', tree.xpath('//nav[@data-sc-tabs]//a/@data-sc-tab'))
         for contact in (self.contact, second):
             card = tree.xpath('//*[@data-sc-edit-card="contact-%s"]' % contact.id)
             self.assertEqual(len(card), 1, contact.name)

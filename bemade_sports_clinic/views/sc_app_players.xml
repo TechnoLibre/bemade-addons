@@ -226,10 +226,23 @@
                         </p>
                     </div>
                 </div>
+                <!-- Owner review 2026-10-11: the play-status selector in the
+                     header, in place of the status pill (therapists edit it
+                     here; coaches read Match / Practice). -->
+                <div class="o_sc_fields o_sc_hero_status" data-sc-section="player.status">
+                    <t t-if="is_treatment_prof and sc_can('patient.status.edit')">
+                        <t t-set="sc_status_label">Play status</t>
+                        <t t-set="sc_status_undo">Status changed</t>
+                        <t t-call="bemade_sports_clinic.sc_field_autosave">
+                            <t t-set="props" t-value="sc_field_props(player, 'sc_status', sc_status_label, 'segmented', options=sc_status_options, instant=True, undoMessage=sc_status_undo)"/>
+                        </t>
+                    </t>
+                    <div t-else="" class="o_sc_chips" data-sc-section="player.status.readonly">
+                        <span class="o_sc_chip o_sc_chip_ghost"><span>Match:</span> <span t-field="player.match_status"/></span>
+                        <span class="o_sc_chip o_sc_chip_ghost"><span>Practice:</span> <span t-field="player.practice_status"/></span>
+                    </div>
+                </div>
                 <div class="o_sc_chips">
-                    <!-- Updated in place after a status save (sc_app_ui.js). -->
-                    <span t-attf-class="o_sc_chip o_sc_chip_#{sc_player_dot or 'ghost'}"
-                          t-att-data-sc-stage-chip="player.id" t-out="sc_player_chip"/>
                     <span t-if="player.pending_removal" class="o_sc_chip o_sc_chip_ghost">Removal pending</span>
                     <span t-if="player.predicted_return_date" class="o_sc_chip o_sc_chip_ghost">
                         <span>Predicted return:</span> <span t-field="player.predicted_return_date"/>
@@ -256,89 +269,6 @@
                 <t t-set="tabs" t-value="sc_player_tabs"/>
                 <t t-set="active" t-value="sc_player_active_tab"/>
             </t>
-
-            <!-- ============================== Overview =============================== -->
-            <section class="o_sc_tab_panel" data-sc-tab-panel="overview" role="tabpanel"
-                     t-att-hidden="None if sc_player_active_tab == 'overview' else 'hidden'">
-                <div class="o_sc_grid2">
-                    <div class="o_sc_card o_sc_fields" data-sc-section="player.status">
-                        <t t-if="is_treatment_prof and sc_can('patient.status.edit')">
-                            <t t-set="sc_status_label">Play status</t>
-                            <t t-set="sc_status_undo">Status changed</t>
-                            <t t-call="bemade_sports_clinic.sc_field_autosave">
-                                <t t-set="props" t-value="sc_field_props(player, 'sc_status', sc_status_label, 'segmented', options=sc_status_options, instant=True, undoMessage=sc_status_undo)"/>
-                            </t>
-                        </t>
-                        <div t-else="" class="o_sc_chips" data-sc-section="player.status.readonly">
-                            <span class="o_sc_chip o_sc_chip_ghost"><span>Match:</span> <span t-field="player.match_status"/></span>
-                            <span class="o_sc_chip o_sc_chip_ghost"><span>Practice:</span> <span t-field="player.practice_status"/></span>
-                        </div>
-                        <t t-set="sc_training_label">Training Recommendation</t>
-                        <!-- Training recommendation history (owner review
-                             2026-10-10/11): always offered, a green link next
-                             to the label; the sheet re-fetches on every open,
-                             so a change made here shows without a reload. -->
-                        <t t-set="sc_training_history_label">History</t>
-                        <t t-if="is_treatment_prof and sc_can('patient.training.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
-                            <t t-set="props" t-value="sc_field_props(player, 'training_recommendation', sc_training_label, 'textarea', clearable=True, historySheet='sc_training_history_sheet', historyLabel=sc_training_history_label)"/>
-                        </t>
-                        <t t-else="" t-call="bemade_sports_clinic.sc_field_static">
-                            <t t-set="label" t-value="sc_training_label"/>
-                            <t t-set="value" t-value="player.training_recommendation"/>
-                            <t t-set="pre" t-value="True"/>
-                            <t t-set="history_sheet" t-value="'sc_training_history_sheet'"/>
-                            <t t-set="history_label" t-value="sc_training_history_label"/>
-                        </t>
-                    </div>
-                    <t t-call="bemade_sports_clinic.sc_sheet">
-                        <t t-set="sheet_id" t-value="'sc_training_history_sheet'"/>
-                        <t t-set="title">Training recommendation history</t>
-                        <t t-set="lazy_url" t-value="'/my/player/%s/training-history' % player.id"/>
-                        <t t-set="lazy_fresh" t-value="True"/>
-                    </t>
-                    <div class="o_sc_section">
-                        <section class="o_sc_section" data-sc-section="player.active_injuries">
-                            <t t-call="bemade_sports_clinic.sc_section_header">
-                                <t t-set="title">Active injuries</t>
-                                <t t-set="more_url" t-value="sc_player_url + '&amp;tab=injuries#sc_new_injury'"/>
-                                <t t-set="more_label" t-if="is_treatment_prof">Add Injury</t>
-                                <t t-set="more_label" t-else="">Report Injury</t>
-                            </t>
-                            <div t-if="sc_active_injury_rows" class="o_sc_list">
-                                <t t-foreach="sc_active_injury_rows" t-as="row">
-                                    <t t-call="bemade_sports_clinic.sc_entity_row">
-                                        <t t-set="href" t-value="row['url']"/>
-                                        <t t-set="dot" t-value="row['dot']"/>
-                                        <t t-set="title" t-value="row['title']"/>
-                                        <t t-set="subtitle" t-value="row['subtitle']"/>
-                                        <t t-set="row_attrs" t-value="{'data-sc-injury-id': row['id']}"/>
-                                        <span t-if="row['hidden']" class="o_sc_chip o_sc_chip_mauve">Hidden from coaches</span>
-                                    </t>
-                                </t>
-                            </div>
-                            <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                                <t t-set="message">No active injury.</t>
-                            </t>
-                        </section>
-                        <section class="o_sc_section" data-sc-section="player.upcoming">
-                            <t t-call="bemade_sports_clinic.sc_section_header">
-                                <t t-set="title">Next events</t>
-                            </t>
-                            <t t-if="sc_player_events" t-call="bemade_sports_clinic.sc_card">
-                                <dl class="o_sc_kv">
-                                    <t t-foreach="sc_player_events" t-as="ev">
-                                        <dt t-out="ev['when']"/>
-                                        <dd><a t-att-href="ev['url']"><strong t-out="ev['kind']"/> <t t-out="ev['name']"/></a></dd>
-                                    </t>
-                                </dl>
-                            </t>
-                            <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                                <t t-set="message">No upcoming events.</t>
-                            </t>
-                        </section>
-                    </div>
-                </div>
-            </section>
 
             <!-- ============================== Injuries =============================== -->
             <section class="o_sc_tab_panel" data-sc-tab-panel="injuries" role="tabpanel"
@@ -519,6 +449,8 @@
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Last name</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'last_name'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Jersey no.</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'jersey_number'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Position</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'position'"/></t>
+                                <t t-if="sc_can('patient.dob')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Date of birth</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'date_of_birth'"/></t>
+                                <t t-if="sc_can('patient.age') and player.age"><dt>Age</dt><dd t-out="player.age"/></t>
                             </dl>
                             <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
                                 <t t-set="lbl">First name</t>
@@ -529,8 +461,36 @@
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'jersey_number', lbl)"/></t>
                                 <t t-set="lbl">Position</t>
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'position', lbl)"/></t>
+                                <t t-if="is_treatment_prof and sc_can('patient.edit.tp_fields') and sc_can('patient.dob')">
+                                    <t t-set="lbl">Date of birth</t>
+                                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'date_of_birth', lbl, 'date')"/></t>
+                                </t>
                                 <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
                             </div>
+                        </section>
+
+                        <!-- Owner review 2026-10-11: the training recommendation
+                             (always live, with its history) just above the
+                             allergies. -->
+                        <section class="o_sc_card o_sc_fields" data-sc-section="player.training">
+                            <t t-set="sc_training_label">Training Recommendation</t>
+                            <t t-set="sc_training_history_label">History</t>
+                            <t t-if="is_treatment_prof and sc_can('patient.training.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
+                                <t t-set="props" t-value="sc_field_props(player, 'training_recommendation', sc_training_label, 'textarea', clearable=True, historySheet='sc_training_history_sheet', historyLabel=sc_training_history_label)"/>
+                            </t>
+                            <t t-else="" t-call="bemade_sports_clinic.sc_field_static">
+                                <t t-set="label" t-value="sc_training_label"/>
+                                <t t-set="value" t-value="player.training_recommendation"/>
+                                <t t-set="pre" t-value="True"/>
+                                <t t-set="history_sheet" t-value="'sc_training_history_sheet'"/>
+                                <t t-set="history_label" t-value="sc_training_history_label"/>
+                            </t>
+                        <t t-call="bemade_sports_clinic.sc_sheet">
+                            <t t-set="sheet_id" t-value="'sc_training_history_sheet'"/>
+                            <t t-set="title">Training recommendation history</t>
+                            <t t-set="lazy_url" t-value="'/my/player/%s/training-history' % player.id"/>
+                            <t t-set="lazy_fresh" t-value="True"/>
+                        </t>
                         </section>
 
                         <section t-if="is_treatment_prof and sc_can('patient.edit.tp_fields')"
@@ -540,17 +500,11 @@
                                 <t t-set="editable" t-value="True"/>
                             </t>
                             <dl class="o_sc_kv" data-sc-edit-view="read">
-                                <t t-if="sc_can('patient.dob')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Date of birth</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'date_of_birth'"/></t>
-                                <t t-if="sc_can('patient.age') and player.age"><dt>Age</dt><dd t-out="player.age"/></t>
                                 <t t-if="sc_can('patient.allergies')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Allergies</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'allergies'"/></t>
                                 <t t-if="sc_can('patient.internal_notes')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Team Notes</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'team_info_notes'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Last consultation</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'last_consultation_date'"/></t>
                             </dl>
                             <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
-                                <t t-if="sc_can('patient.dob')">
-                                    <t t-set="lbl">Date of birth</t>
-                                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'date_of_birth', lbl, 'date')"/></t>
-                                </t>
                                 <t t-if="sc_can('patient.allergies')">
                                     <t t-set="lbl">Allergies</t>
                                     <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'allergies', lbl, 'textarea', clearable=True)"/></t>
@@ -641,87 +595,85 @@
                                 <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
                             </div>
                         </section>
+                        <!-- Owner review 2026-10-11: emergency contacts on the Info
+                             tab (was a « Contacts » tab), one pencil per contact. -->
+                        <section t-if="sc_can('patient.contacts.tab')" class="o_sc_section" data-sc-section="player.info.emergency_contacts">
+                            <t t-call="bemade_sports_clinic.sc_section_header">
+                                <t t-set="title">Emergency Contacts</t>
+                            </t>
+                        <details class="o_sc_card o_sc_disclosure" data-sc-section="contact.add">
+                            <summary class="o_sc_disclosure_summary">
+                                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                                <span>Add Emergency Contact</span>
+                            </summary>
+                            <form action="/my/player/contact/save" method="post" class="o_sc_form" data-sc-form="contact.add">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="patient_id" t-att-value="player.id"/>
+                                <input type="hidden" name="return_url" t-att-value="sc_contacts_return"/>
+                                <t t-call="bemade_sports_clinic.sc_contact_fields">
+                                    <t t-set="c_name" t-value="''"/>
+                                    <t t-set="c_type" t-value="''"/>
+                                    <t t-set="c_mobile" t-value="''"/>
+                                    <t t-set="c_email" t-value="''"/>
+                                </t>
+                                <div class="o_sc_form_actions">
+                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="contact.add">Add Emergency Contact</button>
+                                </div>
+                            </form>
+                        </details>
+                        <div t-if="sc_player_contacts" class="o_sc_list" data-sc-section="player.contacts">
+                            <t t-foreach="sc_player_contacts" t-as="contact">
+                                <section class="o_sc_card o_sc_edit_card o_sc_contact" t-att-data-sc-contact-id="contact.id"
+                                         t-att-data-sc-edit-card="'contact-%s' % contact.id">
+                                    <div class="o_sc_edit_card_head">
+                                        <h3 class="o_sc_edit_card_title">
+                                            <span t-att-data-sc-display="sc_display_key(contact, 'name')" t-out="contact.name"/>
+                                            <span class="o_sc_chip o_sc_chip_ghost" t-att-data-sc-display="sc_display_key(contact, 'contact_type')"
+                                                  t-out="sc_display(contact, 'contact_type')"/>
+                                        </h3>
+                                        <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1"
+                                                aria-expanded="false" aria-label="Edit" title="Edit">
+                                            <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                                        </button>
+                                    </div>
+                                    <dl class="o_sc_kv" data-sc-edit-view="read">
+                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Mobile</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'mobile'"/></t>
+                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'email'"/></t>
+                                    </dl>
+                                    <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                                        <t t-set="lbl">Name</t>
+                                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'name', lbl)"/></t>
+                                        <t t-set="lbl">Relationship</t>
+                                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'contact_type', lbl, 'select', options=sc_contact_type_options)"/></t>
+                                        <t t-set="lbl">Mobile</t>
+                                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'mobile', lbl, 'tel')"/></t>
+                                        <t t-set="lbl">Email</t>
+                                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'email', lbl, 'email')"/></t>
+                                        <div class="o_sc_form_actions">
+                                            <!-- Deleting stays with therapists (coaches have no unlink ACL). -->
+                                            <button t-if="is_treatment_prof" type="button" class="o_sc_btn o_sc_btn_danger o_sc_btn_sm" data-sc-action="contact.delete"
+                                                    t-att-data-sc-sheet-open="'sc_delete_contact_%s' % contact.id">Delete</button>
+                                            <button type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm" data-sc-edit-done="1">Done</button>
+                                        </div>
+                                    </div>
+                                </section>
+                                <t t-if="is_treatment_prof" t-call="bemade_sports_clinic.sc_confirm_sheet">
+                                    <t t-set="sheet_id" t-value="'sc_delete_contact_%s' % contact.id"/>
+                                    <t t-set="title">Delete this contact?</t>
+                                    <t t-set="message" t-value="contact.name"/>
+                                    <t t-set="action" t-value="'/my/player/contact/delete'"/>
+                                    <t t-set="hidden" t-value="{'contact_id': contact.id, 'return_url': sc_contacts_return}"/>
+                                    <t t-set="confirm_label">Delete</t>
+                                    <t t-set="danger" t-value="True"/>
+                                </t>
+                            </t>
+                        </div>
+                        <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
+                            <t t-set="message">No emergency contacts found</t>
+                        </t>
+                        </section>
                     </div>
                 </div>
-            </section>
-
-            <!-- ============================== Contacts =============================== -->
-            <section t-if="sc_can('patient.contacts.tab')" class="o_sc_tab_panel"
-                     data-sc-tab-panel="contacts" role="tabpanel"
-                     t-att-hidden="None if sc_player_active_tab == 'contacts' else 'hidden'">
-                <!-- Owner review 2026-10-10: contacts are added and edited inline
-                     (one pencil per contact card); the add form posts to the same
-                     route as before and comes back to this tab. -->
-                <details class="o_sc_card o_sc_disclosure" data-sc-section="contact.add">
-                    <summary class="o_sc_disclosure_summary">
-                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
-                        <span>Add Emergency Contact</span>
-                    </summary>
-                    <form action="/my/player/contact/save" method="post" class="o_sc_form" data-sc-form="contact.add">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="patient_id" t-att-value="player.id"/>
-                        <input type="hidden" name="return_url" t-att-value="contacts_tab_return"/>
-                        <t t-call="bemade_sports_clinic.sc_contact_fields">
-                            <t t-set="c_name" t-value="''"/>
-                            <t t-set="c_type" t-value="''"/>
-                            <t t-set="c_mobile" t-value="''"/>
-                            <t t-set="c_email" t-value="''"/>
-                        </t>
-                        <div class="o_sc_form_actions">
-                            <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="contact.add">Add Emergency Contact</button>
-                        </div>
-                    </form>
-                </details>
-                <div t-if="sc_player_contacts" class="o_sc_list" data-sc-section="player.contacts">
-                    <t t-foreach="sc_player_contacts" t-as="contact">
-                        <section class="o_sc_card o_sc_edit_card o_sc_contact" t-att-data-sc-contact-id="contact.id"
-                                 t-att-data-sc-edit-card="'contact-%s' % contact.id">
-                            <div class="o_sc_edit_card_head">
-                                <h3 class="o_sc_edit_card_title">
-                                    <span t-att-data-sc-display="sc_display_key(contact, 'name')" t-out="contact.name"/>
-                                    <span class="o_sc_chip o_sc_chip_ghost" t-att-data-sc-display="sc_display_key(contact, 'contact_type')"
-                                          t-out="sc_display(contact, 'contact_type')"/>
-                                </h3>
-                                <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1"
-                                        aria-expanded="false" aria-label="Edit" title="Edit">
-                                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
-                                </button>
-                            </div>
-                            <dl class="o_sc_kv" data-sc-edit-view="read">
-                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Mobile</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'mobile'"/></t>
-                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'email'"/></t>
-                            </dl>
-                            <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
-                                <t t-set="lbl">Name</t>
-                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'name', lbl)"/></t>
-                                <t t-set="lbl">Relationship</t>
-                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'contact_type', lbl, 'select', options=sc_contact_type_options)"/></t>
-                                <t t-set="lbl">Mobile</t>
-                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'mobile', lbl, 'tel')"/></t>
-                                <t t-set="lbl">Email</t>
-                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(contact, 'email', lbl, 'email')"/></t>
-                                <div class="o_sc_form_actions">
-                                    <!-- Deleting stays with therapists (coaches have no unlink ACL). -->
-                                    <button t-if="is_treatment_prof" type="button" class="o_sc_btn o_sc_btn_danger o_sc_btn_sm" data-sc-action="contact.delete"
-                                            t-att-data-sc-sheet-open="'sc_delete_contact_%s' % contact.id">Delete</button>
-                                    <button type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm" data-sc-edit-done="1">Done</button>
-                                </div>
-                            </div>
-                        </section>
-                        <t t-if="is_treatment_prof" t-call="bemade_sports_clinic.sc_confirm_sheet">
-                            <t t-set="sheet_id" t-value="'sc_delete_contact_%s' % contact.id"/>
-                            <t t-set="title">Delete this contact?</t>
-                            <t t-set="message" t-value="contact.name"/>
-                            <t t-set="action" t-value="'/my/player/contact/delete'"/>
-                            <t t-set="hidden" t-value="{'contact_id': contact.id, 'return_url': contacts_tab_return}"/>
-                            <t t-set="confirm_label">Delete</t>
-                            <t t-set="danger" t-value="True"/>
-                        </t>
-                    </t>
-                </div>
-                <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                    <t t-set="message">No emergency contacts found</t>
-                </t>
             </section>
 
             <!-- ============================= Documents =============================== -->

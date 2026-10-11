@@ -909,8 +909,11 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     # Task 1539 — the player page in the app shell
     # ------------------------------------------------------------------
     SC_INJURY_TONES = {'unverified': 'yellow', 'active': 'red', 'resolved': 'green'}
-    SC_PLAYER_TABS = ('overview', 'injuries', 'info', 'contacts', 'documents', 'notes',
-                      'activities')
+    # Owner review 2026-10-11: no « Overview » (status in the header, the
+    # training recommendation on Info) and no « Contacts » (on Info); the
+    # page opens on « Injuries ». Old ?tab= values still land.
+    SC_PLAYER_TABS = ('injuries', 'info', 'documents', 'notes', 'activities')
+    SC_PLAYER_TAB_MOVED = {'overview': 'injuries', 'contacts': 'info'}
 
     def _sc_player_values(self, player, values, kw):
         """Shell-only render values for ``sc_app_player`` — built from the
@@ -985,19 +988,19 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # One append per tab: babel's extractor would take a literal that
         # follows an _() call in the same list for a term.
         roles = user._sc_app_roles()
-        tabs = [('overview', env._("Overview"))]
-        tabs.append(('injuries', env._("Injuries")))
+        tabs = [('injuries', env._("Injuries"))]
         tabs.append(('info', env._("Info")))
-        if sc_app_roles.can('patient.contacts.tab', roles):
-            tabs.append(('contacts', env._("Contacts")))
         tabs.append(('documents', env._("Documents")))
         if is_tp and sc_app_roles.can('patient.notes.tab', roles):
             tabs.append(('notes', env._("Notes")))
         if can_activities and sc_app_roles.can('patient.activities.tab', roles):
             tabs.append(('activities', env._("Activities")))
         keys = [key for key, _label in tabs]
-        active_tab = kw.get('tab') if kw.get('tab') in keys else 'overview'
-        aliases = {'info': 'patient-info team-info'}
+        requested = self.SC_PLAYER_TAB_MOVED.get(kw.get('tab'), kw.get('tab'))
+        active_tab = requested if requested in keys else 'injuries'
+        # Legacy #fragments (a POST round-trip's return_url) open the tab now
+        # holding them: the contacts are on Info.
+        aliases = {'info': 'patient-info team-info contacts'}
         sc_tabs = [(key, label, '%s&tab=%s' % (base_url, key), aliases.get(key, ''))
                    for key, label in tabs]
 
@@ -1029,6 +1032,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_player_tabs': sc_tabs,
             'sc_player_active_tab': active_tab,
             'sc_player_url': base_url,
+            'sc_contacts_return': '%s&tab=info' % base_url,
             'sc_player_dot': self.SC_STAGE_TONES.get(stage, 'green'),
             'sc_player_chip': stage_labels.get(stage, ''),
             'sc_player_team': values['team'] or player.team_ids[:1],
