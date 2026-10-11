@@ -177,16 +177,7 @@
     <template id="sc_app_activities" name="Sports Clinic App: activities">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['activities']"/>
-            <t t-set="sc_context" t-value="sc_context_title"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
-            <t t-if="context_team and simplified">
-                <t t-set="sc_parent_url" t-value="'/my/team?team_id=%s&amp;tab=activities' % context_team.id"/>
-                <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], '/my/teams'), (context_team.name, '/my/team?team_id=%s' % context_team.id)]"/>
-            </t>
-            <t t-elif="context_event and simplified">
-                <t t-set="sc_parent_url" t-value="'/my/event/%s' % context_event.id"/>
-                <t t-set="sc_crumbs" t-value="[(sc_nav_labels['events'], '/my/events')]"/>
-            </t>
             <t t-if="sc_add_activity_url">
                 <t t-set="sc_add_activity_label">Add Activity</t>
                 <t t-set="sc_primary_action" t-value="{'url': sc_add_activity_url, 'label': sc_add_activity_label, 'key': 'activity.add'}"/>
@@ -236,10 +227,7 @@
                 <t t-set="sc_title">Add Activity</t>
                 <t t-set="sc_form_back" t-value="return_url"/>
             </t>
-            <t t-set="sc_context" t-value="record_name or (activity and activity.res_name) or ''"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
-            <t t-set="sc_parent_url" t-value="sc_form_back"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['activities'], '/my/activities')]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <form t-att-action="'/my/activity/update' if activity else '/my/activity/save'" method="post"
                   class="o_sc_card o_sc_form" data-sc-form="activity.form">
@@ -307,10 +295,7 @@
     <template id="sc_app_activity_detail" name="Sports Clinic App: activity detail">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="activity.summary or activity.activity_type_id.name"/>
-            <t t-set="sc_context" t-value="related_record_name"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
-            <t t-set="sc_parent_url" t-value="sc_related_url or '/my/activities'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['activities'], '/my/activities')]"/>
             <t t-set="sc_edit_label">Edit</t>
             <t t-set="sc_primary_action" t-value="{'url': '/my/activity/%s/edit' % activity.id, 'label': sc_edit_label, 'key': 'activity.edit', 'icon': 'edit'}"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>

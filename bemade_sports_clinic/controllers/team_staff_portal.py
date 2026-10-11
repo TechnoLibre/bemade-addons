@@ -665,8 +665,13 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             })
             response.status_code = 403
             return response
+        # Task 1581: the shared history entry (the standard the other
+        # histories now follow).
         return http.request.render('bemade_sports_clinic.sc_training_history_list', {
-            'history': player._training_recommendation_history(),
+            'entries': [
+                self._sc_history_entry(row['when'], row['author'], row['body'])
+                for row in player._training_recommendation_history()
+            ],
         })
 
     @http.route(route=['/my/player'], type='http',
@@ -937,6 +942,12 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 return 0
         created_id = _int_arg('created')
         opened_id = _int_arg('injury') or created_id
+        # Task 1579: a create from the full « new injury » page lands here —
+        # drop its device draft once the injury exists (even when the viewer,
+        # a coach, does not list unverified injuries).
+        created = env['sports.patient.injury'].sudo().browse(created_id).exists()
+        created_draft_clear = bool(
+            created and created.patient_id == player and created.create_uid == user)
         tp_view = bool(is_tp and user._sc_app_roles() & sc_app_roles.TP)
 
         def _injury_row(injury):
@@ -1036,6 +1047,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_player_dot': self.SC_STAGE_TONES.get(stage, 'green'),
             'sc_player_chip': stage_labels.get(stage, ''),
             'sc_player_team': values['team'] or player.team_ids[:1],
+            'sc_created_draft_clear': created_draft_clear,
             'sc_injury_rows': [_injury_row(i) for i in injuries],
             'sc_is_tp_view': tp_view,
             'sc_injury_stage_options': list(

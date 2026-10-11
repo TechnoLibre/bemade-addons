@@ -5,7 +5,9 @@
  * - segmented page tabs (data-sc-tabs): switch panels in place, keep ?tab=
  *   in the address bar; without JS each tab is a plain link;
  * - sheets: [data-sc-sheet-open="<dialog id>"] opens the <dialog>, lazy body
- *   (data-sc-lazy-url) fetched once through sc_fetch;
+ *   (data-sc-lazy-url) fetched once through sc_fetch — on EVERY open with
+ *   data-sc-lazy-fresh (the histories, task 1581); a [data-sc-sheet-refetch]
+ *   link inside a sheet reloads its body from its href (filter chips);
  * - lazy rows: <details data-sc-lazy-url> fetch their body on first open;
  * - the status toast (sc_fetch errors, offline / back online);
  * - the device draft store: foreign drafts purged on load, every draft
@@ -233,7 +235,8 @@ async function loadLazy(container, url, target) {
     try {
         const html = await scFetch(url, { as: "html" });
         target.innerHTML = html;
-        if (!target.querySelector("li, a, tr")) {
+        // A fragment with its own empty state (task 1581 histories) keeps it.
+        if (!target.querySelector("li, a, tr, .o_sc_empty")) {
             const empty = document.createElement("p");
             empty.className = "o_sc_empty";
             empty.textContent = _t("Nothing to show.");
@@ -266,6 +269,16 @@ document.addEventListener(
 );
 
 // --------------------------------------------------------------- sheets
+function refetchSheet(dialog, url) {
+    const body = dialog.querySelector(".o_sc_sheet_body");
+    dialog.dataset.scLoaded = "0";
+    const loading = document.createElement("p");
+    loading.className = "o_sc_empty o_sc_lazy_loading";
+    loading.textContent = _t("Loading…");
+    body.replaceChildren(loading);
+    return loadLazy(dialog, url, body);
+}
+
 function openSheet(id) {
     const dialog = document.getElementById(id);
     if (!dialog || typeof dialog.showModal !== "function") {
@@ -275,16 +288,13 @@ function openSheet(id) {
         dialog.showModal();
     }
     if (dialog.dataset.scLazyUrl) {
-        const body = dialog.querySelector(".o_sc_sheet_body");
         if (dialog.dataset.scLazyFresh === "1") {
-            // A history that can change on this page: fetched on every open.
-            dialog.dataset.scLoaded = "0";
-            const loading = document.createElement("p");
-            loading.className = "o_sc_empty o_sc_lazy_loading";
-            loading.textContent = _t("Loading…");
-            body.replaceChildren(loading);
+            // A history that can change on this page: fetched on every open
+            // (task 1581: every history of the shell).
+            refetchSheet(dialog, dialog.dataset.scLazyUrl);
+            return;
         }
-        loadLazy(dialog, dialog.dataset.scLazyUrl, body);
+        loadLazy(dialog, dialog.dataset.scLazyUrl, dialog.querySelector(".o_sc_sheet_body"));
     }
 }
 
@@ -297,6 +307,14 @@ document.addEventListener("click", (ev) => {
     if (opener) {
         ev.preventDefault();
         openSheet(opener.dataset.scSheetOpen);
+        return;
+    }
+    // Task 1581: filters INSIDE a lazy sheet (the injury notes' scope
+    // chips) re-fetch its body from their href, the sheet stays open.
+    const refetch = ev.target.closest("dialog.o_sc_sheet [data-sc-sheet-refetch]");
+    if (refetch && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) {
+        ev.preventDefault();
+        refetchSheet(refetch.closest("dialog"), refetch.getAttribute("href"));
         return;
     }
     const closer = ev.target.closest("[data-sc-sheet-close]");

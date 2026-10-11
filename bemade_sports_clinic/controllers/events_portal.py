@@ -568,8 +568,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if return_url:
             # Only allow returning to the portal events list or the app home
             # (prevent open redirects)
-            if not return_url.startswith(EVENT_RETURN_PREFIXES):
-                return_url = None
+            return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
         else:
             # Fallback: infer from referrer (e.g. user navigated via /my/event/<id>)
             # Only accept referrers that point to /my/events to avoid open redirects.
@@ -580,8 +579,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     candidate = parsed.path
                     if parsed.query:
                         candidate = f"{candidate}?{parsed.query}"
-                    if candidate.startswith(EVENT_RETURN_PREFIXES):
-                        return_url = candidate
+                    return_url = self._safe_return_url(
+                        candidate, None, prefixes=EVENT_RETURN_PREFIXES)
             except Exception:
                 return_url = None
 
@@ -673,8 +672,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if return_url and isinstance(return_url, str) and '&amp;' in return_url:
             return_url = return_url.replace('&amp;', '&')
 
-        if return_url and not str(return_url).startswith(EVENT_RETURN_PREFIXES):
-            return_url = None
+        return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
 
         return ('&return_url=%s' % urllib.parse.quote(return_url, safe='')) if return_url else ''
 
@@ -802,8 +800,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return_url = kw.get('return_url')
         if return_url and isinstance(return_url, str) and '&amp;' in return_url:
             return_url = return_url.replace('&amp;', '&')
-        if return_url and not return_url.startswith(EVENT_RETURN_PREFIXES):
-            return_url = None
+        return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
         if not return_url:
             try:
                 ref = http.request.httprequest.referrer
@@ -813,8 +810,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     cand = (qs.get('return_url') or [None])[0]
                     if cand and isinstance(cand, str) and '&amp;' in cand:
                         cand = cand.replace('&amp;', '&')
-                    if cand and cand.startswith(EVENT_RETURN_PREFIXES):
-                        return_url = cand
+                    return_url = self._safe_return_url(
+                        cand, None, prefixes=EVENT_RETURN_PREFIXES)
             except Exception:
                 return_url = None
         

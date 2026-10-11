@@ -514,7 +514,6 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         can_add_directly = self._is_tp_or_system()
         add_search = self._sc_add_player_search(team) if can_add_directly else None
         org = team.sudo().parent_id.name or ''
-        history = team.note_history_ids
         return {
             'sc_team_org': org,
             'sc_dashboard_rows': dashboard_rows,
@@ -525,7 +524,6 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_pending_count': sum(1 for row in roster_rows if row['pending_removal']),
             'sc_can_add_directly': can_add_directly,
             'sc_can_edit_announcement': team._user_can_edit_announcement(),
-            'sc_announcement_history': history,
             'sc_announcement_deadline': (
                 format_date(env, team.announcement_deadline)
                 if team.announcement_deadline else ''),
@@ -771,6 +769,47 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         except Exception as e:
             _logger.error("Error dismissing team announcement: %s", str(e), exc_info=True)
             return request.redirect(f"/my/team?team_id={team_id}")
+
+    # Task 1581: the announcement history action -> (chip tone, state); the
+    # labels are built in _sc_announcement_history_entries (babel extracts
+    # them from the _() calls there).
+    SC_ANNOUNCEMENT_ACTIONS = {
+        'set': ('green', None),
+        'edit': ('ghost', None),
+        'dismiss': ('ghost', 'archived'),
+    }
+
+    def _sc_announcement_history_entries(self, team):
+        env = request.env
+        labels = {
+            'set': env._("Posted"),
+            'edit': env._("Edited"),
+            'dismiss': env._("Archived"),
+        }
+        entries = []
+        for row in team.note_history_ids:
+            tone, state = self.SC_ANNOUNCEMENT_ACTIONS.get(row.action, ('ghost', None))
+            entries.append(self._sc_history_entry(
+                row.note_datetime, row.author_id.name, row.body,
+                action=labels.get(row.action, row.action), tone=tone,
+                state=state or ('' if (row.body or '').strip() else 'cleared')))
+        return entries
+
+    @http.route(['/my/team/<int:team_id>/announcement/history'],
+                type='http', auth='user', website=True, methods=['GET'])
+    def portal_team_announcement_history(self, team_id, **kw):
+        """Task 1581: the team announcement history sheet's body, fetched on
+        EVERY open (a change made on the page shows without a reload). Same
+        gate as the team page (its staff; clinic administrators)."""
+        try:
+            team = self._check_team_access(team_id)
+        except MissingError:
+            return request.not_found()
+        except AccessError as error:
+            return self._forbidden(error)
+        return request.render('bemade_sports_clinic.sc_announcement_history_fragment', {
+            'entries': self._sc_announcement_history_entries(team),
+        })
 
     def _find_existing_patient(self, first_name, last_name, email=None, phone=None):
         """Search for an existing patient by name and contact information.
@@ -1433,14 +1472,10 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
           per-record ir.rules until the team link exists; only then does
           _check_access_to_patient grant the user full record access.
         """
-        return_url = post.get('return_url') or '/my/players'
-        # Only ever redirect to a same-site, absolute path (reject scheme-relative
-        # '//host' and backslash tricks to avoid an open redirect).
-        if (not isinstance(return_url, str)
-                or not return_url.startswith('/')
-                or return_url.startswith('//')
-                or '\\' in return_url):
-            return_url = '/my/players'
+        # Only ever redirect to a same-site, absolute path (the shared
+        # validator, task 1579: no scheme, '//host', backslash or control
+        # character — no open redirect).
+        return_url = self._safe_return_url(post.get('return_url'), '/my/players')
 
         user = request.env.user
         is_tp_admin = self._is_tp_or_system()

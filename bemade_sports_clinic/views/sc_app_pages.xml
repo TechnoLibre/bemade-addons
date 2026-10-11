@@ -204,20 +204,6 @@
                 </form>
             </section>
 
-            <section class="o_sc_section" id="sc_navigation">
-                <t t-call="bemade_sports_clinic.sc_section_header">
-                    <t t-set="title">Navigation</t>
-                </t>
-                <form method="post" action="/my/app/pref" data-sc-pref="1" class="o_sc_segmented o_sc_segmented_full">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <input type="hidden" name="redirect" value="/my/app/more"/>
-                    <button type="submit" name="sc_nav_mode" value="back"
-                            t-att-aria-pressed="'true' if sc_nav_mode == 'back' else 'false'">Back + context</button>
-                    <button type="submit" name="sc_nav_mode" value="crumbs"
-                            t-att-aria-pressed="'true' if sc_nav_mode == 'crumbs' else 'false'">Breadcrumbs</button>
-                </form>
-            </section>
-
             <section class="o_sc_section" id="sc_account">
                 <t t-call="bemade_sports_clinic.sc_section_header">
                     <t t-set="title">Account</t>

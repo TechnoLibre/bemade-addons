@@ -152,16 +152,38 @@ $sc-laptop: 992px;
         flex: none;
     }
 
+    // Task 1579: the breadcrumb trail is the LAPTOP's navigation; phones get
+    // the back chevron + context line. Both are rendered on every sub-page,
+    // the screen width decides (no user setting).
     .o_sc_crumbs {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--sc-space-1);
+        display: none;
         padding: 6px var(--sc-space-4);
         background: var(--sc-surface);
         border-bottom: 1px solid var(--sc-line);
         font-size: var(--sc-text-sm);
         color: var(--sc-fg-2);
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--sc-space-1);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sc-space-1);
+            min-width: 0;
+        }
+
+        li + li::before {
+            content: "›";
+            opacity: 0.5;
+        }
 
         a {
             padding: 4px 2px;
@@ -173,10 +195,6 @@ $sc-laptop: 992px;
                 color: var(--sc-fg);
                 text-decoration: underline;
             }
-        }
-
-        .o_sc_crumb_sep {
-            opacity: 0.5;
         }
 
         .o_sc_crumb_current {
@@ -290,8 +308,15 @@ $sc-laptop: 992px;
         }
 
         .o_sc_crumbs {
+            display: block;
             padding-left: var(--sc-space-5);
             padding-right: var(--sc-space-5);
+        }
+
+        // Laptop: the trail replaces the back chevron and the context line.
+        .o_sc_back,
+        .o_sc_appbar_context {
+            display: none;
         }
 
         .o_sc_rail {

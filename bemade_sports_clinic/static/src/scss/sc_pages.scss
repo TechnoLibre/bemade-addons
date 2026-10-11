@@ -353,6 +353,33 @@ $sc-laptop: 992px;
         }
     }
 
+    // Task 1581: the shared history entry / sheet body (sc_history_entry).
+    .o_sc_history_fragment {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-3);
+    }
+
+    .o_sc_history_meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .o_sc_history_body {
+        margin: 4px 0 0;
+    }
+
+    .o_sc_history_cleared {
+        margin: 4px 0 0;
+        font-style: italic;
+    }
+
+    .o_sc_history_entry[data-sc-history-state="archived"] .o_sc_history_body {
+        color: var(--sc-fg-2);
+    }
+
     // Toast
     .o_sc_toast {
         position: fixed;

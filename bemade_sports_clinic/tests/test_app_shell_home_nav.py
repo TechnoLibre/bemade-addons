@@ -26,8 +26,8 @@ Acceptance criteria covered here:
   « Activities », then « More » — « Clinic », « Events » and « Timesheets »
   move to « More ». Laptop rail: the same plus « Clinic », « Events »,
   « Timesheets » always visible above « More ».
-* UC-H8 Team page: the digest-history sheet's lazy body is themed as a
-  legacy fragment (was white rows with light text in the dark theme).
+* UC-H8 Team page: « History » opens the digest list page (task 1579 retired
+  the digest-history sheet, whose lazy body this used to check).
 * UC-H4 A ``return_url`` that is not a local path is ignored (no open
   redirect through the back chevron).
 """
@@ -82,7 +82,6 @@ class TestAppShellHomeNav(Parity1577Common):
         self.assertEqual(self._back(tree), [HOME])
 
     def test_upcoming_event_crumb_comes_back_home(self):
-        self.tp.sc_nav_mode = 'crumbs'
         _text, tree = self._get('/my/event/%s?return_url=%%2Fmy%%2Fhome' % self.upcoming.id)
         self.assertIn(HOME, tree.xpath('//nav[contains(@class, "o_sc_crumbs")]//a/@href'))
 
@@ -144,7 +143,6 @@ class TestAppShellHomeNav(Parity1577Common):
         self.assertEqual(current, ['teams'])
 
     def test_team_crumbs_point_to_teams_list(self):
-        self.tp.sc_nav_mode = 'crumbs'
         _text, tree = self._get('/my/team?team_id=%s' % self.team_a.id)
         crumbs = tree.xpath('//nav[contains(@class, "o_sc_crumbs")]//a/@href')
         self.assertIn('/my/teams', crumbs)
@@ -232,9 +230,9 @@ class TestAppShellHomeNav(Parity1577Common):
         self.assertIn('events', tree.xpath('//main[@id="sc_content"]//a/@data-sc-nav-key'))
 
     # -- UC-H8 -----------------------------------------------------------
-    def test_digest_history_sheet_body_is_themed(self):
+    def test_digest_history_opens_the_list_page(self):
         _text, tree = self._get('/my/team?team_id=%s' % self.team_a.id)
-        body = tree.xpath('//dialog[@id="sc_digest_history_sheet"]'
-                          '//*[contains(@class, "o_sc_sheet_body")]')
-        self.assertEqual(len(body), 1)
-        self.assertIn('o_sc_legacy', body[0].get('class').split())
+        self.assertFalse(tree.xpath('//dialog[@id="sc_digest_history_sheet"]'))
+        self.assertEqual(
+            tree.xpath('//a[@data-sc-action="team.digest_history"]/@href'),
+            ['/my/team/%s/digest-history' % self.team_a.id])

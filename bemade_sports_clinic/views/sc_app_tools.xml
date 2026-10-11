@@ -17,8 +17,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['timesheets']"/>
             <t t-set="sc_active_nav" t-value="'timesheets'"/>
-            <t t-set="sc_parent_url" t-value="'/my/app/more'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['more'], '/my/app/more')]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
             <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters">
@@ -228,8 +226,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['notepad']"/>
             <t t-set="sc_active_nav" t-value="'notepad'"/>
-            <t t-set="sc_parent_url" t-value="'/my/app/more'"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['more'], '/my/app/more')]"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <div t-if="success == 'note_added'" t-att-data-sc-draft-clear="sc_quick_note_prefix" hidden="hidden"/>
 
@@ -294,10 +290,7 @@
     <template id="sc_app_team_digest" name="Sports Clinic App: team digest">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Daily digest</t>
-            <t t-set="sc_context" t-value="team.name"/>
             <t t-set="sc_active_nav" t-value="'teams'"/>
-            <t t-set="sc_parent_url" t-value="'/my/team?team_id=%s' % team.id"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], '/my/teams'), (team.name, '/my/team?team_id=%s' % team.id)]"/>
             <p class="o_sc_meta" data-sc-section="digest.date">
                 <span t-out="sc_digest_date"/>
                 <t t-if="digest.timezone"> (<t t-out="digest.timezone"/>)</t>
@@ -319,10 +312,7 @@
     <template id="sc_app_team_digest_history" name="Sports Clinic App: team digest history">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">Digest history</t>
-            <t t-set="sc_context" t-value="team.name"/>
             <t t-set="sc_active_nav" t-value="'teams'"/>
-            <t t-set="sc_parent_url" t-value="back_url"/>
-            <t t-set="sc_crumbs" t-value="[(sc_nav_labels['teams'], '/my/teams'), (team.name, '/my/team?team_id=%s' % team.id)]"/>
             <div t-if="sc_digest_rows" class="o_sc_list" data-sc-section="digest.history">
                 <t t-foreach="sc_digest_rows" t-as="row">
                     <t t-call="bemade_sports_clinic.sc_entity_row">
