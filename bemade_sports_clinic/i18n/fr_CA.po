@@ -13041,8 +13041,8 @@ msgstr "associé"
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/models/treatment_note.py:0
-msgid "modified on %(date)s by %(initials)s"
-msgstr "modifié le %(date)s par %(initials)s"
+msgid "modified on %(when)s by %(name)s"
+msgstr "modifié le %(when)s par %(name)s"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
@@ -14654,3 +14654,19 @@ msgstr "Cette blessure ne peut plus être annulée ; supprimez-la depuis sa page
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Visible to coaches"
 msgstr "Visible aux entraîneurs"
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_treatment_note__portal_when_label
+msgid "Written On"
+msgstr "Rédigée le"
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,help:bemade_sports_clinic.field_sports_treatment_note__portal_when_label
+msgid ""
+"Portal caption: the note's date with the time it was written (viewer's time "
+"zone); the date alone when the note is dated another day than it was "
+"written (e.g. backdated)."
+msgstr ""
+"Légende du portail : la date de la note avec l'heure de sa rédaction (fuseau "
+"horaire de l'utilisateur) ; la date seule lorsque la note est datée d'un "
+"autre jour que celui de sa rédaction (p. ex. antidatée)."

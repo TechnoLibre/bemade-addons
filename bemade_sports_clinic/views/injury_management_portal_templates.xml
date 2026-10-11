@@ -440,11 +440,11 @@
                                             </tr>
                                             <t t-foreach="notes" t-as="note">
                                                 <tr>
-                                                    <td><span t-field="note.date"/></td>
+                                                    <td><span t-esc="note.portal_when_label"/></td>
                                                     <td class="text-center">
                                                         <span class="badge text-bg-light border o_sc_note_author"
                                                               t-att-data-author="note.sudo().user_id.name"
-                                                              t-esc="note.author_initials"/>
+                                                              t-esc="note.sudo().user_id.name"/>
                                                     </td>
                                                     <td>
                                                         <t t-if="note.injury_id">

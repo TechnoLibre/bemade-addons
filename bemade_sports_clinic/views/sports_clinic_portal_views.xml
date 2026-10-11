@@ -2606,11 +2606,11 @@
                                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                                             <small class="text-muted">
                                                                 <i class="fa fa-calendar me-1"/>
-                                                                <span t-field="note.date"/>
+                                                                <span t-esc="note.portal_when_label"/>
                                                             </small>
                                                             <span class="badge text-bg-light border o_sc_note_author"
                                                                   t-att-data-author="note.sudo().user_id.name"
-                                                                  t-esc="note.author_initials"/>
+                                                                  t-esc="note.sudo().user_id.name"/>
                                                         </div>
                                                         <div class="mb-2">
                                                             <t t-if="note.injury_id">
