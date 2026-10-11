@@ -75,6 +75,9 @@ export class ScAutosaveField extends Component {
         instant: { type: Boolean, optional: true },
         clearable: { type: Boolean, optional: true },
         undoMessage: { type: String, optional: true },
+        // A history sheet opened from a link next to the label (sc_app_ui).
+        historySheet: { type: String, optional: true },
+        historyLabel: { type: String, optional: true },
         draftKey: { type: String, optional: true },
         // server mode
         model: { type: String, optional: true },
@@ -205,6 +208,11 @@ export class ScAutosaveField extends Component {
         const details = this.inputRef.el && this.inputRef.el.closest("details");
         if (details) {
             details.open = true;
+        }
+        // Inside an edit card's hidden edit view: ask sc_app_ui to open it.
+        const card = this.inputRef.el && this.inputRef.el.closest("[data-sc-edit-card]");
+        if (card) {
+            card.dispatchEvent(new CustomEvent("sc:edit-open", { bubbles: true }));
         }
     }
 

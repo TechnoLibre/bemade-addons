@@ -554,6 +554,58 @@ $sc-laptop: 992px;
         overflow-wrap: anywhere;
     }
 
+    // Player row status line (sc_player_status_line): the legacy card's
+    // Match / Practice badges, injury count and ⚡ « Changements récents »
+    // flag, under the name so they wrap instead of crowding a phone row.
+    .o_sc_row_status {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 6px;
+        margin-top: 4px;
+    }
+
+    .o_sc_status_pill,
+    .o_sc_injury_count {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 8px;
+        border: 1px solid transparent;
+        border-radius: var(--sc-radius-pill);
+        font-size: var(--sc-text-xs);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .o_sc_injury_count {
+        border-color: var(--sc-line);
+        color: var(--sc-fg-2);
+    }
+
+    // Expanded recent-changes detail: « Active injuries » / « Resolved
+    // injuries » subtitles above the injury cards.
+    .o_sc_change_detail_sub {
+        margin: 12px 0 6px;
+        font-size: var(--sc-text-xs);
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--sc-fg-2);
+    }
+
+    .o_sc_recent_pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 8px;
+        border-radius: var(--sc-radius-pill);
+        background: var(--sc-warn);
+        color: var(--sc-tone-fg);
+        font-size: var(--sc-text-xs);
+        font-weight: 600;
+    }
+
     .o_sc_row_trailing {
         display: flex;
         align-items: center;

@@ -205,8 +205,8 @@ const DRAFT_TEXT = "Tour 1542 synthetic draft";
 tours.add("sc_1542_announcement_draft", {
     steps: () => [
         {
-            content: "Open the compose disclosure",
-            trigger: 'details[data-sc-section="team.announcement.edit"] > summary',
+            content: "Open the compose form (the announcement card's pencil)",
+            trigger: '[data-sc-edit-card="announcement"] button[data-sc-edit-toggle]',
             run(helpers) {
                 window.sessionStorage.setItem("sc1542TeamUrl", window.location.href);
                 return helpers.click();
@@ -267,7 +267,7 @@ tours.add("sc_1542_announcement_draft", {
 tours.add("sc_1542_logout_clears_drafts", {
     steps: () => [
         {
-            trigger: 'details[data-sc-section="team.announcement.edit"] > summary',
+            trigger: '[data-sc-edit-card="announcement"] button[data-sc-edit-toggle]',
             run: "click",
         },
         {
@@ -367,7 +367,7 @@ tours.add("sc_1542_sw_kill_switch", {
 tours.add("sc_1542_fr_draft", {
     steps: () => [
         {
-            trigger: 'details[data-sc-section="team.announcement.edit"] > summary',
+            trigger: '[data-sc-edit-card="announcement"] button[data-sc-edit-toggle]',
             run: "click",
         },
         {

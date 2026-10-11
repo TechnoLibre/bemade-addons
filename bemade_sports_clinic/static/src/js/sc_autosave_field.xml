@@ -10,6 +10,8 @@
                 <span t-if="statusLabel" t-attf-class="o_sc_save_state o_sc_save_state_{{ state.status }}" role="status" t-esc="statusLabel"/>
                 <button t-if="props.clearable and state.value and !props.disabled" type="button"
                         class="o_sc_link_btn o_sc_clear_btn" t-on-click="clear">Clear</button>
+                <button t-if="props.historySheet" type="button" class="o_sc_link_btn o_sc_field_history"
+                        t-att-data-sc-sheet-open="props.historySheet" t-esc="props.historyLabel"/>
             </label>
             <div t-if="state.restored" class="o_sc_banner o_sc_draft_banner" role="status">
                 <strong class="o_sc_banner_title">Draft restored</strong>

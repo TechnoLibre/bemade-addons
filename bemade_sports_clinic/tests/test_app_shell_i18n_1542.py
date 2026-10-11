@@ -36,7 +36,7 @@ class TestAppShellI18n1542(TestAppShellI18n1538):
         self.assertIn('lang="fr-CA"', html_tag)
         for term in ('Aperçu', 'Joueurs', 'Activités', 'Ajouter un joueur',
                      'Changements récents', 'Blessés', 'En reprise', 'Disponibles',
-                     "Publier une annonce d'équipe", 'Publier', 'Historique des sommaires',
+                     "Annonce de l'équipe", 'Publier', 'Historique des sommaires',
                      'Événements à venir', 'Par statut', 'Par numéro', 'Chargement…'):
             self.assertIn(term, text, term)
         self._login_coach()

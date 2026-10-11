@@ -581,6 +581,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'chip': stage_labels.get(stage, ''),
                 'accessible': accessible,
                 'changed': player.id in (values.get('changed_player_ids') or ()),
+                'status': player._sc_row_status(),
                 'url': '/my/player?player_id=%s' % player.id if accessible else False,
             })
         active_filters = any(values.get(key) for key in (
@@ -635,11 +636,38 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # exactly that set.
         shown_injury_ids = player.injury_ids.filtered(
             lambda i: i.stage == 'active').ids
+        if kw.get('detail'):
+            # The app shell's team page: the legacy card's whole expandable in
+            # one fragment, each injury's changes inside its own card.
+            values = player._sc_change_detail(role, is_tp, cutoff)
+            values['player'] = player
+            return http.request.render(
+                'bemade_sports_clinic.sc_player_change_detail', values)
         items = player._dashboard_change_items_deduped(role, cutoff, shown_injury_ids)
         return http.request.render(
             'bemade_sports_clinic.portal_card_recent_changes_fragment',
             {'items': items, 'player': player},
         )
+
+    @http.route(route=['/my/player/<int:player_id>/training-history'], type='http',
+                auth='user', website=True)
+    def portal_player_training_history(self, player_id, **kw):
+        """The player page's training recommendation history sheet, fetched
+        on every open (owner review 2026-10-11). Same access as the page;
+        coaches see it too (they see the recommendation)."""
+        try:
+            player = self._check_access_to_patient(int(player_id))
+        except UserError as e:
+            response = http.request.render('http_routing.http_error', {
+                'status_code': 403,
+                'status_message': 'Forbidden',
+                'error_message': str(e),
+            })
+            response.status_code = 403
+            return response
+        return http.request.render('bemade_sports_clinic.sc_training_history_list', {
+            'history': player._training_recommendation_history(),
+        })
 
     @http.route(route=['/my/player'], type='http',
                 auth='user', website=True)
@@ -992,7 +1020,6 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_active_injury_rows': [_injury_row(i) for i in active],
             'sc_player_events': events,
             'sc_status_options': self._sc_status_options(),
-            'sc_training_history': player._training_recommendation_history(),
             # Inline « Add Injury » card (owner review 2026-10-10): the new
             # injury page's draft prefix and consent choices.
             'sc_new_injury_prefix': 'sports.patient.%s.new_injury.' % player.id,

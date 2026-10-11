@@ -20,7 +20,8 @@ Acceptance criteria covered here:
   server-side (the announcement is unchanged).
 * UC-T5 (AC2) The dashboard rows are role-filtered as today: a change only
   therapists may see (TP stamp) is listed for the therapist and NOT for the
-  coach; changed rows lazy-load the SAME fragment route as the legacy card.
+  coach; changed rows lazy-load the SAME fragment route as the legacy card
+  (``detail=1``: the card's whole expandable, see test_app_shell_team_changes).
 * UC-T6 (AC2) Activities tab hidden for a staff role « other » (no
   mail.activity ACL), as today.
 """
@@ -185,14 +186,20 @@ class TestAppShellTeam1542(AppShellCommon):
 
     # -- UC-T5 -----------------------------------------------------------
     def test_dashboard_rows_role_filtered(self):
+        # Only players with changes to show are listed (presence, see
+        # test_app_shell_team_changes UC-RC12); presence is mocked as « all ».
         self._switch(True)
+        Patient = type(self.env['sports.patient'])
+        everyone = {'players': {self.player.id, self.player_tp_only.id}, 'injuries': set()}
         self._login_tp()
-        _text, tree = self._get(self.url)
+        with patch.object(Patient, '_dashboard_card_presence', return_value=everyone):
+            _text, tree = self._get(self.url)
         tp_rows = self._row_ids(tree, 'team.recent_changes')
         self.assertIn(self.player.id, tp_rows)
         self.assertIn(self.player_tp_only.id, tp_rows)
         self._login_coach()
-        _text, tree = self._get(self.url)
+        with patch.object(Patient, '_dashboard_card_presence', return_value=everyone):
+            _text, tree = self._get(self.url)
         coach_rows = self._row_ids(tree, 'team.recent_changes')
         self.assertIn(self.player.id, coach_rows)
         self.assertNotIn(self.player_tp_only.id, coach_rows)
@@ -204,7 +211,7 @@ class TestAppShellTeam1542(AppShellCommon):
                           return_value={'players': {self.player.id}, 'injuries': set()}):
             _text, tree = self._get(self.url)
         urls = tree.xpath('//details[@data-sc-player-id="%s"]/@data-sc-lazy-url' % self.player.id)
-        self.assertEqual(urls, ['/my/player/%s/recent-changes' % self.player.id])
+        self.assertEqual(urls, ['/my/player/%s/recent-changes?detail=1' % self.player.id])
         resp = self.url_open(urls[0])
         self.assertEqual(resp.status_code, 200)
 

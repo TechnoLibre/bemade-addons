@@ -157,6 +157,13 @@ function setCardEditing(card, editing) {
     }
 }
 
+document.addEventListener("sc:edit-open", (ev) => {
+    const card = ev.target.closest && ev.target.closest("[data-sc-edit-card]");
+    if (card && !card.dataset.scEditOpen) {
+        setCardEditing(card, true);
+    }
+});
+
 document.addEventListener("click", (ev) => {
     const toggle = ev.target.closest && ev.target.closest("[data-sc-edit-toggle]");
     const done = !toggle && ev.target.closest && ev.target.closest("[data-sc-edit-done]");
@@ -237,7 +244,16 @@ function openSheet(id) {
         dialog.showModal();
     }
     if (dialog.dataset.scLazyUrl) {
-        loadLazy(dialog, dialog.dataset.scLazyUrl, dialog.querySelector(".o_sc_sheet_body"));
+        const body = dialog.querySelector(".o_sc_sheet_body");
+        if (dialog.dataset.scLazyFresh === "1") {
+            // A history that can change on this page: fetched on every open.
+            dialog.dataset.scLoaded = "0";
+            const loading = document.createElement("p");
+            loading.className = "o_sc_empty o_sc_lazy_loading";
+            loading.textContent = _t("Loading…");
+            body.replaceChildren(loading);
+        }
+        loadLazy(dialog, dialog.dataset.scLazyUrl, body);
     }
 }
 

@@ -15,13 +15,20 @@ Acceptance criteria covered here:
 * UC-PS5 Training recommendation history (like the team announcement's):
   every change (from the field's tracking) listed newest first with date,
   author and the text set (« Cleared » when emptied), in a sheet opened from
-  the training recommendation card; no history = no button.
+  the training recommendation card. Owner review 2026-10-11: the link is
+  ALWAYS there, green (a link button), next to the « Training
+  Recommendation » label, for therapists and coaches; the sheet loads the
+  list fresh on every open (``/my/player/<id>/training-history``), so a
+  change made on the page shows without a reload (browser half: the
+  ``sc_training_history_refresh`` tour).
 * UC-PS6 The player page's injuries list: current injuries (active,
   unverified) first, then resolved ones; each group by injury date, newest
   first.
 * UC-PS4 The app bar shows « #12 First Last » with « team · position »
   as its context line.
 """
+import json
+
 from odoo import fields
 from odoo.tests import tagged
 
@@ -101,28 +108,48 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
         }, allow_redirects=False)
         self.assertEqual(resp.status_code, 200, resp.text)
 
+    def _history_link(self, tree):
+        """The link sits in the training field's label row, green: a coach's
+        read-only field renders it server-side; a therapist's autosave field
+        draws it in the browser from its props (the tour clicks it)."""
+        links = tree.xpath(
+            '//*[@data-sc-section="player.status"]'
+            '//*[contains(@class, "o_sc_field_label")]'
+            '//*[@data-sc-sheet-open="sc_training_history_sheet"][contains(@class, "o_sc_link_btn")]')
+        fields_ = [json.loads(c.get('props')) for c in tree.xpath(
+            '//*[@data-sc-section="player.status"]//owl-component')]
+        owl = [f for f in fields_ if f.get('field') == 'training_recommendation'
+               and f.get('historySheet') == 'sc_training_history_sheet' and f.get('historyLabel')]
+        self.assertEqual(len(links) + len(owl), 1)
+        sheet = tree.xpath('//dialog[@id="sc_training_history_sheet"]')[0]
+        self.assertEqual(sheet.get('data-sc-lazy-url'),
+                         '/my/player/%s/training-history' % self.player.id)
+        self.assertEqual(sheet.get('data-sc-lazy-fresh'), '1')
+        return sheet
+
     def test_training_recommendation_history(self):
         self._login_tp()
         _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
-        self.assertFalse(tree.xpath('//*[@data-sc-sheet-open="sc_training_history_sheet"]'))
+        self._history_link(tree)  # always present, even with no history
+        url = '/my/player/%s/training-history' % self.player.id
+        _text, tree = self._get(url)
+        self.assertFalse(tree.xpath('//li'))
         self._save_training('Rest two days')
         self._save_training('Light jog only')
         self._save_training('')
-        _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
-        self.assertTrue(tree.xpath(
-            '//*[@data-sc-section="player.status"]//*[@data-sc-sheet-open="sc_training_history_sheet"]'))
-        items = tree.xpath('//dialog[@id="sc_training_history_sheet"]//li')
-        texts = [li.text_content() for li in items]
-        self.assertEqual(len(items), 3, texts)
+        _text, tree = self._get(url)
+        texts = [li.text_content() for li in tree.xpath('//li')]
+        self.assertEqual(len(texts), 3, texts)
         self.assertIn('Cleared', texts[0])
         self.assertIn('Light jog only', texts[1])
         self.assertIn('Rest two days', texts[2])
         self.assertIn(self.tp.name, texts[0])
-        # A coach sees the same history (they see the recommendation).
+        # A coach sees the same link and history (they see the recommendation).
         self._login_coach()
         _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
-        self.assertEqual(len(tree.xpath('//dialog[@id="sc_training_history_sheet"]//li')), 3)
-
+        self._history_link(tree)
+        _text, tree = self._get(url)
+        self.assertEqual(len(tree.xpath('//li')), 3)
 
     # -- UC-PS6 ----------------------------------------------------------
     def test_injuries_current_first_then_newest(self):
@@ -156,8 +183,13 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
 @tagged('post_install', '-at_install')
 class TestAppShellPlayerStatusTour(PlayerStatusCommon):
 
+    def test_training_history_refresh(self):
+        self.start_tour('/my/player?player_id=%s' % self.player.id,
+                        'sc_training_history_refresh', login='pc.tp@example.com')
+
     def test_status_pill_refresh(self):
         self.start_tour('/my/player?player_id=%s' % self.player.id,
                         'sc_status_pill_refresh', login='pc.tp@example.com')
         self.player.invalidate_recordset()
         self.assertEqual((self.player.match_status, self.player.practice_status), ('no', 'no'))
+

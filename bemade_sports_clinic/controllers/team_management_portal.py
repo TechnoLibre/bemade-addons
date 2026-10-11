@@ -436,6 +436,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'chip': stage_labels.get(stage, ''),
             'url': '/my/player?player_id=%s&team_id=%s' % (player.id, team.id),
             'pending_removal': bool(player.pending_removal),
+            'status': player._sc_row_status(),
         }
 
     def _sc_team_values(self, team, values):
@@ -446,15 +447,22 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         stage_labels = dict(
             env['sports.patient']._fields['stage']._description_selection(env))
         show_position = team.show_position_on_dashboard
+        # « Recent changes » lists only players with something to show (the
+        # ⚡ presence rule). A recent activity stamp whose changes net to
+        # nothing (owner review 2026-10-11) is not a change: such a red or
+        # yellow player joins « Other players to watch » instead.
         changed = set(values.get('changed_player_ids') or ())
         dashboard_rows = []
-        for player in values['dashboard_players']:
+        for player in values['dashboard_players'].filtered(lambda p: p.id in changed):
             row = self._sc_player_row(player, team, stage_labels, show_position)
-            row['changed'] = player.id in changed
+            row['changed'] = True
             dashboard_rows.append(row)
+        quiet = values['dashboard_players'].filtered(
+            lambda p: p.id not in changed and p.stage in ('no_play', 'practice_ok'))
         watch_rows = [
             self._sc_player_row(player, team, stage_labels, show_position)
-            for player in team.dashboard_watchlist_patient_ids
+            for player in (team.dashboard_watchlist_patient_ids | quiet).sorted(
+                key=lambda p: (p.sort_order, p.last_name or '', p.first_name or ''))
         ]
         roster_rows = [
             self._sc_player_row(player, team, stage_labels)

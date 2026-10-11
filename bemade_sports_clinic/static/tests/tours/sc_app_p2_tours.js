@@ -229,6 +229,59 @@ tours.add("sc_status_pill_refresh", {
     ],
 });
 
+// ------------- player page: training history refreshes without a reload
+tours.add("sc_training_history_refresh", {
+    steps: () => [
+        {
+            content: "Open the (empty) training history; mark the page to detect a reload",
+            trigger: '[data-sc-section="player.status"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
+            run(helpers) {
+                window.__scTrainingNoReload = true;
+                helpers.click();
+            },
+        },
+        {
+            content: "Nothing yet",
+            trigger: "dialog#sc_training_history_sheet[open] .o_sc_empty:not(.o_sc_lazy_loading)",
+        },
+        {
+            content: "Close the sheet",
+            trigger: "dialog#sc_training_history_sheet[open] [data-sc-sheet-close]",
+            run: "click",
+        },
+        {
+            content: "Type a recommendation",
+            trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] textarea',
+            run: "edit Synthetic bike only",
+        },
+        {
+            content: "Leave the field so it saves",
+            trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] textarea',
+            run() {
+                this.anchor.blur();
+            },
+        },
+        {
+            content: "Saved",
+            trigger: '.o_sc_autosave[data-sc-field="training_recommendation"][data-sc-state="saved"]',
+        },
+        {
+            content: "Open the history again",
+            trigger: '[data-sc-section="player.status"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
+            run: "click",
+        },
+        {
+            content: "The new recommendation is listed, without a reload",
+            trigger: "dialog#sc_training_history_sheet[open] li:contains(Synthetic bike only)",
+            run() {
+                if (!window.__scTrainingNoReload) {
+                    throw new Error("the page reloaded");
+                }
+            },
+        },
+    ],
+});
+
 // ------------- player page: one pencil per card, read view updates in place
 tours.add("sc_player_inline_edit", {
     steps: () => [
