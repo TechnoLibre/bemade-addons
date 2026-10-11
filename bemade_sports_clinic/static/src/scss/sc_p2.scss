@@ -522,3 +522,25 @@ $sc-p2-laptop: 992px;
         gap: 0;
     }
 }
+
+// Grouped lists (events, timesheets: « Group by », owner review 2026-10-11).
+.o_sc_app {
+    .o_sc_group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-2);
+
+        + .o_sc_group {
+            margin-top: var(--sc-space-3);
+        }
+    }
+
+    .o_sc_group_title {
+        margin: 0;
+        font-size: var(--sc-text-xs);
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--sc-fg-2);
+    }
+}
