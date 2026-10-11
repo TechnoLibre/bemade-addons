@@ -296,7 +296,8 @@ def _injury_write(ctrl, injury, field, value):
         if stage == 'resolved' and not injury.resolution_date:
             vals['resolution_date'] = fields.Date.context_today(injury)
         injury.write(vals)
-        return {}
+        # Owner review 2026-10-11: the page shows the date at once.
+        return {'also_fields': ['resolution_date']} if 'resolution_date' in vals else {}
     if field == 'hidden_from_coaches':
         injury.write({field: str(value).lower() in _TRUTHY})
         return {}
@@ -990,6 +991,15 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'value': self._sc_save_value(record, field),
                 'display': self._sc_save_display(record, field),
             }
+            # Other fields the write hook set along (e.g. an injury's
+            # resolution date with « Resolved »), so the page updates them
+            # in place: {field: {value, display}}.
+            also = extra.pop('also_fields', None) or ()
+            if also:
+                payload['also'] = {name: {
+                    'value': self._sc_save_value(record, name),
+                    'display': self._sc_save_display(record, name),
+                } for name in also}
             payload.update(extra)
             return self._sc_save_json(payload)
         except (AccessError, MissingError):

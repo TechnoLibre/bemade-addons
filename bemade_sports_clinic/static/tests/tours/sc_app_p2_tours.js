@@ -285,6 +285,43 @@ tours.add("sc_injury_inline_create", {
     ],
 });
 
+// ------------- player page: « Resolved » fills the resolution date in place
+tours.add("sc_injury_resolve_date", {
+    steps: () => [
+        {
+            content: "The injury is open; mark the page and edit it",
+            trigger: ".o_sc_injury_item[open] [data-sc-edit-toggle]",
+            run(helpers) {
+                window.__scResolveNoReload = true;
+                helpers.click();
+            },
+        },
+        {
+            content: "No resolution date yet",
+            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input',
+            run() {
+                if (this.anchor.value) {
+                    throw new Error(`resolution date already set: ${this.anchor.value}`);
+                }
+            },
+        },
+        {
+            content: "Resolve",
+            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="stage"] button[data-sc-value="resolved"]',
+            run: "click",
+        },
+        {
+            content: "The resolution date shows at once (no reload)",
+            trigger: `.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input:value(${new Date().getFullYear()})`,
+            run() {
+                if (!window.__scResolveNoReload) {
+                    throw new Error("the page reloaded");
+                }
+            },
+        },
+    ],
+});
+
 // ------------- player page: training history refreshes without a reload
 tours.add("sc_training_history_refresh", {
     steps: () => [

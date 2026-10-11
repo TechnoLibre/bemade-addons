@@ -2127,13 +2127,13 @@ class Patient(models.Model):
         } for tracking in trackings]
 
     def _portal_heading_name(self):
-        """« #12 First Last » of ONE patient for single-patient headings (the
-        player page H1, the clinic dossier card) — ``name`` alone without a
-        number. Breadcrumbs keep the bare ``name``."""
+        """Single-patient headings (the player page title, the clinic dossier
+        card, the injury pages' context line). Owner review 2026-10-11: the
+        same « #12 Last, First » as every list (``_portal_list_name``), so a
+        heading never reads in the reverse order of the line below it.
+        Breadcrumbs keep the bare ``name``."""
         self.ensure_one()
-        label = self._jersey_label()
-        name = self.name or ""
-        return "%s %s" % (label, name) if label else name
+        return self._portal_list_name()
 
     def _portal_combo_key(self):
         """Normalized « last first » search key of ONE patient (what the

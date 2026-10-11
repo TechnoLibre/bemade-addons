@@ -24,8 +24,9 @@ Acceptance criteria covered here:
 * UC-PS6 The player page's injuries list: current injuries (active,
   unverified) first, then resolved ones; each group by injury date, newest
   first.
-* UC-PS4 The app bar shows « #12 First Last » with « team · position »
-  as its context line.
+* UC-PS4 The app bar shows « #12 Last, First » (owner review 2026-10-11:
+  the same order as the hero below it and every list) with « team ·
+  position » as its context line.
 """
 import json
 
@@ -93,7 +94,9 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
         self._login_tp()
         _text, tree = self._get('/my/player?player_id=%s&team_id=%s' % (self.player.id, self.team_a.id))
         title = tree.xpath('//*[contains(@class, "o_sc_appbar_title_text")]')[0].text_content().strip()
-        self.assertEqual(title, '#12 %s' % self.player.name)
+        # Owner review 2026-10-11: « #12 Last, First », as the hero below it.
+        self.assertEqual(title, self.player._portal_list_name())
+        self.assertIn(', ', title)
         context = tree.xpath('//*[contains(@class, "o_sc_appbar_context")]')[0].text_content().strip()
         self.assertEqual(context, '%s · Linebacker' % self.team_a.name)
 

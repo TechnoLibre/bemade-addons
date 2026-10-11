@@ -110,10 +110,32 @@ export class ScAutosaveField extends Component {
                 this.save();
             }
         };
+        // A sibling field's save that also set THIS field (the save answers
+        // it under « also », e.g. « Resolved » → the resolution date).
+        this.onSiblingSaved = (ev) => {
+            const detail = ev.detail || {};
+            const also = detail.result && detail.result.also;
+            if (
+                !also ||
+                !(this.props.field in also) ||
+                detail.model !== this.props.model ||
+                detail.recordId !== this.props.recordId ||
+                ["dirty", "saving"].includes(this.state.status)
+            ) {
+                return;
+            }
+            this.state.value = asText(also[this.props.field].value);
+            this.lastSaved = this.state.value;
+            this.writeDate = detail.result.write_date;
+        };
+        if (this.isServer) {
+            document.addEventListener("sc:saved", this.onSiblingSaved);
+        }
         onMounted(() => this.restore());
         onWillUnmount(() => {
             clearTimeout(this.timer);
             window.removeEventListener("online", this.onOnline);
+            document.removeEventListener("sc:saved", this.onSiblingSaved);
         });
         if (this.isServer) {
             window.addEventListener("online", this.onOnline);

@@ -26,6 +26,10 @@ Acceptance criteria:
 * UC-IJ6 A therapist sees « Consent to complete » on an injury without
   parental consent; a coach never does.
 * UC-IJ7 The card and the injury cards render in French (fr_CA).
+* UC-IJ8 (owner 2026-10-11) Setting the status to « Resolved » answers the
+  resolution date it set (value + display), so the open card's date field and
+  read view show it at once, without a reload (browser half: the
+  ``sc_injury_resolve_date`` tour).
 """
 from datetime import timedelta
 from urllib.parse import urlparse
@@ -195,6 +199,16 @@ class TestAppShellInjuryInline(PlayerInlineCommon):
         self.assertNotIn('"internal_notes"', fields_)
         self.assertNotIn('"parental_consent"', fields_)
 
+    # -- UC-IJ8 ----------------------------------------------------------
+    def test_resolve_answers_resolution_date(self):
+        self.injury.sudo().write({'resolution_date': False})
+        self._login_tp()
+        resp = self._save(self.injury, 'stage', 'resolved')
+        self.assertEqual(resp.status_code, 200, resp.text)
+        also = resp.json().get('also') or {}
+        today = fields.Date.context_today(self.injury)
+        self.assertEqual(also.get('resolution_date', {}).get('value'), fields.Date.to_string(today))
+        self.assertTrue(also['resolution_date'].get('display'))
 
 @tagged('post_install', '-at_install')
 class TestAppShellInjuryInlineTour(PlayerInlineCommon):
@@ -225,3 +239,17 @@ class TestAppShellInjuryInlineFr(TestAppShellI18n1538):
                      'Consentement à compléter', 'Notes de traitement, documents et historique',
                      'Date de la blessure'):
             self.assertIn(term, text, term)
+
+
+@tagged('post_install', '-at_install')
+class TestAppShellInjuryResolveTour(PlayerInlineCommon):
+    """UC-IJ8 in the browser."""
+
+    def test_resolve_refreshes_date(self):
+        self._switch(True)
+        self.injury.sudo().write({'resolution_date': False})
+        self.start_tour(self._url(tab='injuries', team_id=self.team_a.id, injury=self.injury.id),
+                        'sc_injury_resolve_date', login='pc.tp@example.com')
+        self.injury.invalidate_recordset()
+        self.assertEqual(self.injury.stage, 'resolved')
+        self.assertTrue(self.injury.resolution_date)

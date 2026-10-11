@@ -78,6 +78,11 @@ document.addEventListener("sc:saved", (ev) => {
             el.textContent = result.display || "—";
         }
     }
+    for (const [name, shown] of Object.entries(result.also || {})) {
+        for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${name}"]`)) {
+            el.textContent = shown.display || "—";
+        }
+    }
     const card = ev.target && ev.target.closest && ev.target.closest("[data-sc-edit-card]");
     for (const opened of document.querySelectorAll("[data-sc-edit-card][data-sc-edit-open]")) {
         opened.dataset.scEditChanged = "1";
