@@ -155,3 +155,4 @@ from . import test_app_shell_session_toast_1583
 from . import test_app_shell_event_timesheets_1584
 from . import test_app_shell_tap_links_1585
 from . import test_activity_attachment_download
+from . import test_app_shell_note_1587

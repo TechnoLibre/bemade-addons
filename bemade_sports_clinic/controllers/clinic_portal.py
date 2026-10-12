@@ -1042,8 +1042,7 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         editable = values['editable_note_ids']
         for note in values['treatment_notes']:
             if note.id in editable:
-                note_props[note.id] = self._sc_field_props(
-                    note, 'note', env._("Note"), 'textarea')
+                note_props[note.id] = self._sc_note_edit_props(note)
         injury_rows = []
         stage_labels = values['injury_stage_labels']
         for injury in values['active_injuries']:

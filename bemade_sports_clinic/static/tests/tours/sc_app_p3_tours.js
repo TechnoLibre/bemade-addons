@@ -173,3 +173,57 @@ tours.add("sc_1540_notepad", {
         },
     ],
 });
+
+// ------------- task 1587: a note's pencil edit changes its date and injury
+const NOTE_CARD = '[data-sc-edit-card^="note-"]';
+
+tours.add("sc_1587_note_date_injury", {
+    steps: () => [
+        {
+            content: "Open the note's pencil",
+            trigger: `${NOTE_CARD} button[data-sc-edit-toggle]`,
+            run: "click",
+        },
+        {
+            content: "Change the note's date",
+            trigger: `${NOTE_CARD} .o_sc_autosave[data-sc-field="date"] input[type="date"]`,
+            run() {
+                this.anchor.value = "2026-02-14";
+                this.anchor.dispatchEvent(new Event("input", { bubbles: true }));
+                this.anchor.dispatchEvent(new Event("change", { bubbles: true }));
+            },
+        },
+        {
+            content: "The date is saved",
+            trigger: `${NOTE_CARD} .o_sc_autosave[data-sc-field="date"][data-sc-state="saved"]`,
+        },
+        {
+            content: "Link the note to another injury of the player",
+            trigger: `${NOTE_CARD} .o_sc_autosave[data-sc-field="injury_id"] select`,
+            run() {
+                const option = [...this.anchor.options].find((opt) => opt.text === "Synthetic strain");
+                assert(option, "the player's open injury is offered");
+                assert(this.anchor.options[0].value === "", "« General note » comes first");
+                this.anchor.value = option.value;
+                this.anchor.dispatchEvent(new Event("change", { bubbles: true }));
+            },
+        },
+        {
+            content: "The injury is saved",
+            trigger: `${NOTE_CARD} .o_sc_autosave[data-sc-field="injury_id"][data-sc-state="saved"]`,
+        },
+        {
+            content: "Done: the card reloads",
+            trigger: `${NOTE_CARD} [data-sc-edit-done]`,
+            run: "click",
+            expectUnloadPage: true,
+        },
+        {
+            content: "The meta line shows the new injury",
+            trigger: `${NOTE_CARD} .o_sc_note_meta:contains("Synthetic strain")`,
+            run() {
+                assert(!this.anchor.textContent.includes("Synthetic old bruise"), "old injury still shown");
+            },
+        },
+    ],
+});
