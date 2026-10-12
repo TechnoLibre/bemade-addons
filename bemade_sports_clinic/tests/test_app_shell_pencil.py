@@ -11,8 +11,8 @@ Acceptance criteria:
 * UC-PE2 A coach's injury page: the same cards with only the coach's own
   editable fields (date, external notes; diagnosis while unverified).
 * UC-PE3 Treatment note cards: the author's (or a clinic admin's) note shows
-  its text with a pencil revealing the autosave field; another therapist's
-  note has no pencil and no field.
+  its text with a pencil revealing its autosave fields (note, date, injury —
+  task 1587); another therapist's note has no pencil and no field.
 * UC-PE5 Activity page: one pencil card (summary, due date, assignee, note —
   the type stays read-only, as the edit route always treated it); the
   separate edit page leads to the activity page in the shell.
@@ -119,7 +119,7 @@ class TestAppShellPencil(AppShellCommon):
         self._login_tp()
         _text, tree = self._get('/my/player?player_id=%s&tab=notes' % self.player.id)
         card, edit = self._card(tree, 'note-%s' % self.mine.id)
-        self.assertEqual([f['field'] for f in self._fields(edit)], ['note'])
+        self.assertEqual([f['field'] for f in self._fields(edit)], ['note', 'date', 'injury_id'])
         self.assertIn('Synthetic mine', card.xpath('.//*[@data-sc-edit-view="read"]')[0].text_content())
         theirs = tree.xpath('//*[@data-sc-note-id="%s"]' % self.theirs.id)[0]
         self.assertFalse(theirs.xpath('.//button[@data-sc-edit-toggle]'))

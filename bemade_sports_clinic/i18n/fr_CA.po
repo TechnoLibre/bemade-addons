@@ -4481,6 +4481,8 @@ msgid ""
 msgstr "Les données sont hébergées au Québec. Responsable de la protection des renseignements personnels : Denis Durepos — admin@lefitcrew.com. Vous pouvez en tout temps demander l'accès à vos renseignements, leur rectification ou le retrait de votre consentement."
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__note_datetime
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team_note_history__note_datetime
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_treatment_note__date
@@ -4494,7 +4496,7 @@ msgstr "Les données sont hébergées au Québec. Responsable de la protection d
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
 msgid "Date"
-msgstr ""
+msgstr "Date"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_search
@@ -6237,6 +6239,7 @@ msgstr "Blessures (audit)"
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 #: code:addons/bemade_sports_clinic/models/sc_app_nav.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_document__injury_id
@@ -7594,6 +7597,7 @@ msgstr "Non jumelée"
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 #: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
@@ -7610,7 +7614,7 @@ msgstr "Non jumelée"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_quick_note_form
 msgid "Note"
-msgstr ""
+msgstr "Note"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__note_history_ids
@@ -14731,3 +14735,20 @@ msgstr "<span>Demander l'ajout d'un joueur</span>"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Add a therapist…"
 msgstr "Ajouter un thérapeute…"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_card
+msgid "<span>General note</span>"
+msgstr "<span>Note générale</span>"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "General note"
+msgstr "Note générale"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "The selected injury does not belong to this player."
+msgstr "La blessure choisie n'appartient pas à ce joueur."

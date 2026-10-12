@@ -776,7 +776,7 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         env = request.env
         user = env.user
         note_props = {
-            note.id: self._sc_field_props(note, 'note', env._("Note"), 'textarea')
+            note.id: self._sc_note_edit_props(note)
             for note in notes if note._can_portal_edit(user)
         }
         injuries = patient.injury_ids

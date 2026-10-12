@@ -1019,8 +1019,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         note_props = {}
         for note in values['treatment_notes']:
             if note.id in editable:
-                note_props[note.id] = self._sc_field_props(
-                    note, 'note', env._("Note"), 'textarea')
+                note_props[note.id] = self._sc_note_edit_props(note)
 
         all_teams = player.sudo().team_ids
         readable = set(env['sports.team'].search([('id', 'in', all_teams.ids)]).ids)

@@ -350,13 +350,15 @@
     <!--
         Task 1539 — treatment-note card: text, author initials + date, the
         « modifié » stamp, the linked injury. Variables: note, injury_url
-        (link of the linked injury or False), edit_props (JSON of the note's
-        server autosave field when the viewer may edit it, else False).
+        (link of the linked injury or False), edit_props (list of the JSON
+        props of the note's server autosave fields — note, date, injury (task
+        1587) — when the viewer may edit it, else False).
     -->
     <template id="sc_note_card" name="App shell: note card">
         <!-- Owner review 2026-10-11: an editable note is a pencil card. -->
         <article t-attf-class="o_sc_card o_sc_note_card #{'o_sc_edit_card' if edit_props else ''}" t-att-data-sc-note-id="note.id"
-                 t-att-data-sc-edit-card="('note-%s' % note.id) if edit_props else None">
+                 t-att-data-sc-edit-card="('note-%s' % note.id) if edit_props else None"
+                 t-att-data-sc-edit-reload="'1' if edit_props else None">
             <div class="o_sc_meta o_sc_note_meta">
                 <span t-out="note.portal_when_label"/>
                 <span>·</span>
@@ -367,8 +369,8 @@
                     <span t-else="" t-out="note.injury_id.diagnosis"/>
                 </t>
                 <t t-else="">
-                    <span>·</span>
-                    <span>General</span>
+                    <span t-out="'·'"/>
+                    <span>General note</span>
                 </t>
             </div>
             <t t-if="edit_props">
@@ -382,8 +384,10 @@
                     </button>
                 </div>
                 <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
-                    <t t-call="bemade_sports_clinic.sc_field_autosave">
-                        <t t-set="props" t-value="edit_props"/>
+                    <t t-foreach="edit_props" t-as="field_props">
+                        <t t-call="bemade_sports_clinic.sc_field_autosave">
+                            <t t-set="props" t-value="field_props"/>
+                        </t>
                     </t>
                     <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
                 </div>

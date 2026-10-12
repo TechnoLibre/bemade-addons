@@ -586,7 +586,30 @@ def _note_write(ctrl, note, field, value):
         if not day:
             raise ValidationError(_("Please enter a valid date."))
         note.sudo().write({'date': day})
+    elif field == 'injury_id':
+        # Task 1587: empty = a general note; otherwise one of the note's
+        # OWN player's injuries (never trust the posted id).
+        injury = False
+        if str(value or '').strip():
+            try:
+                injury_id = int(value)
+            except (TypeError, ValueError):
+                injury_id = 0
+            injuries = note.sudo().patient_id.injury_ids
+            if injury_id not in injuries.ids:
+                raise ValidationError(_("The selected injury does not belong to this player."))
+            injury = injury_id
+        note.sudo().write({'injury_id': injury})
     return {}
+
+
+def _note_display(note, field):
+    """Task 1587: the linked injury reads as its diagnosis, « General note »
+    when the note is linked to none."""
+    if field == 'injury_id':
+        injury = note.sudo().injury_id
+        return (injury.diagnosis or injury.display_name) if injury else _("General note")
+    return None
 
 
 # -- sports.patient.contact (the player form's primary emergency contact) ----
@@ -656,9 +679,10 @@ SAVE_REGISTRY = {
         'display': _injury_display,
     },
     'sports.treatment.note': {
-        'fields': {'note': _TP_ROLES, 'date': _TP_ROLES},
+        'fields': {'note': _TP_ROLES, 'date': _TP_ROLES, 'injury_id': _TP_ROLES},
         'check': _note_check,
         'write': _note_write,
+        'display': _note_display,
         'sudo_write': True,
         'permission': _note_permission,
     },
@@ -920,6 +944,22 @@ class AppShellMixin:
             if value is not None:
                 props[key] = str(value) if key in ('hint', 'placeholder', 'undoMessage', 'historyLabel') else value
         return json.dumps(props, default=str)
+
+    def _sc_note_edit_props(self, note):
+        """Task 1587: the pencil edit fields of a treatment-note card — the
+        text, the date and the linked injury (« General note », the player's
+        open injuries and the note's current one, even resolved)."""
+        env = request.env
+        current = note.sudo().injury_id
+        injuries = note.sudo().patient_id.injury_ids.filtered(
+            lambda i: i.stage != 'resolved' or i == current)
+        options = [('', env._("General note"))] + [
+            (injury.id, injury.diagnosis or injury.display_name) for injury in injuries]
+        return [
+            self._sc_field_props(note, 'note', env._("Note"), 'textarea'),
+            self._sc_field_props(note, 'date', env._("Date"), 'date'),
+            self._sc_field_props(note, 'injury_id', env._("Injury"), 'select', options=options),
+        ]
 
     @staticmethod
     def _sc_draft_props(draft_key, name, label, input_type='text', value='', **extra):
