@@ -208,6 +208,37 @@ class AccessControlMixin:
         ], order='name')
         return self._admin_or_staffed_teams(staffed)
 
+    def _activity_view_access(self, activity):
+        """May the current user OPEN ``activity`` — the detail page's rule,
+        shared with its attachment downloads (task 1586): the assignee, or
+        staff of the related patient's teams. Task 1589 changes who may
+        view here, and both routes follow."""
+        env = http.request.env
+        try:
+            if activity.user_id == env.user:
+                return True
+            if activity.res_model == 'sports.patient':
+                patient = env['sports.patient'].browse(activity.res_id)
+                if patient.exists():
+                    return bool(self._activity_scope_teams() & patient.team_ids)
+        except (AccessError, MissingError):
+            return False
+        return False
+
+    @staticmethod
+    def _activity_attachments(activity):
+        """The attachments of ``activity`` the portal lists and serves (task
+        1586): those attached to it (res_model/res_id) plus its
+        ``attachment_ids``. sudo(): the caller's _activity_view_access is the
+        authorization — coaches have no ir.attachment read on
+        mail.activity."""
+        Attachment = http.request.env['ir.attachment'].sudo()
+        attached = Attachment.search([
+            ('res_model', '=', 'mail.activity'),
+            ('res_id', '=', activity.id),
+        ])
+        return attached | activity.sudo().attachment_ids
+
     def _activity_edit_access(self, activity):
         """May the current user edit ``activity`` — /my/activity/update's rule
         (the assignee, or staff of the related patient / team / event's
