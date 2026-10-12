@@ -1033,7 +1033,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         }
         # PRG: surface a stashed validation error + re-prefill from prior input,
         # mapping the raw submitted fields onto the template's prefill keys.
-        flash_error, flash_data = self._portal_pop_flash()
+        flash_error, flash_data = self._portal_pop_flash(('event', 'new'))
         if flash_error:
             def _ids(val):
                 return [int(x) for x in str(val or '').replace(',', ' ').split() if x.strip().isdigit()]
@@ -1154,15 +1154,19 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                         staff_ids = [int(staff_param)]
             create_vals['state'] = 'confirmed'
 
-            # Task creation is handled by the model's create() default logic
-            event = http.request.env['sports.event'].create(create_vals)
+            # Task 1600: the create and the staff assignment are one unit — a
+            # refused step leaves no half-created event behind.
+            with http.request.env.cr.savepoint():
+                # Task creation is handled by the model's create() default logic
+                event = http.request.env['sports.event'].create(create_vals)
 
-            # assigned_staff_ids is an m2m to res.users; portal users can't read
-            # other users, so writing it non-sudo raises AccessError when the
-            # selected staff isn't the current user. Assign under sudo — the
-            # controller already authorized this therapist to create the event.
-            if staff_ids:
-                event.sudo().write({'assigned_staff_ids': [(6, 0, staff_ids)]})
+                # assigned_staff_ids is an m2m to res.users; portal users can't read
+                # other users, so writing it non-sudo raises AccessError when the
+                # selected staff isn't the current user. Assign under sudo — the
+                # controller already authorized this therapist to create the event.
+                if staff_ids:
+                    event.sudo().write({'assigned_staff_ids': [(6, 0, staff_ids)]})
+                event.flush_recordset()
 
             return http.request.redirect(f'/my/event/{event.id}?created=1')
 
@@ -1170,7 +1174,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # PRG: stash the error + submitted fields and redirect (GET) back to
             # the create form, which re-renders them. (Avoids re-POST on refresh
             # and the fragile inline re-render that previously 500'd.)
-            self._portal_flash(str(e).replace('\n', ' ').replace('\r', ' '), post)
+            self._portal_flash(str(e).replace('\n', ' ').replace('\r', ' '), post, ('event', 'new'))
             return http.request.redirect('/my/event/create')
 
     @http.route(['/my/venue/create'], type='http', auth='user', website=True, methods=['POST'],

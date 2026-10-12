@@ -26,6 +26,16 @@
                     <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" t-on-click="takeTheirs">Take theirs</button>
                 </div>
             </div>
+            <!-- Task 1600: an existing name / date of birth changes only once confirmed. -->
+            <div t-if="state.identity" class="o_sc_banner o_sc_banner_warn o_sc_identity_banner" role="alert">
+                <strong class="o_sc_banner_title" t-esc="state.identity.message"/>
+                <span class="o_sc_identity_change" t-esc="identityChange"/>
+                <span>The change will be noted in the player's file.</span>
+                <div class="o_sc_banner_actions">
+                    <button type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm o_sc_identity_confirm" t-on-click="confirmIdentity">Confirm</button>
+                    <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm o_sc_identity_cancel" t-on-click="cancelIdentity">Cancel</button>
+                </div>
+            </div>
             <textarea t-if="type === 'textarea'" t-ref="input" class="o_sc_input o_sc_textarea" rows="4"
                       t-att-id="props.inputId" t-att-name="props.name" t-att-placeholder="props.placeholder"
                       t-att-required="props.required" t-att-disabled="props.disabled"

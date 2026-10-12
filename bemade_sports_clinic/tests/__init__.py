@@ -158,3 +158,7 @@ from . import test_activity_attachment_download
 from . import test_app_shell_note_1587
 from . import test_app_shell_lang
 from . import test_activity_permissions_1589
+from . import test_portal_flash_scope_1600
+from . import test_identity_guard_1600
+from . import test_identity_guard_tours_1600
+from . import test_identity_guard_i18n_1600

@@ -384,6 +384,14 @@ class TestActivityPermissions1589(ActivityPermissionsCommon):
         _text, tree = self._get('/my/activities?error=not_allowed')
         self.assertIn('You cannot change this activity.', ' '.join(tree.xpath('//text()')))
 
+    def test_refusal_flash_legacy(self):
+        # App shell OFF: the legacy activities page names the refusal
+        # instead of showing an empty red box.
+        self._switch(False)
+        self._login('coach')
+        text, _tree = self._get('/my/activities?error=not_allowed')
+        self.assertIn('You cannot change this activity.', text)
+
     # -- UC-P6 -----------------------------------------------------------
     def test_migration_domain_matches_xml_and_rewrites(self):
         rule = self.env.ref(migration.RULE_XMLID)

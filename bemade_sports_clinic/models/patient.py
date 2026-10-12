@@ -1,5 +1,6 @@
 from odoo import models, fields, _, api, Command, SUPERUSER_ID
 from odoo.exceptions import ValidationError, AccessError, UserError
+from odoo.fields import Domain
 from datetime import date, datetime, timedelta
 import re
 import unicodedata
@@ -11,6 +12,8 @@ from .patient_injury import (
     legacy_change_emails_enabled,
 )
 import logging
+
+from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
 
@@ -24,6 +27,18 @@ REMOVAL_ROLES = ('therapist', 'head_therapist')
 # Task 1421: jersey_sort value for players without a (numeric) jersey number —
 # above any 8-digit number, so « blanks last » on an ascending order.
 JERSEY_SORT_LAST = 10 ** 8
+
+# Task 1600: a player's identity. For a portal (share) user, changing an
+# EXISTING value of one of these is an explicit, confirmed step (context key
+# ``sc_identity_confirmed``) recorded on the player's file; filling a blank one
+# is free. The same triple, case-insensitive and trimmed, may not be given to
+# two players by a portal user (exact-duplicate refusal).
+IDENTITY_FIELDS = ('first_name', 'last_name', 'date_of_birth')
+IDENTITY_CONFIRM_KEY = 'sc_identity_confirmed'
+
+# Summaries of the « Player Removal Request » activities (English source and
+# the fr_CA rendering the cron may have stored).
+REMOVAL_REQUEST_SUMMARIES = ('Player Removal Request', 'Demande de suppression de joueur')
 
 external_tracking_fields = {
     "last_consultation_date",
@@ -325,7 +340,10 @@ class Patient(models.Model):
 
     def write(self, vals):
         self._normalize_jersey_vals(vals)
+        corrections = self._sc_identity_guard(vals)
         res = super().write(vals)
+        if corrections:
+            self._sc_post_identity_note(corrections)
         if "jersey_number" in vals or "team_ids" in vals:
             self._notify_jersey_duplicates()
         if "team_ids" in vals:
@@ -1859,6 +1877,10 @@ class Patient(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if self._sc_identity_guarded():
+            for row in vals_list:
+                self._sc_check_identity_duplicate(
+                    row.get('first_name'), row.get('last_name'), row.get('date_of_birth'))
         for row in vals_list:
             self._normalize_jersey_vals(row)
             if "partner_id" not in row:
@@ -1907,6 +1929,109 @@ class Patient(models.Model):
                 raise ValidationError(
                     _("Invalid combination of match and practice status.")
                 )
+
+    # ----------------------------------------------------------------------
+    # Identity guard (task 1600)
+    # ----------------------------------------------------------------------
+    # Scope: portal (share) users only — the app shell, the legacy portal forms
+    # and any other portal route all write as the user (or sudo'd, which keeps
+    # env.user), so a model-level check covers them all. Internal users (clinic
+    # administrators, the backend, the merge wizard, crons) are deliberately
+    # NOT guarded: the backend merge flows must stay able to align two files.
+    def _sc_identity_guarded(self):
+        return bool(self.env.user.share)
+
+    @staticmethod
+    def _sc_identity_text(value):
+        if not value:
+            return ''
+        if isinstance(value, (date, datetime)):
+            return fields.Date.to_string(value)
+        return str(value).strip()
+
+    def _sc_identity_corrections(self, vals):
+        """{patient: [(field, old, new)]}: the identity fields ``vals`` CHANGES
+        from a non-empty value (filling a blank field is not a correction;
+        whitespace-only differences are not either)."""
+        corrections = {}
+        names = [name for name in IDENTITY_FIELDS if name in vals]
+        if not names:
+            return corrections
+        for patient in self.sudo():
+            changed = []
+            for name in names:
+                old = self._sc_identity_text(patient[name])
+                new = self._sc_identity_text(
+                    fields.Date.to_date(vals[name]) if name == 'date_of_birth' and vals[name]
+                    else vals[name])
+                if old and old != new:
+                    changed.append((name, old, new))
+            if changed:
+                corrections[patient.id] = changed
+        return corrections
+
+    def _sc_identity_guard(self, vals):
+        """Pre-write checks for a portal user (nothing is written when one
+        refuses). Returns the corrections to record after the write."""
+        if not any(name in vals for name in IDENTITY_FIELDS):
+            return {}
+        if not self._sc_identity_guarded():
+            # Internal users (clinic administrators, the backend, merges, crons)
+            # are never blocked. A correction they CONFIRMED through a portal
+            # form (the confirm step sets the context flag) is recorded on the
+            # file like anyone else's; a plain backend write is not.
+            if self.env.context.get(IDENTITY_CONFIRM_KEY):
+                return self._sc_identity_corrections(vals)
+            return {}
+        corrections = self._sc_identity_corrections(vals)
+        if corrections and not self.env.context.get(IDENTITY_CONFIRM_KEY):
+            raise UserError(_("Confirm the identity correction."))
+        for patient in self.sudo():
+            self._sc_check_identity_duplicate(
+                vals.get('first_name', patient.first_name),
+                vals.get('last_name', patient.last_name),
+                vals['date_of_birth'] if 'date_of_birth' in vals else patient.date_of_birth,
+                exclude_id=patient.id)
+        return corrections
+
+    @api.model
+    def _sc_identity_duplicate(self, first_name, last_name, date_of_birth, exclude_id=None):
+        """Another player (active or archived) with exactly this first name,
+        last name (case-insensitive, trimmed) and date of birth, or None."""
+        first = (first_name or '').strip().lower()
+        last = (last_name or '').strip().lower()
+        dob = fields.Date.to_date(date_of_birth) if date_of_birth else False
+        if not (first and last and dob):
+            return None
+        self.env['sports.patient'].flush_model(['first_name', 'last_name', 'date_of_birth'])
+        self.env.cr.execute(
+            """SELECT id FROM sports_patient
+                WHERE lower(trim(first_name)) = %s AND lower(trim(last_name)) = %s
+                  AND date_of_birth = %s AND id != %s
+                ORDER BY id LIMIT 1""",
+            (first, last, dob, exclude_id or 0))
+        row = self.env.cr.fetchone()
+        return self.env['sports.patient'].sudo().browse(row[0]) if row else None
+
+    @api.model
+    def _sc_check_identity_duplicate(self, first_name, last_name, date_of_birth, exclude_id=None):
+        if self._sc_identity_duplicate(first_name, last_name, date_of_birth, exclude_id):
+            raise ValidationError(_("Another player already has this name and date of birth."))
+
+    def _sc_post_identity_note(self, corrections):
+        """The audit note of a confirmed identity correction: who changed
+        what, old → new (on the player's file, internal note)."""
+        author = self.env.user.sudo().name
+        for patient in self.sudo().browse(list(corrections)):
+            items = Markup('').join(
+                Markup('<li>%s : %s → %s</li>') % (
+                    patient._fields[name]._description_string(self.env),
+                    old or '—', new or '—')
+                for name, old, new in corrections[patient.id])
+            body = Markup('<p>%s</p><ul>%s</ul>') % (
+                _("Identity correction confirmed by %s", author), items)
+            patient.message_post(
+                body=body, message_type='comment', subtype_xmlid='mail.mt_note')
 
     @api.depends("injury_ids.stage")
     def _compute_active_injury_count(self):
@@ -2544,6 +2669,43 @@ class Patient(models.Model):
                 'date_deadline': today,
             })
     
+    def _sc_removal_request_activities(self):
+        """The open « Player Removal Request » activities of these players."""
+        if not self:
+            return self.env['mail.activity']
+        return self.env['mail.activity'].sudo().search(Domain.AND([
+            [('res_model', '=', 'sports.patient'), ('res_id', 'in', self.ids)],
+            Domain.OR([[('summary', 'ilike', summary)] for summary in REMOVAL_REQUEST_SUMMARIES]),
+        ]))
+
+    def _sc_close_removal_requests(self):
+        """Mark the open removal-request activities of these players done,
+        with « Closed: the player is no longer on the team. » as feedback (in
+        the assignee's language). Returns the number closed."""
+        activities = self._sc_removal_request_activities()
+        for activity in activities:
+            lang = activity.user_id.lang or self.env.lang
+            feedback = self.with_context(lang=lang)._sc_removal_closed_feedback()
+            activity.with_context(lang=lang).action_feedback(feedback=feedback)
+        return len(activities)
+
+    def _sc_removal_closed_feedback(self):
+        return _("Closed: the player is no longer on the team.")
+
+    @api.model
+    def _sc_clear_stale_removal_flags(self):
+        """Task 1600 one-off cleanup: players flagged ``pending_removal`` who
+        no longer belong to any team (active or archived) — the flag is
+        cleared and their open removal requests are closed. Returns
+        ``(players, activities_closed)``."""
+        players = self.sudo().with_context(active_test=False).search([
+            ('pending_removal', '=', True), ('team_ids', '=', False)])
+        closed = 0
+        if players:
+            players.write({'pending_removal': False})
+            closed = players._sc_close_removal_requests()
+        return players, closed
+
     def _removal_log_message(self, team_name, user_name):
         """Compose the chatter line describing a removal from ``team_name``.
 
@@ -2592,7 +2754,11 @@ class Patient(models.Model):
         :return bool: True if the current user may remove directly from ``team``
         """
         user = self.env.user
-        if user.has_group('base.group_system'):
+        # Task 1600: a clinic administrator acts on ALL teams (task 1577 owner
+        # decision) — the legacy edit form lets them untick any team, and an
+        # untick now goes through this removal path.
+        if user.has_group('base.group_system') or user.has_group(
+                'bemade_sports_clinic.group_sports_clinic_admin'):
             return True
 
         is_treatment_prof = (
@@ -2698,6 +2864,10 @@ class Patient(models.Model):
         if had_pending:
             update_vals['pending_removal'] = False
         self.write(update_vals)
+        if clear_pending:
+            # Task 1600: the official removal closes the open « Player Removal
+            # Request » activities of these players (the request is answered).
+            self._sc_close_removal_requests()
 
         # Chatter branches on recordset size:
         #  - a SINGLE-record call keeps its per-player audit note on the player's

@@ -27,6 +27,10 @@
  *   the server value). ``instant`` fields (status, visibility: segmented
  *   buttons) save on click and offer « Annuler » in the shell toast, which
  *   re-posts the previous value through the same route.
+ *   Task 1600: a 428 « confirm_identity » answer (a portal user changing a
+ *   player's existing name / date of birth) shows a confirm banner
+ *   (old → new); « Confirm » re-posts with confirm=1, « Cancel » restores
+ *   the saved value. Nothing is written before the confirmation.
  *
  * Input types: textarea | text | email | tel | date | select | segmented |
  * date_na (a date + « N/A » box, value "na" or YYYY-MM-DD) | tags (CSV of the
@@ -98,6 +102,7 @@ export class ScAutosaveField extends Component {
             message: "",
             error: "",
             query: "", // tags: the search box
+            identity: null, // task 1600: {message, old, new} awaiting confirmation
         });
         this.writeDate = this.props.writeDate || "";
         // The field value the server last held (sent as old_value: a record
@@ -179,6 +184,8 @@ export class ScAutosaveField extends Component {
                 return _t("Error — not saved");
             case "conflict":
                 return _t("Changed elsewhere");
+            case "confirm":
+                return _t("To confirm");
             default:
                 return "";
         }
@@ -189,6 +196,11 @@ export class ScAutosaveField extends Component {
         return by
             ? _t("%s changed this field while you were typing.", by)
             : _t("This field was changed elsewhere while you were typing.");
+    }
+
+    get identityChange() {
+        const identity = this.state.identity || {};
+        return `${identity.old || "—"} → ${identity.new || "—"}`;
     }
 
     get naLabel() {
@@ -401,8 +413,9 @@ export class ScAutosaveField extends Component {
     }
 
     /** @returns {Promise<boolean>} saved */
-    async save() {
+    async save({ confirm = false } = {}) {
         clearTimeout(this.timer);
+        this.state.identity = null;
         if (navigator.onLine === false) {
             this.queue();
             return false;
@@ -412,12 +425,15 @@ export class ScAutosaveField extends Component {
         try {
             const result = await scFetch(this.saveUrl, {
                 method: "POST",
-                data: {
-                    field: this.props.field,
-                    value: this.state.value,
-                    write_date: this.writeDate,
-                    old_value: this.lastSaved,
-                },
+                data: Object.assign(
+                    {
+                        field: this.props.field,
+                        value: this.state.value,
+                        write_date: this.writeDate,
+                        old_value: this.lastSaved,
+                    },
+                    confirm ? { confirm: "1" } : {}
+                ),
                 toast: false,
             });
             this.writeDate = result.write_date;
@@ -445,7 +461,12 @@ export class ScAutosaveField extends Component {
             );
             return true;
         } catch (error) {
-            if (error.status === 409 && error.payload) {
+            if (error.status === 428 && error.payload && error.payload.confirm_identity) {
+                // Task 1600: changing a player's existing name / date of
+                // birth is an explicit step — nothing was saved yet.
+                this.state.identity = error.payload;
+                this.state.status = "confirm";
+            } else if (error.status === 409 && error.payload) {
                 this.state.conflict = error.payload;
                 this.state.status = "conflict";
             } else if (error.status === 0) {
@@ -456,6 +477,19 @@ export class ScAutosaveField extends Component {
             }
             return false;
         }
+    }
+
+    /** Task 1600: « Confirm » on the identity banner — the same save, confirmed. */
+    confirmIdentity() {
+        this.save({ confirm: true });
+    }
+
+    /** « Cancel »: back to the value the server holds, nothing saved. */
+    cancelIdentity() {
+        this.state.identity = null;
+        this.state.value = this.lastSaved;
+        this.state.status = "idle";
+        removeDraft(this.key);
     }
 
     keepMine() {
