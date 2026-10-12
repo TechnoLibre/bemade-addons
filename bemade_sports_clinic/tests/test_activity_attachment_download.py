@@ -3,8 +3,9 @@ Synthetic fixtures only (invented file names and contents).
 
 Acceptance criteria:
 
-* UC-D1 A coach of the activity's player's team (who can open the activity
-  page) GETs ``/my/activity/<activity>/attachment/<attachment>`` → 200 with
+* UC-D1 A coach of the activity's player's team who can open the activity
+  page (task 1589: it is assigned to them) GETs
+  ``/my/activity/<activity>/attachment/<attachment>`` → 200 with
   the file's bytes, as a download (``Content-Disposition: attachment``).
 * UC-D2 A coach of an unrelated team (cannot open the activity page) → 404,
   even with the exact URL — the URL grants nothing.
@@ -48,6 +49,10 @@ class AttachmentDownloadCommon(AppShellCommon):
         env['sports.team.staff'].create({
             'team_id': cls.team_b.id, 'partner_id': cls.other_coach.partner_id.id, 'role': 'coach',
         })
+        # Task 1589: a coach opens only the activities assigned to / created
+        # by them — the activity is the coach's (the TP still opens it: team
+        # scope).
+        cls.act_player.user_id = cls.coach
         Att = env['ir.attachment']
         cls.att = Att.create({
             'name': 'synthetic-plan.pdf', 'raw': PAYLOAD, 'mimetype': 'application/pdf',
@@ -75,7 +80,7 @@ class AttachmentDownloadCommon(AppShellCommon):
 class TestActivityAttachmentDownload(AttachmentDownloadCommon):
 
     # -- UC-D1 -----------------------------------------------------------
-    def test_team_coach_downloads(self):
+    def test_assignee_coach_downloads(self):
         self._login_coach()
         resp = self.url_open(self._url(self.att))
         self.assertEqual(resp.status_code, 200)
@@ -83,13 +88,24 @@ class TestActivityAttachmentDownload(AttachmentDownloadCommon):
         self.assertIn('attachment', resp.headers.get('Content-Disposition', ''))
         self.assertIn('synthetic-plan.pdf', resp.headers.get('Content-Disposition', ''))
 
-    def test_assignee_downloads(self):
+    def test_team_tp_downloads(self):
         self._login_tp()
         resp = self.url_open(self._url(self.att))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, PAYLOAD)
 
     # -- UC-D2 -----------------------------------------------------------
+    @mute_logger('odoo.http', 'odoo.addons.base.models.ir_rule')
+    def test_team_coach_not_assignee_404(self):
+        """Task 1589: a coach of the team who neither is assigned to nor
+        created the activity cannot open it, nor download its files."""
+        self.act_player.user_id = self.tp
+        self._login_coach()
+        self.assertEqual(self.url_open('/my/activity/%s' % self.act_player.id).status_code, 404)
+        resp = self.url_open(self._url(self.att))
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotIn(PAYLOAD, resp.content)
+
     @mute_logger('odoo.http', 'odoo.addons.base.models.ir_rule')
     def test_unrelated_coach_404(self):
         self.authenticate('pc.other@example.com', 'pc-other')

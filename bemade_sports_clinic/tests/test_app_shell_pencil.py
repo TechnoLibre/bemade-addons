@@ -154,7 +154,12 @@ class TestAppShellPencil(AppShellCommon):
         act.invalidate_recordset()
         self.assertIn('Synthetic note text', act.note)
         self.assertEqual(self._save(act, 'user_id', str(self.plain.id)).status_code, 400)
+        # Task 1589: a coach edits only their own activities.
         self._login_coach()
+        act.invalidate_recordset()
+        with mute_logger('odoo.http'):
+            self.assertIn(self._save(act, 'summary', 'Synthetic by coach').status_code, (403, 404))
+        act.sudo().user_id = self.coach
         act.invalidate_recordset()
         self.assertEqual(self._save(act, 'summary', 'Synthetic by coach').status_code, 200)
         self._login_plain()
@@ -255,6 +260,8 @@ class TestAppShellPencil(AppShellCommon):
             '/my/patient/notes?patient_id=%s' % self.player.id,
             '/my/team?team_id=%s' % self.team_a.id,
         ]
+        # Task 1589: the coach opens only their own activities.
+        self.act_player.user_id = self.coach
         for login, extra in ((self._login_tp, ['/my/notepad', '/my/sc/timesheets']), (self._login_coach, [])):
             login()
             for url in pages + extra:

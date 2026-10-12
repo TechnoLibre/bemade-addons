@@ -357,10 +357,12 @@
                     </t>
                 </div>
             </section>
-            <div class="o_sc_actionbar">
+            <!-- Task 1589: Cancel / Reschedule / Done only for who may act on
+                 the activity (the routes re-check). -->
+            <div t-if="sc_activity_editable" class="o_sc_actionbar">
                 <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-open="sc_activity_cancel_sheet"
                         t-att-data-sc-activity-id="activity.id" data-sc-action="activity.cancel">Cancel</button>
-                <button t-if="activity.user_id == request.env.user" type="button" class="o_sc_btn o_sc_btn_ghost"
+                <button type="button" class="o_sc_btn o_sc_btn_ghost"
                         data-sc-sheet-open="sc_activity_reschedule_sheet" t-att-data-sc-activity-id="activity.id"
                         data-sc-action="activity.reschedule">Reschedule</button>
                 <button type="button" class="o_sc_btn o_sc_btn_primary" data-sc-sheet-open="sc_activity_complete_sheet"
