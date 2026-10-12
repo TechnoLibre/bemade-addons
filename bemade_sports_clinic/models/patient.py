@@ -1973,7 +1973,15 @@ class Patient(models.Model):
     def _sc_identity_guard(self, vals):
         """Pre-write checks for a portal user (nothing is written when one
         refuses). Returns the corrections to record after the write."""
-        if not self._sc_identity_guarded() or not any(name in vals for name in IDENTITY_FIELDS):
+        if not any(name in vals for name in IDENTITY_FIELDS):
+            return {}
+        if not self._sc_identity_guarded():
+            # Internal users (clinic administrators, the backend, merges, crons)
+            # are never blocked. A correction they CONFIRMED through a portal
+            # form (the confirm step sets the context flag) is recorded on the
+            # file like anyone else's; a plain backend write is not.
+            if self.env.context.get(IDENTITY_CONFIRM_KEY):
+                return self._sc_identity_corrections(vals)
             return {}
         corrections = self._sc_identity_corrections(vals)
         if corrections and not self.env.context.get(IDENTITY_CONFIRM_KEY):

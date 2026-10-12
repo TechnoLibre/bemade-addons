@@ -14469,6 +14469,8 @@ msgstr "Vous ne pouvez pas assigner cette activité à cet utilisateur."
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/task_management_portal.py:0
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_edit_activity
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_activities
 msgid "You cannot change this activity."
 msgstr "Vous ne pouvez pas modifier cette activité."
 

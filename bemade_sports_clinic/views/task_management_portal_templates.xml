@@ -33,6 +33,9 @@
                             <t t-if="request.params.get('error') == 'invalid_user'">
                                 You do not have permission to assign activities to other users.
                             </t>
+                            <t t-if="request.params.get('error') == 'not_allowed'">
+                                You cannot change this activity.
+                            </t>
                         </div>
                         
                         <t t-set="today_date" t-value="datetime.datetime.strptime(today, '%Y-%m-%d').date()"/>
@@ -671,6 +674,9 @@
                             </t>
                             <t t-if="request.params.get('error') == 'invalid_user'">
                                 You do not have permission to assign activities to other users.
+                            </t>
+                            <t t-if="request.params.get('error') == 'not_allowed'">
+                                You cannot change this activity.
                             </t>
                         </div>
                         

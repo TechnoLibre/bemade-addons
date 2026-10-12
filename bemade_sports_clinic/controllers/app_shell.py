@@ -1423,8 +1423,8 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if field != 'date_of_birth' and not new:
             return None  # refused as « required » by the write hook
         changes = patient._sc_identity_corrections({field: new})
-        if not changes or not patient._sc_identity_guarded():
-            return None
+        if not changes:
+            return None  # same confirm step for every user (owner, 2026-10-12)
         _name, old, new_text = changes[patient.id][0]
         if field == 'date_of_birth':
             old = format_date(patient.env, old) if old else ''

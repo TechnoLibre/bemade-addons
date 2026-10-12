@@ -124,6 +124,18 @@ class TestIdentityGuardModel1600(IdentityCommon):
         self.assertEqual(self.player.first_name, 'Backend')
         self.assertFalse(self._notes(self.player))
 
+    def test_internal_confirmed_correction_is_recorded(self):
+        # Owner 2026-10-12: a clinic administrator who goes through the
+        # portal confirm step gets the same note on the file.
+        self.player.with_user(self.internal).with_context(sc_identity_confirmed=True).write(
+            {'first_name': 'Patricia'})
+        self.player.invalidate_recordset()
+        self.assertEqual(self.player.first_name, 'Patricia')
+        note = self._notes(self.player)
+        self.assertEqual(len(note), 1)
+        self.assertIn('Pat → Patricia', note.body)
+        self.assertEqual(note.author_id, self.internal.partner_id)
+
     # ----- AC-c (model) -----
     def test_duplicate_identity_refused_for_portal(self):
         writer = self.player.with_user(self.tp).with_context(sc_identity_confirmed=True)
@@ -293,6 +305,19 @@ class TestIdentityGuardAppShell1600(IdentityCommon):
             'field': 'date_of_birth', 'value': '2012-02-03', 'csrf_token': self._csrf(),
             'write_date': fields.Datetime.to_string(blank.write_date)}, allow_redirects=False)
         self.assertEqual(resp.status_code, 200, resp.text)
+
+    def test_pencil_admin_confirms_too(self):
+        # Same confirm step for every user (owner 2026-10-12), and the
+        # administrator's confirmed correction is recorded on the file.
+        self.internal.password = 'pc-internal-1600'
+        self.authenticate('pc.internal.1600@example.com', 'pc-internal-1600')
+        resp = self._app_save('first_name', 'Patsy')
+        self.assertEqual(resp.status_code, 428, resp.text)
+        resp = self._app_save('first_name', 'Patsy', confirm='1')
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.player.invalidate_recordset()
+        self.assertEqual(self.player.first_name, 'Patsy')
+        self.assertEqual(len(self._notes(self.player)), 1)
 
     def test_pencil_duplicate_refused(self):
         self.player.write({'first_name': 'Dana', 'date_of_birth': '2010-01-02'})
