@@ -160,10 +160,21 @@
         </div>
     </template>
 
-    <!-- A read-view row. Variables: label, record, field. -->
+    <!-- A read-view row. Variables: label, record, field; optional
+         href_kind ('tel' / 'mailto', task 1585): the value is a tap-to-call /
+         tap-to-email link (no href while empty — « — » is not a link);
+         data-sc-display-href lets a save move the href (sc_app_ui.js). -->
     <template id="sc_display_row" name="App shell: display row">
         <dt t-out="label"/>
-        <dd><span t-att-data-sc-display="sc_display_key(record, field)" t-out="sc_display(record, field) or '—'"/></dd>
+        <dd>
+            <t t-if="href_kind">
+                <t t-set="sc_shown" t-value="sc_display(record, field)"/>
+                <a class="o_sc_contact_link" t-att-href="sc_contact_href(href_kind, sc_shown)"
+                   t-att-data-sc-display-href="href_kind"
+                   t-att-data-sc-display="sc_display_key(record, field)" t-out="sc_shown or '—'"/>
+            </t>
+            <span t-else="" t-att-data-sc-display="sc_display_key(record, field)" t-out="sc_display(record, field) or '—'"/>
+        </dd>
     </template>
 
     <!-- Empty state. Variable: message. -->

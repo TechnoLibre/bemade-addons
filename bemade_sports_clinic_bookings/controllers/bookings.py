@@ -14,10 +14,12 @@ from odoo.http import request
 from odoo.tools import format_datetime
 
 from odoo.addons.appointment_portal_staff.controllers.portal import BookingPortal
-from odoo.addons.bemade_sports_clinic.controllers.app_shell import AppShellMixin
+from odoo.addons.bemade_sports_clinic.controllers.app_shell import AppShellMixin, sc_contact_href
 
 
 DETAIL_KEYS = ('client', 'appointment_type', 'status', 'email', 'phone')
+# Task 1585: the calendar detail shows these as tap-to-email / tap-to-call.
+DETAIL_LINK_KINDS = {'email': 'mailto', 'phone': 'tel'}
 SEGMENTS = (
     ('upcoming', '/my/bookings?filterby=upcoming'),
     ('past', '/my/bookings?filterby=past'),
@@ -58,9 +60,11 @@ class BookingShellPortal(BookingPortal, AppShellMixin):
             'feedUrl': '/my/bookings/calendar/data',
             'params': {},
             'locale': response.qcontext.get('calendar_locale') or 'en',
-            'detailKeys': [list(pair) for pair in zip(DETAIL_KEYS, (
-                env._("Client"), env._("Appointment type"), env._("Status"),
-                env._("Email"), env._("Phone")))],
+            'detailKeys': [
+                [key, label] + ([DETAIL_LINK_KINDS[key]] if key in DETAIL_LINK_KINDS else [])
+                for key, label in zip(DETAIL_KEYS, (
+                    env._("Client"), env._("Appointment type"), env._("Status"),
+                    env._("Email"), env._("Phone")))],
         }
         return self._sc_bookings_shell(
             response, 'bemade_sports_clinic_bookings.sc_app_bookings_calendar',
@@ -87,7 +91,12 @@ class BookingShellPortal(BookingPortal, AppShellMixin):
                 'id': booking.id,
                 'title': details['client'],
                 'subtitle': ' · '.join(part for part in (
-                    when, details['appointment_type'], details['phone'], details['email']) if part),
+                    when, details['appointment_type']) if part),
+                # Task 1585: the client's phone / email as tap links.
+                'phone': details['phone'],
+                'phone_href': sc_contact_href('tel', details['phone']),
+                'email': details['email'],
+                'email_href': sc_contact_href('mailto', details['email']),
                 'status': details['status'],
                 'cancelled': details['cancelled'],
             })

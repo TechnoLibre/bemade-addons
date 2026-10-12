@@ -236,6 +236,33 @@ $sc-p3-laptop: 1024px;
     }
 }
 
+// Task 1585: tap-to-call / tap-to-email links (player and emergency
+// contact phones / emails, bookings, the event page's staff and
+// organization). An empty value (no href) reads as plain text.
+.o_sc_app {
+    a.o_sc_contact_link[href] {
+        color: var(--sc-accent);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .o_sc_contact_sub {
+        margin-left: 6px;
+    }
+
+    .o_sc_contact_person {
+        display: block;
+    }
+
+    .o_sc_row_contacts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 12px;
+        font-size: var(--sc-text-sm);
+    }
+}
+
 @keyframes o_sc_pulse {
     0%,
     100% {

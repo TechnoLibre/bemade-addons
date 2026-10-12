@@ -22,6 +22,7 @@
  */
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
+import { scSetDisplay } from "@bemade_sports_clinic/js/sc_contact_href";
 import {
     clearAllDrafts,
     purgeForeignDrafts,
@@ -106,6 +107,7 @@ if (document.readyState === "loading") {
 
 // A save updates the page in place (owner review 2026-10-10):
 // * the read views of inline-edit cards ([data-sc-display="model:id:field"]);
+//   a tap-to-call / tap-to-email link's href follows (task 1585);
 // * the player's status pill (a status save answers the new stage);
 // * the player's heading (an Identity save answers it).
 document.addEventListener("sc:saved", (ev) => {
@@ -115,12 +117,12 @@ document.addEventListener("sc:saved", (ev) => {
     }
     if (result.display !== undefined) {
         for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${field}"]`)) {
-            el.textContent = result.display || "—";
+            scSetDisplay(el, result.display);
         }
     }
     for (const [name, shown] of Object.entries(result.also || {})) {
         for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${name}"]`)) {
-            el.textContent = shown.display || "—";
+            scSetDisplay(el, shown.display);
         }
     }
     const card = ev.target && ev.target.closest && ev.target.closest("[data-sc-edit-card]");

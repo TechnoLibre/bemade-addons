@@ -55,6 +55,11 @@
                         <span class="o_sc_row_text">
                             <span class="o_sc_row_title" t-out="row['title']"/>
                             <span class="o_sc_row_subtitle" t-out="row['subtitle']"/>
+                            <!-- Task 1585: the client's phone / email, tap to call / write. -->
+                            <span t-if="row['phone'] or row['email']" class="o_sc_row_contacts">
+                                <a t-if="row['phone']" class="o_sc_contact_link" t-att-href="row['phone_href']" data-sc-booking-link="phone" t-out="row['phone']"/>
+                                <a t-if="row['email']" class="o_sc_contact_link" t-att-href="row['email_href']" data-sc-booking-link="email" t-out="row['email']"/>
+                            </span>
                         </span>
                         <span class="o_sc_row_trailing">
                             <span t-if="row['cancelled']" class="o_sc_chip o_sc_chip_red">Cancelled</span>
