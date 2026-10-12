@@ -120,6 +120,24 @@ def sc_contact_href(kind, value):
     return None
 
 
+def sc_file_size(size, env=None):
+    """Task 1586: a file size for an attachment row — « 512 B », « 2.1 KB »,
+    « 3.0 MB » (« 2,1 Ko » in fr_CA). ``env`` gives the decimal separator;
+    the unit follows the request's language."""
+    size = int(size or 0)
+    if size < 1024:
+        return _("%s B", size)
+    if size < 1024 * 1024:
+        value, unit = size / 1024, 'kb'
+    else:
+        value, unit = size / (1024 * 1024), 'mb'
+    text = '%.1f' % value
+    if env is not None and env.lang:
+        point = env['res.lang']._get_data(code=env.lang).decimal_point or '.'
+        text = text.replace('.', point)
+    return _("%s KB", text) if unit == 'kb' else _("%s MB", text)
+
+
 def _clean_text(value):
     value = (value or '').strip()
     return value or False
@@ -812,6 +830,8 @@ class AppShellMixin:
             # Task 1585: tap-to-call / tap-to-email hrefs (sc_display_row
             # with ``href_kind``, the event page's staff / organization).
             'sc_contact_href': sc_contact_href,
+            # Task 1586: an attachment row's file size.
+            'sc_file_size': lambda size: sc_file_size(size, request.env),
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page

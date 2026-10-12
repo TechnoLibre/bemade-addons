@@ -346,10 +346,14 @@
                 <t t-call="bemade_sports_clinic.sc_section_header"><t t-set="title">Attachments</t></t>
                 <div class="o_sc_list">
                     <t t-foreach="attachments" t-as="attachment">
-                        <div class="o_sc_entity_row o_sc_entity_row_static">
+                        <a t-attf-href="/my/activity/#{activity.id}/attachment/#{attachment.id}" download=""
+                           class="o_sc_entity_row" t-att-data-sc-attachment="attachment.id">
                             <span class="o_sc_row_lead"><t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'documents'"/></t></span>
-                            <span class="o_sc_row_text"><span class="o_sc_row_title" t-field="attachment.name"/></span>
-                        </div>
+                            <span class="o_sc_row_text">
+                                <span class="o_sc_row_title" t-field="attachment.name"/>
+                                <span class="o_sc_row_subtitle" t-out="sc_file_size(attachment.file_size)"/>
+                            </span>
+                        </a>
                     </t>
                 </div>
             </section>

@@ -859,6 +859,22 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return self._sc_render('bemade_sports_clinic.portal_edit_activity',
                                'bemade_sports_clinic.sc_app_activity_form', values)
 
+    @http.route(['/my/activity/<int:activity_id>/attachment/<int:attachment_id>'],
+                type='http', auth='user', methods=['GET'])
+    def download_activity_attachment(self, activity_id, attachment_id, **kw):
+        """Task 1586: download one attachment of an activity. Whoever may open
+        the activity (``_activity_view_access``) may download its attachments;
+        anyone else — and any attachment not of this activity — gets a 404.
+        No access token: the URL grants nothing on its own."""
+        activity = request.env['mail.activity'].browse(activity_id)
+        if not activity.exists() or not self._activity_view_access(activity):
+            raise request.not_found()
+        attachment = request.env['ir.attachment'].sudo().browse(attachment_id)
+        if not attachment.exists() or attachment not in self._activity_attachments(activity):
+            raise request.not_found()
+        stream = request.env['ir.binary']._get_stream_from(attachment)
+        return stream.get_response(as_attachment=True)
+
     @http.route(['/my/activity/<int:activity_id>'], type='http', auth='user', website=True)
     def view_activity_detail(self, activity_id, **kw):
         """Display detailed view of a specific activity"""
@@ -868,23 +884,8 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if not activity.exists():
             raise request.not_found()
             
-        # Check access permissions (user assigned to activity or related to patient through teams)
-        user = request.env.user
-        partner = user.partner_id
-        
-        # Allow access if user is assigned to the activity
-        if activity.user_id == user:
-            has_access = True
-        else:
-            # Check if user has access through team relationships
-            has_access = False
-            if activity.res_model == 'sports.patient':
-                patient = request.env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    # Check if user is staff on any of the patient's teams
-                    user_teams = self._activity_scope_teams()
-                    patient_teams = patient.team_ids
-                    has_access = bool(user_teams & patient_teams)
+        # Task 1586: one rule for the page and its attachment downloads.
+        has_access = self._activity_view_access(activity)
         
         if not has_access:
             raise request.not_found()
@@ -914,13 +915,10 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             except Exception:
                 pass
         
-        # Get attachments for this activity
-        # sudo(): the access check above is the authorization; coaches have
-        # no ir.attachment read on mail.activity (the page 403'd for them).
-        attachments = request.env['ir.attachment'].sudo().search([
-            ('res_model', '=', 'mail.activity'),
-            ('res_id', '=', activity.id)
-        ])
+        # Get attachments for this activity (sudo inside: the access check
+        # above is the authorization — coaches have no ir.attachment read on
+        # mail.activity).
+        attachments = self._activity_attachments(activity)
         
         from datetime import date
         
