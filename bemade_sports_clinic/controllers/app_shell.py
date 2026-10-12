@@ -32,6 +32,7 @@ import re
 from datetime import timedelta
 
 from dateutil.relativedelta import relativedelta
+import werkzeug.exceptions
 
 from markupsafe import Markup
 
@@ -53,6 +54,9 @@ _TRUTHY = ('1', 'true', 'yes', 'on')
 PREF_FIELDS = {
     'sc_theme': ('dark', 'light'),
 }
+# Task 1588: « Plus › Langue » — the user's profile language (``res.users.lang``),
+# allowed values = the request's frontend languages (checked at post time).
+PREF_LANG = 'lang'
 # ---------------------------------------------------------------------------
 # Server autosave (task 1542, filled by task 1539) — WHAT may be saved field
 # by field, and BY WHOM.
@@ -815,6 +819,7 @@ class AppShellMixin:
         context line, crumb trail — comes from the parent registry
         (``models/sc_app_nav.py``, task 1579); without it the page is top
         level."""
+        self._sc_profile_lang_guard()
         user = request.env.user
         roles = user._sc_app_roles()
         ctx = {'booking_card_enable': self._sc_booking_enabled()}
@@ -836,6 +841,7 @@ class AppShellMixin:
             'sc_plus': plus,
             'sc_nav_labels': labels,
             'sc_theme': user.sc_theme or 'dark',
+            'sc_langs': self._sc_lang_options(),
             'sc_current_url': path + ('?' + query if query else ''),
             'sc_search_url': '/my/players' if any(t['key'] == 'players' for t in rail) else False,
             'sc_user_initials': initials or '?',
@@ -873,6 +879,84 @@ class AppShellMixin:
             'sc_context': nav['context'],
         })
         return shell
+
+    # ------------------------------------------------------------------
+    # Task 1588: the PROFILE language is the only source of truth
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _sc_profile_lang():
+        """The frontend language serving the user's profile language
+        (``res.users.lang``, or its nearest frontend sibling), or None when
+        the frontend offers nothing close (then the request's language
+        stands: never a redirect that cannot land)."""
+        return request.env['ir.http'].get_nearest_lang(request.env.user.lang)
+
+    @staticmethod
+    def _sc_lang_url(url, lang_code):
+        """``url`` (a local path + query) in ``lang_code``: any language
+        prefix dropped, the frontend prefix of ``lang_code`` added when it is
+        not the default language and the path is a multilang route — the URL
+        the http_routing ``_match`` serves in that language WITHOUT a
+        further language redirect (so no loop with the website's own)."""
+        env = request.env
+        frontend = env['res.lang']._get_frontend()
+        url_codes = [lang.url_code for lang in frontend.values()]
+        path, sep, query = url.partition('?')
+        parts = path.split('/')
+        if len(parts) > 1 and parts[1] in url_codes:
+            parts.pop(1)
+        path = '/'.join(parts) or '/'
+        lang = frontend.get(lang_code)
+        default = env['ir.http']._get_default_lang()
+        if (lang and lang.code != default.code and len(url_codes) > 1
+                and env['ir.http']._is_multilang_url(path, url_codes)):
+            path = '/%s%s' % (lang.url_code, path if path != '/' else '')
+        return path + sep + query
+
+    def _sc_profile_lang_guard(self):
+        """Profile wins (owner decision 2026-10-12): a shell page served in
+        another language than the user's profile one — a stale
+        ``frontend_lang`` cookie, an ``/en/`` URL prefix — is redirected
+        (GET/HEAD) to the same page in the profile language with the cookie
+        reset to it. Other methods are aligned in place."""
+        user = request.env.user
+        if user._is_public():
+            return
+        target = self._sc_profile_lang()
+        current = getattr(request, 'lang', None)
+        if not target or not current or current.code == target:
+            return
+        if request.httprequest.method in ('GET', 'HEAD'):
+            query = request.httprequest.query_string.decode()
+            url = self._sc_lang_url(
+                request.httprequest.path + ('?' + query if query else ''), target)
+            response = request.redirect(url, code=303, local=True)
+            response.set_cookie('frontend_lang', target)
+            werkzeug.exceptions.abort(response)
+        request.lang = request.env['res.lang']._get_data(code=target)
+        request.update_context(lang=target)
+        request.future_response.set_cookie('frontend_lang', target)
+
+    @staticmethod
+    def _sc_lang_options():
+        """« Plus › Langue »: one entry per frontend language (FR / EN),
+        the profile language pressed; empty with a single language."""
+        frontend = request.env['res.lang']._get_frontend()
+        if len(frontend) < 2:
+            return []
+        current = AppShellMixin._sc_profile_lang()
+        shorts = [code.partition('_')[0] for code in frontend]
+        options = []
+        for code, lang in frontend.items():
+            short = code.partition('_')[0]
+            options.append({
+                'code': code,
+                # Two variants of one language (fr_CA + fr_FR): their names.
+                'label': short.upper() if shorts.count(short) == 1 else lang.name,
+                'name': lang.name,
+                'active': code == current,
+            })
+        return options
 
     @staticmethod
     def _sc_history_entry(when, author, body, action=None, tone=None, state=None, **extra):
@@ -1216,7 +1300,10 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 methods=['POST'], multilang=False)
     def sc_app_pref(self, **post):
         """Set ``sc_theme`` on the CALLER's own record (task 1579: the
-        navigation mode setting is gone).
+        navigation mode setting is gone) and/or ``lang`` (task 1588: one of
+        the frontend languages — the profile language, mirrored in the
+        ``frontend_lang`` cookie and the session; the redirect lands on the
+        target page in that language).
 
         CSRF is enforced by the http POST route. Any other field, a bad value
         or another user's id is refused and nothing is written. A caller that
@@ -1228,16 +1315,31 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         target = post.pop('user_id', None)
         if target not in (None, '') and str(target) != str(user.id):
             return request.make_json_response({'error': 'forbidden'}, status=403)
-        if not post or set(post) - set(PREF_FIELDS):
+        if not post or set(post) - set(PREF_FIELDS) - {PREF_LANG}:
             return request.make_json_response({'error': 'bad_request'}, status=400)
         for name, value in post.items():
-            if value not in PREF_FIELDS[name]:
+            allowed = (request.env['res.lang']._get_frontend() if name == PREF_LANG
+                       else PREF_FIELDS[name])
+            if not value or value not in allowed:
                 return request.make_json_response({'error': 'bad_request'}, status=400)
         user.write(dict(post))
+        lang = post.get(PREF_LANG)
+        if lang:
+            # Task 1588: the session context too (the backend and the
+            # http_routing fallback read it); the cookie below wins anyway.
+            request.session.context = dict(request.session.context, lang=lang)
         accept = request.httprequest.headers.get('Accept', '')
         if 'application/json' in accept:
-            return request.make_json_response({'sc_theme': user.sc_theme})
-        return request.redirect(self._safe_return_url(redirect, '/my/app/more'))
+            response = request.make_json_response(
+                {'sc_theme': user.sc_theme, 'lang': user.lang})
+        else:
+            url = self._safe_return_url(redirect, '/my/app/more')
+            if lang:
+                url = self._sc_lang_url(url, lang)
+            response = request.redirect(url)
+        if lang:
+            response.set_cookie('frontend_lang', lang)
+        return response
 
     # ------------------------------------------------------------------
     # /my/app/save/<model>/<id> — the server autosave pattern (task 1542)
