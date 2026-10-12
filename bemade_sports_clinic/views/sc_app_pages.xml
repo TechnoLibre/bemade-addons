@@ -204,6 +204,25 @@
                 </form>
             </section>
 
+            <!-- Task 1588: the profile language (res.users.lang), a plain
+                 POST (full reload: the whole page changes language). -->
+            <section t-if="sc_langs" class="o_sc_section" id="sc_language">
+                <t t-call="bemade_sports_clinic.sc_section_header">
+                    <t t-set="title">Language</t>
+                </t>
+                <form method="post" action="/my/app/pref" class="o_sc_segmented o_sc_segmented_full">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="redirect" value="/my/app/more"/>
+                    <t t-foreach="sc_langs" t-as="sc_lang">
+                        <button type="submit" name="lang" t-att-value="sc_lang['code']"
+                                t-att-title="sc_lang['name']"
+                                t-att-lang="sc_lang['code'].replace('_', '-')"
+                                t-att-aria-pressed="'true' if sc_lang['active'] else 'false'"
+                                t-out="sc_lang['label']"/>
+                    </t>
+                </form>
+            </section>
+
             <section class="o_sc_section" id="sc_account">
                 <t t-call="bemade_sports_clinic.sc_section_header">
                     <t t-set="title">Account</t>

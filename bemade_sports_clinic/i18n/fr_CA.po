@@ -14752,3 +14752,8 @@ msgstr "Note générale"
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "The selected injury does not belong to this player."
 msgstr "La blessure choisie n'appartient pas à ce joueur."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
+msgid "Language"
+msgstr "Langue"
