@@ -202,6 +202,7 @@
                     <a t-if="show_event" t-att-href="row['event_url']" class="o_sc_row_title" t-out="row['title']"/>
                     <strong t-else="" t-out="row['when']"/>
                     <p class="o_sc_meta">
+                        <t t-if="not row['own']"><span data-sc-timesheet-employee="1" t-out="row['employee']"/> · </t>
                         <t t-if="show_event"><t t-out="row['when']"/> · </t>
                         <t t-out="row['subtitle']"/>
                     </p>
@@ -401,12 +402,15 @@
             </t>
 
             <section t-if="can_view_timesheets" class="o_sc_section" data-sc-section="event.timesheets">
+                <!-- Task 1584: admins see every therapist's rows — a neutral
+                     title; a therapist sees their own. -->
                 <t t-call="bemade_sports_clinic.sc_section_header">
-                    <t t-set="title">My Timesheets</t>
+                    <t t-if="show_all_timesheets" t-set="title">Timesheets</t>
+                    <t t-else="" t-set="title">My Timesheets</t>
                 </t>
                 <t t-call="bemade_sports_clinic.sc_banner" t-if="missing_count and show_all_timesheets">
                     <t t-set="tone" t-value="'warn'"/>
-                    <t t-out="missing_names"/>
+                    <span data-sc-missing-timesheets="1"><strong>Missing timesheets:</strong> <t t-out="missing_names"/></span>
                 </t>
                 <div t-if="sc_timesheet_rows" class="o_sc_list">
                     <t t-foreach="sc_timesheet_rows" t-as="row">
