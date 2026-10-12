@@ -40,15 +40,8 @@
             <!-- Owner review 2026-10-11: « Add a player » / « Request an
                  addition » are inline cards at the top of the Players tab. -->
 
-            <!-- Flash messages (same sources as the legacy page). -->
-            <t t-if="request.session.get('notification')">
-                <t t-set="notif" t-value="request.session.pop('notification')"/>
-                <t t-call="bemade_sports_clinic.sc_banner">
-                    <t t-set="title" t-value="notif.get('title')"/>
-                    <t t-set="tone" t-value="'warn' if notif.get('type') in ('danger', 'warning') else 'info'"/>
-                    <t t-out="notif.get('message')"/>
-                </t>
-            </t>
+            <!-- Flash messages. The session notification is the shell's
+                 status toast now (task 1583, sc_app_layout). -->
             <t t-if="error" t-call="bemade_sports_clinic.sc_banner">
                 <t t-set="tone" t-value="'warn'"/>
                 <t t-out="error"/>

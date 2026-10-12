@@ -12636,7 +12636,7 @@ msgstr "Vous pouvez ajouter des joueurs directement."
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/team_management_portal.py:0
 msgid "You can only add players to a team you staff."
-msgstr ""
+msgstr "Vous pouvez seulement ajouter des joueurs à une équipe dont vous faites partie."
 "Vous ne pouvez ajouter des joueurs qu'à une équipe dont vous faites partie "
 "du personnel."
 
