@@ -363,9 +363,11 @@ class User(models.Model):
             return snaps[1]
         return recent
 
-    def _digest_pending_verify_count(self, team):
+    def _digest_pending_verify_count(self, team, role=None):
         """Open 'Verify injury' to-do activities on the team's injuries (the
-        count only — the underlying activities are untouched)."""
+        count only — the underlying activities are untouched). Task 1589: a
+        coach line counts only the ones assigned to or created by the
+        recipient (a coach never learns of other staff's activities)."""
         injuries = (
             self.env["sports.patient.injury"]
             .sudo()
@@ -375,11 +377,12 @@ class User(models.Model):
             return 0
         # Task 1409: verification To-Dos live on the patient, keyed by the
         # technical injury_id link (+ the summary marker, as before).
-        return (
-            self.env["mail.activity"]
-            .sudo()
-            .search_count(injuries._verify_activity_domain())
-        )
+        domain = injuries._verify_activity_domain()
+        if role == "coach":
+            domain = domain + [
+                "|", ("user_id", "=", self.id), ("create_uid", "=", self.id),
+            ]
+        return self.env["mail.activity"].sudo().search_count(domain)
 
     def _digest_build_team_line(self, staff, role, now, cutoff, base_url):
         """Build one PHI-free per-team summary dict for the recipient, scoped to
@@ -411,7 +414,7 @@ class User(models.Model):
                 lambda p: p[act_field] and p[act_field] >= cutoff
             )
         )
-        pending_verify = self._digest_pending_verify_count(team)
+        pending_verify = self._digest_pending_verify_count(team, role)
         pending_removal = len(patients.filtered("pending_removal"))
 
         # Task 1396: the dashboard link follows the RECIPIENT, not the surface.

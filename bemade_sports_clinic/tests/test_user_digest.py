@@ -276,8 +276,13 @@ class TestUserMorningDigest(TransactionCase):
         self.assertEqual(tp_line["changes"], 1)
 
     def test_pending_verify_and_removal_counts(self):
-        line = self._line_for(self.coach_a, self.team_a)
+        line = self._line_for(self.therapist_a, self.team_a)
         self.assertEqual(line["pending_verify"], 1)
+        self.assertEqual(line["pending_removal"], 1)
+        # Task 1589: a coach line counts only the coach's own (assigned or
+        # created) verifications — none here.
+        line = self._line_for(self.coach_a, self.team_a)
+        self.assertEqual(line["pending_verify"], 0)
         self.assertEqual(line["pending_removal"], 1)
 
     def test_team_ordering_and_event_dedup(self):

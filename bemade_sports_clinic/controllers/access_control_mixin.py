@@ -208,22 +208,67 @@ class AccessControlMixin:
         ], order='name')
         return self._admin_or_staffed_teams(staffed)
 
-    def _activity_view_access(self, activity):
-        """May the current user OPEN ``activity`` — the detail page's rule,
-        shared with its attachment downloads (task 1586): the assignee, or
-        staff of the related patient's teams. Task 1589 changes who may
-        view here, and both routes follow."""
-        env = http.request.env
-        try:
-            if activity.user_id == env.user:
-                return True
-            if activity.res_model == 'sports.patient':
-                patient = env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    return bool(self._activity_scope_teams() & patient.team_ids)
-        except (AccessError, MissingError):
+    # ------------------------------------------------------------------
+    # Activity permissions (task 1589, owner decision 2026-10-12) — ONE
+    # place for who may open / act on an activity in the portal:
+    #   * clinic / system administrator: everything;
+    #   * a coach (portal coach who is not a therapist): only the
+    #     activities assigned to them OR created by them, within their team
+    #     scope — they never see the others (matches the coach record rule
+    #     ``mail_activity_portal_team_coach_rule``);
+    #   * everyone else (therapists, …): the assignee, or staff of the
+    #     related patient / team / event's teams.
+    # « Act » = edit (pencil / edit page), complete, cancel, reschedule,
+    # reassign. Writes run with sudo() only AFTER this check.
+    # ------------------------------------------------------------------
+
+    def _activity_coach_only(self):
+        """A portal coach who is neither a therapist (portal or internal)
+        nor a clinic / system administrator (task 1589)."""
+        user = http.request.env.user
+        return (
+            user.has_group('bemade_sports_clinic.group_portal_team_coach')
+            and not self._is_tp_or_system()
+            and not self._is_clinic_admin())
+
+    def _activity_in_scope(self, activity):
+        """Is ``activity``'s related patient / team / event in the viewer's
+        team scope (``_activity_scope_teams``)? sudo(): only to read the
+        related record's teams for the comparison."""
+        activity = activity.sudo()
+        if activity.res_model not in ('sports.patient', 'sports.team', 'sports.event'):
             return False
-        return False
+        record = http.request.env[activity.res_model].sudo().browse(activity.res_id)
+        if not activity.res_id or not record.exists():
+            return False
+        teams = self._activity_scope_teams()
+        if activity.res_model == 'sports.team':
+            return bool(teams & record)
+        return bool(teams.ids and set(teams.ids) & set(record.team_ids.ids))
+
+    def _activity_act_access(self, activity):
+        """May the current user ACT on ``activity`` (edit, complete, cancel,
+        reschedule, reassign)? See the rules above (task 1589)."""
+        env = http.request.env
+        activity = activity.sudo()
+        if not activity.exists():
+            return False
+        if self._is_clinic_admin():
+            return True
+        user = env.user
+        if self._activity_coach_only():
+            return ((activity.user_id == user or activity.create_uid == user)
+                    and self._activity_in_scope(activity))
+        if activity.user_id == user:
+            return True
+        return self._activity_in_scope(activity)
+
+    def _activity_view_access(self, activity):
+        """May the current user OPEN ``activity`` — the detail page and its
+        attachment downloads (task 1586). Task 1589: whoever may act on it
+        may open it, and nobody else (a coach never opens another's
+        activity)."""
+        return self._activity_act_access(activity)
 
     @staticmethod
     def _activity_attachments(activity):
@@ -238,25 +283,6 @@ class AccessControlMixin:
             ('res_id', '=', activity.id),
         ])
         return attached | activity.sudo().attachment_ids
-
-    def _activity_edit_access(self, activity):
-        """May the current user edit ``activity`` — /my/activity/update's rule
-        (the assignee, or staff of the related patient / team / event's
-        teams). Shared with the app shell's inline save (owner review
-        2026-10-11)."""
-        env = http.request.env
-        if activity.user_id == env.user:
-            return True
-        record = env[activity.res_model].browse(activity.res_id) if activity.res_model in (
-            'sports.patient', 'sports.team', 'sports.event') else None
-        if not record or not record.exists():
-            return False
-        teams = self._activity_scope_teams()
-        if activity.res_model == 'sports.patient':
-            return bool(teams & record.team_ids)
-        if activity.res_model == 'sports.team':
-            return bool(teams & record)
-        return bool(teams & record.team_ids)
 
     @classmethod
     def _activity_scope_teams(cls):

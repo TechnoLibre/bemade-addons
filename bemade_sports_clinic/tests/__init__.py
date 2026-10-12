@@ -157,3 +157,4 @@ from . import test_app_shell_tap_links_1585
 from . import test_activity_attachment_download
 from . import test_app_shell_note_1587
 from . import test_app_shell_lang
+from . import test_activity_permissions_1589

@@ -426,7 +426,8 @@
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'chevron'"/></t>
                 </span>
             </a>
-            <div class="o_sc_card_actions o_sc_activity_actions">
+            <!-- Task 1589: actions only for who may act on the activity. -->
+            <div t-if="sc_activity_can_act(activity)" class="o_sc_card_actions o_sc_activity_actions">
                 <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" data-sc-sheet-open="sc_activity_complete_sheet"
                         t-att-data-sc-activity-id="activity.id" data-sc-action="activity.complete">
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'check'"/></t>

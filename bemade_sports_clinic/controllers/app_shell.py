@@ -167,12 +167,12 @@ def _date_value(value):
 
 # -- mail.activity (owner review 2026-10-11: the activity page's pencil card) --
 def _activity_check(ctrl, activity):
-    if not ctrl._activity_edit_access(activity):
+    if not ctrl._activity_act_access(activity):
         raise AccessError(_("You do not have access to this activity."))
 
 
 def _activity_permission(ctrl, activity):
-    return ctrl._activity_edit_access(activity)
+    return ctrl._activity_act_access(activity)
 
 
 def _activity_write(ctrl, activity, field, value):
@@ -862,6 +862,9 @@ class AppShellMixin:
             'sc_contact_href': sc_contact_href,
             # Task 1586: an attachment row's file size.
             'sc_file_size': lambda size: sc_file_size(size, request.env),
+            # Task 1589: an activity row's Done / Reschedule / Reassign /
+            # Cancel buttons follow the one act rule (the routes re-check).
+            'sc_activity_can_act': self._activity_act_access,
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page

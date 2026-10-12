@@ -130,7 +130,14 @@ class TestAppShellActivities1539(AppShellCommon):
     # -- UC-A5 -----------------------------------------------------------
     def test_team_page_tab_uses_shell_list(self):
         self._switch(True)
+        # Task 1589: a coach lists only the activities assigned to / created
+        # by them — the therapist's team activity is hidden until it is
+        # assigned to the coach.
         self._login_coach()
+        _text, tree = self._get('/my/team?team_id=%s&tab=activities' % self.team_a.id)
+        panel = tree.xpath('//section[@data-sc-tab-panel="activities"]')[0]
+        self.assertFalse(panel.xpath('.//*[@data-sc-activity-row="%s"]' % self.act_team.id))
+        self.act_team.user_id = self.coach
         _text, tree = self._get('/my/team?team_id=%s&tab=activities' % self.team_a.id)
         panel = tree.xpath('//section[@data-sc-tab-panel="activities"]')[0]
         self.assertFalse(panel.xpath('.//*[contains(@class, "o_sc_legacy")]'))

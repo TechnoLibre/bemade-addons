@@ -229,6 +229,8 @@ class TestAppShellPlayer1539(PlayersCommon1539):
 
     def test_activity_sheets_carry_csrf_and_return(self):
         self._switch(True)
+        # Task 1589: the coach lists only their own activities.
+        self.act_player.user_id = self.coach
         self._login_coach()
         _text, tree = self._get(self.url)
         # « add » is an inline card since the owner review of 2026-10-10.
