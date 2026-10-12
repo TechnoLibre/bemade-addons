@@ -355,8 +355,27 @@
                     <t t-if="sc_event_therapist_when"><dt>Therapist</dt><dd t-out="sc_event_therapist_when"/></t>
                     <dt>Teams</dt><dd t-out="sc_event_teams or '—'"/>
                     <dt>Venue</dt><dd t-out="event_sudo.venue_id.name or '—'"/>
-                    <t t-if="event_sudo.partner_id"><dt>Organization</dt><dd t-out="event_sudo.partner_id.name"/></t>
-                    <dt>Assigned Staff</dt><dd t-out="', '.join(s['name'] for s in assigned_staff) or '—'"/>
+                    <!-- Task 1585: the organization's and the assigned staff's
+                         emails are tap-to-email links. -->
+                    <t t-if="event_sudo.partner_id">
+                        <dt>Organization</dt>
+                        <dd data-sc-event-organization="1">
+                            <span t-out="event_sudo.partner_id.name"/>
+                            <t t-set="sc_org_mailto" t-value="sc_contact_href('mailto', event_sudo.partner_id.email)"/>
+                            <a t-if="sc_org_mailto" class="o_sc_contact_link o_sc_contact_sub" t-att-href="sc_org_mailto" t-out="event_sudo.partner_id.email"/>
+                        </dd>
+                    </t>
+                    <dt>Assigned Staff</dt>
+                    <dd>
+                        <t t-if="assigned_staff">
+                            <span t-foreach="assigned_staff" t-as="staff" class="o_sc_contact_person" data-sc-event-staff="1">
+                                <span t-out="staff['name']"/>
+                                <t t-set="sc_staff_mailto" t-value="sc_contact_href('mailto', staff['email'])"/>
+                                <a t-if="sc_staff_mailto" class="o_sc_contact_link o_sc_contact_sub" t-att-href="sc_staff_mailto" t-out="staff['email']"/>
+                            </span>
+                        </t>
+                        <t t-else="">—</t>
+                    </dd>
                 </dl>
                 <p t-if="sc_event_description" class="o_sc_pre" t-out="sc_event_description"/>
                 </div>

@@ -28,6 +28,7 @@ A session in a non-default website language is served under ``/<lang>/my/``
 routes themselves stay ``multilang=False`` (stable, unprefixed URLs).
 """
 import json
+import re
 from datetime import timedelta
 
 from dateutil.relativedelta import relativedelta
@@ -100,6 +101,23 @@ _VALID_STATUS_PAIRS = {('yes', 'yes'), ('no', 'yes'), ('no', 'no_contact'), ('no
 SC_STATUS_KEYS = ('yes:yes', 'no:yes', 'no:no_contact', 'no:no')
 # Dot / chip tone of a player's stage (same tones as the lists' rows).
 SC_STAGE_TONES = {'no_play': 'red', 'practice_ok': 'yellow', 'healthy': 'green'}
+
+
+def sc_contact_href(kind, value):
+    """Task 1585: the tap-to-call / tap-to-email href of a shown phone or
+    email (``kind`` = ``'tel'`` / ``'mailto'``), or None when there is
+    nothing to dial or write to. A phone keeps only ``+`` and its digits
+    (« +1 (555) 010-0123 » -> ``tel:+15550100123``). Same rule in the
+    browser: static/src/js/sc_contact_href.js."""
+    value = (value or '').strip() if isinstance(value, str) else ''
+    if not value:
+        return None
+    if kind == 'tel':
+        digits = re.sub(r'[^0-9+]', '', value)
+        return 'tel:%s' % digits if re.search(r'[0-9]', digits) else None
+    if kind == 'mailto':
+        return 'mailto:%s' % value
+    return None
 
 
 def _clean_text(value):
@@ -791,6 +809,9 @@ class AppShellMixin:
             # save route answers, so an in-place update matches a reload).
             'sc_display': lambda record, field: AppShellPortal._sc_save_display(record, field),
             'sc_display_key': lambda record, field: '%s:%s:%s' % (record._name, record.id, field),
+            # Task 1585: tap-to-call / tap-to-email hrefs (sc_display_row
+            # with ``href_kind``, the event page's staff / organization).
+            'sc_contact_href': sc_contact_href,
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page

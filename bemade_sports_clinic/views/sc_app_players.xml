@@ -518,8 +518,8 @@
                                 <t t-set="editable" t-value="True"/>
                             </t>
                             <dl class="o_sc_kv" data-sc-edit-view="read">
-                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'email'"/></t>
-                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Phone</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'phone'"/></t>
+                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'email'"/><t t-set="href_kind" t-value="'mailto'"/></t>
+                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Phone</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'phone'"/><t t-set="href_kind" t-value="'tel'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Street</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'street'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Street 2</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'street2'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">City</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'city'"/></t>
@@ -630,8 +630,8 @@
                                         </button>
                                     </div>
                                     <dl class="o_sc_kv" data-sc-edit-view="read">
-                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Mobile</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'mobile'"/></t>
-                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'email'"/></t>
+                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Mobile</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'mobile'"/><t t-set="href_kind" t-value="'tel'"/></t>
+                                        <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Email</t><t t-set="record" t-value="contact"/><t t-set="field" t-value="'email'"/><t t-set="href_kind" t-value="'mailto'"/></t>
                                     </dl>
                                     <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
                                         <t t-set="lbl">Name</t>
