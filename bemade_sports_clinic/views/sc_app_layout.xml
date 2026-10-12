@@ -144,8 +144,13 @@
                     <main class="o_sc_content" id="sc_content">
                         <t t-out="0"/>
                     </main>
-                    <!-- Task 1542: status toast (sc_fetch errors, offline). -->
-                    <div class="o_sc_toast" role="status" aria-live="polite" hidden="hidden"/>
+                    <!-- Task 1542: status toast (sc_fetch errors, offline).
+                         Task 1583: it also shows the pending session
+                         notification of a POST round-trip on load. -->
+                    <div class="o_sc_toast" role="status" aria-live="polite" hidden="hidden"
+                         t-att-data-sc-notify="sc_notification and (sc_notification['message'] or sc_notification['title']) or None"
+                         t-att-data-sc-notify-title="sc_notification and sc_notification['message'] and sc_notification['title'] or None"
+                         t-att-data-sc-notify-tone="sc_notification and sc_notification['tone'] or None"/>
                 </div>
 
                 <!-- Phone: bottom tabs -->

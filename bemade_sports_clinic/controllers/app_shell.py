@@ -734,6 +734,21 @@ class AppShellMixin:
             items.append(item)
         return items
 
+    @staticmethod
+    def _sc_pop_notification():
+        """Task 1583: pop ``request.session['notification']`` (the
+        ``{type, title, message}`` dict the POST routes store) into the
+        toast payload ``{message, title, tone}`` — tone ``error`` for the
+        danger / warning types, ``success`` otherwise — or False."""
+        notif = request.session.pop('notification', None)
+        if not isinstance(notif, dict) or not (notif.get('message') or notif.get('title')):
+            return False
+        return {
+            'message': str(notif.get('message') or ''),
+            'title': str(notif.get('title') or ''),
+            'tone': 'error' if notif.get('type') in ('danger', 'warning', 'error') else 'success',
+        }
+
     def _sc_app_values(self, values, page=None):
         """``values`` + everything ``sc_app_layout`` needs. ``page`` is the
         app template (``module.template``): its navigation — back target,
@@ -777,6 +792,10 @@ class AppShellMixin:
             'sc_display': lambda record, field: AppShellPortal._sc_save_display(record, field),
             'sc_display_key': lambda record, field: '%s:%s:%s' % (record._name, record.id, field),
             'sc_draft_props': self._sc_draft_props,
+            # Task 1583: the pending session notification (set by a POST
+            # round-trip, e.g. « Add to Team ») pops on whichever shell page
+            # comes next, as the status toast.
+            'sc_notification': self._sc_pop_notification(),
         }
         shell.update(values)
         nav = sc_app_nav.resolve(

@@ -9,7 +9,8 @@
  *   data-sc-lazy-fresh (the histories, task 1581); a [data-sc-sheet-refetch]
  *   link inside a sheet reloads its body from its href (filter chips);
  * - lazy rows: <details data-sc-lazy-url> fetch their body on first open;
- * - the status toast (sc_fetch errors, offline / back online);
+ * - the status toast (sc_fetch errors, offline / back online; task 1583:
+ *   the pending session notification of a POST round-trip, on load);
  * - the device draft store: foreign drafts purged on load, every draft
  *   cleared on « Déconnexion »;
  * - task 1539: the toast may carry ONE action (« Annuler » after an instant
@@ -33,15 +34,28 @@ function app() {
 
 // ---------------------------------------------------------------- toast
 let toastTimer = null;
-function showToast(message, actionLabel, action, duration) {
+function showToast(message, actionLabel, action, duration, options) {
     const root = app();
     const toast = root && root.querySelector(".o_sc_toast");
     if (!toast) {
         return;
     }
+    const { title, tone } = options || {};
+    const parts = [];
+    if (title) {
+        const strong = document.createElement("strong");
+        strong.className = "o_sc_toast_title";
+        strong.textContent = title;
+        parts.push(strong);
+    }
     const text = document.createElement("span");
     text.textContent = message;
-    const parts = [text];
+    parts.push(text);
+    if (tone) {
+        toast.dataset.scToastTone = tone;
+    } else {
+        delete toast.dataset.scToastTone;
+    }
     if (actionLabel && action) {
         const button = document.createElement("button");
         button.type = "button";
@@ -66,6 +80,30 @@ document.addEventListener("sc:toast", (ev) => {
     const detail = ev.detail || {};
     showToast(detail.message || "", detail.actionLabel, detail.action);
 });
+
+// Task 1583: the pending session notification of a POST round-trip
+// (« Add to Team »…), rendered on the toast host by sc_app_layout — shown
+// once on load, whatever the page. Errors stay longer.
+function showSessionNotification() {
+    const root = app();
+    const toast = root && root.querySelector(".o_sc_toast[data-sc-notify]");
+    if (!toast) {
+        return;
+    }
+    const message = toast.dataset.scNotify;
+    const tone = toast.dataset.scNotifyTone || "success";
+    const title = toast.dataset.scNotifyTitle || "";
+    delete toast.dataset.scNotify;
+    delete toast.dataset.scNotifyTitle;
+    delete toast.dataset.scNotifyTone;
+    showToast(message, null, null, tone === "error" ? 10000 : 6000, { title, tone });
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", showSessionNotification);
+} else {
+    showSessionNotification();
+}
+
 // A save updates the page in place (owner review 2026-10-10):
 // * the read views of inline-edit cards ([data-sc-display="model:id:field"]);
 // * the player's status pill (a status save answers the new stage);
