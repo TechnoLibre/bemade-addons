@@ -192,7 +192,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
             # PRG: a failed submit stashed the error + submitted fields in the
             # session; surface them and re-prefill the form.
-            flash_error, flash_data = self._portal_pop_flash()
+            flash_error, flash_data = self._portal_pop_flash(('team_add', team.id))
             if flash_error:
                 values['error'] = flash_error
                 for field in ('first_name', 'last_name', 'email', 'phone', 'date_of_birth'):
@@ -1080,7 +1080,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     vals['practice_status'] = post.get('practice_status')
 
             # Create through secured helper
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
 
             # Optionally create a primary emergency contact if provided (TP/admin only)
             if is_tp:
@@ -1182,7 +1184,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             try:
                 dob_date = fields.Date.to_date(dob)
             except Exception:
-                self._portal_flash(_('Please enter a valid Date of Birth (YYYY-MM-DD).'), post)
+                self._portal_flash(_('Please enter a valid Date of Birth (YYYY-MM-DD).'), post, ('team_add', team_id))
                 return request.redirect(f'/my/team/{team_id}/add_player')
 
             # Enforce DOB not in future and not older than 120 years
@@ -1190,7 +1192,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             min_dob = today - relativedelta(years=120)
             if dob_date > today or dob_date < min_dob:
                 self._portal_flash(
-                    _('Date of Birth must not be in the future and not be more than 120 years ago.'), post)
+                    _('Date of Birth must not be in the future and not be more than 120 years ago.'), post, ('team_add', team_id))
                 return request.redirect(f'/my/team/{team_id}/add_player')
             
             # Determine if current user is allowed to set medical/status fields
@@ -1253,7 +1255,10 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     patient_vals['practice_status'] = post.get('practice_status')
             
             # Create patient through the private _create_portal_patient method which has proper access controls
-            patient = request.env['sports.patient']._create_portal_patient(patient_vals)
+            # Task 1600: a refused create (e.g. the exact-duplicate check)
+            # leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(patient_vals)
             
             # Log the action
             _logger.debug(
@@ -1266,7 +1271,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect(edit_url)
             
         except UserError as e:
-            self._portal_flash(self._user_error_text(e, 'team'), post)
+            self._portal_flash(self._user_error_text(e, 'team'), post, ('team_add', team_id))
             return request.redirect(f'/my/team/{team_id}/add_player')
 
         except (AccessError, MissingError) as e:
@@ -1274,7 +1279,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
         except Exception as e:
             _logger.exception("Error in portal_add_player_submit")
-            self._portal_flash(_("An error occurred while adding the player. Please try again later."), post)
+            self._portal_flash(_("An error occurred while adding the player. Please try again later."), post, ('team_add', team_id))
             return request.redirect(f'/my/team/{team_id}/add_player')
 
     @http.route(['/my/team/<int:team_id>/player/search'], type='jsonrpc', auth="user", methods=['POST'])
@@ -1424,7 +1429,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if post.get('practice_status'):
                 vals['practice_status'] = post.get('practice_status')
 
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
             if sc_inline:
                 return request.redirect(
                     f"/my/player?player_id={patient.id}&team_id={team.id}&tab=info")
@@ -1567,7 +1574,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if post.get('practice_status'):
                 vals['practice_status'] = post.get('practice_status')
 
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
 
             request.session['notification'] = {
                 'type': 'success',

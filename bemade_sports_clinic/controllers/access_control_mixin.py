@@ -23,6 +23,7 @@ from odoo.http import request
 
 from ..models import sc_app_nav
 from datetime import datetime, time
+import time as systime
 import logging
 import pytz
 
@@ -389,20 +390,58 @@ class AccessControlMixin:
     # inline" pattern (which repeatedly 500'd on missing template context).
     # ------------------------------------------------------------------
 
-    def _portal_flash(self, error, form_data=None):
-        """Stash a validation error + submitted form data for a PRG redirect."""
-        request.session['portal_flash_error'] = error
-        request.session['portal_flash_data'] = dict(form_data or {})
+    # Task 1600: the flash is SCOPED to the form it belongs to and EXPIRES.
+    # A flash stashed by player A's failed save used to stay in the session
+    # until ANY form popped it — and the player edit form then filled player
+    # B's fields (and unticked B's teams) from A's posted data. Now a pop
+    # returns the data only for the same scope (e.g. ('player_edit', A.id))
+    # and within PORTAL_FLASH_TTL seconds; any other pop discards it.
+    PORTAL_FLASH_TTL = 600
 
-    def _portal_pop_flash(self):
-        """Return (error, form_data) stashed by _portal_flash, clearing them.
+    @staticmethod
+    def _portal_flash_scope(scope):
+        return [str(part) for part in (scope if isinstance(scope, (list, tuple)) else (scope,))]
 
-        form_data is a plain dict of the user's previous input, for re-prefill.
-        """
-        return (
-            request.session.pop('portal_flash_error', None),
-            request.session.pop('portal_flash_data', {}) or {},
-        )
+    def _portal_flash(self, error, form_data=None, scope=None):
+        """Stash a validation error + submitted form data for a PRG redirect
+        to the form identified by ``scope`` (a tuple such as
+        ``('player_edit', patient_id)``)."""
+        request.session.pop('portal_flash_error', None)
+        request.session.pop('portal_flash_data', None)
+        data = request.httprequest.form.to_dict(flat=False) if form_data is None else form_data
+        clean = {}
+        for key, value in dict(data or {}).items():
+            if key == 'csrf_token':
+                continue
+            if isinstance(value, (list, tuple)):
+                value = list(value) if len(value) > 1 else (value[0] if value else '')
+            clean[key] = value
+        request.session['portal_flash'] = {
+            'scope': self._portal_flash_scope(scope),
+            'ts': systime.time(),
+            'error': error,
+            'data': clean,
+        }
+
+    def _portal_pop_flash(self, scope=None):
+        """Return (error, form_data) stashed by _portal_flash for ``scope``,
+        clearing the flash in every case. A flash of another scope, or older
+        than PORTAL_FLASH_TTL, is discarded: (None, {})."""
+        # Pre-1600 sessions: the unscoped keys are dropped, never used.
+        request.session.pop('portal_flash_error', None)
+        request.session.pop('portal_flash_data', None)
+        flash = request.session.pop('portal_flash', None)
+        if not isinstance(flash, dict):
+            return None, {}
+        if flash.get('scope') != self._portal_flash_scope(scope):
+            return None, {}
+        try:
+            age = systime.time() - float(flash.get('ts') or 0)
+        except (TypeError, ValueError):
+            return None, {}
+        if age < 0 or age > self.PORTAL_FLASH_TTL:
+            return None, {}
+        return flash.get('error'), dict(flash.get('data') or {})
 
     def _activity_assignable_users(self):
         """Active users in either treatment-professional group OR the

@@ -45,6 +45,7 @@ from odoo.tools import file_open, format_date, format_datetime, html2plaintext, 
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
 from ..models import sc_app_nav, sc_app_roles
+from ..models.patient import IDENTITY_CONFIRM_KEY, IDENTITY_FIELDS
 from .access_control_mixin import AccessControlMixin
 
 APP_SHELL_PARAM = 'bemade_sports_clinic.app_shell_enabled'
@@ -1413,6 +1414,28 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return bool(request.env.user._sc_app_roles() & frozenset(allowed[field]))
         return True
 
+    @staticmethod
+    def _sc_identity_confirm_needed(patient, field, value):
+        """The 409 payload asking the client to confirm an identity
+        correction (an existing first / last name or date of birth changed
+        by a portal user), or None when no confirmation is needed."""
+        new = _date_value(value) if field == 'date_of_birth' else (value or '').strip()
+        if field != 'date_of_birth' and not new:
+            return None  # refused as « required » by the write hook
+        changes = patient._sc_identity_corrections({field: new})
+        if not changes or not patient._sc_identity_guarded():
+            return None
+        _name, old, new_text = changes[patient.id][0]
+        if field == 'date_of_birth':
+            old = format_date(patient.env, old) if old else ''
+            new_text = format_date(patient.env, new_text) if new_text else ''
+        return {
+            'confirm_identity': True,
+            'message': _("Correct this player's identity?"),
+            'old': old,
+            'new': new_text,
+        }
+
     @http.route(['/my/app/save/<string:model>/<int:record_id>'], type='http', auth='user',
                 methods=['POST'], csrf=True, multilang=False)
     def sc_app_save(self, model, record_id, field=None, value=None, write_date=None,
@@ -1435,7 +1458,10 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         * 403 ``{error}`` — model / field outside ``SAVE_REGISTRY``, a field
           outside the caller's role allowlist, the registry check or
           permission refused, or the ORM refused the write;
-        * 400 ``{error}`` — missing parameters or an invalid value.
+        * 400 ``{error}`` — missing parameters or an invalid value;
+        * 428 ``{confirm_identity, message, old, new}`` — task 1600: a portal
+          user changes an existing first / last name or date of birth; nothing
+          is written until the same save is re-posted with ``confirm=1``.
         """
         spec = SAVE_REGISTRY.get(model)
         if not spec or not field or not self._sc_save_allowed(spec, field):
@@ -1457,6 +1483,16 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     'current_write_date': current,
                     'by': record.sudo().write_uid.name or '',
                 }, 409)
+            if model == 'sports.patient' and field in IDENTITY_FIELDS:
+                # Task 1600: changing an existing name / date of birth is an
+                # explicit, confirmed step (``confirm=1``, posted by the
+                # field's confirm banner) — the model records it on the file.
+                if kw.get('confirm') == '1':
+                    record = record.with_context(**{IDENTITY_CONFIRM_KEY: True})
+                else:
+                    refusal = self._sc_identity_confirm_needed(record, field, value)
+                    if refusal:
+                        return self._sc_save_json(refusal, 428)
             extra = {}
             # A refused / invalid write leaves nothing behind (a hook may
             # write more than one field).

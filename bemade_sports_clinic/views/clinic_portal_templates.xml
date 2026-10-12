@@ -199,6 +199,7 @@
                         <t t-elif="error == 'permission_denied'">You do not have permission to add treatment notes.</t>
                         <t t-elif="error == 'unregistered_row'">This sign-in is not registered yet — link it to a file, create the player, or remove it.</t>
                         <t t-elif="error == 'no_team'">Pick the team the new player belongs to.</t>
+                        <t t-elif="error == 'duplicate_identity'">Another player already has this name and date of birth.</t>
                         <t t-else="" t-esc="error"/>
                     </div>
 
