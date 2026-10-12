@@ -964,6 +964,10 @@ class AppShellMixin:
                 'travel_end': self._sc_local_input(ts.travel_end),
             },
             'editable': ts.state != 'invoiced' and own,
+            # Task 1584: whose timesheet — the card names the therapist on
+            # rows that aren't the viewer's (admins' full event view).
+            'own': own,
+            'employee': ts.user_id.sudo().name or '',
             'record': ts,
             'event_url': '/my/event/%s' % event.id,
         }

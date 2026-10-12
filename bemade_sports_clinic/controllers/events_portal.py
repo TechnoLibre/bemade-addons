@@ -599,9 +599,11 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Confidentiality (dev-review 2026-07-04): a TP only sees the tab when
         # assigned to this event, and then only their OWN rows; system admins
         # keep the full view. Membership is read via event_sudo (m2m to
-        # res.users is group-restricted).
+        # res.users is group-restricted). Task 1584 (owner decision
+        # 2026-10-12): clinic admins get the full view too, assigned or not
+        # (their record rules already read every timesheet).
         is_assigned = user.id in event_sudo.assigned_staff_ids.ids
-        show_all_timesheets = user.has_group('base.group_system')
+        show_all_timesheets = self._is_clinic_admin()
         can_view_timesheets = (is_therapist and is_assigned) or show_all_timesheets
         can_add_timesheet = is_therapist and is_assigned
 

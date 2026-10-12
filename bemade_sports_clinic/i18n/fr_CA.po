@@ -2385,6 +2385,11 @@ msgid "<strong>Last Name:</strong>"
 msgstr "<strong>Nom de famille :</strong>"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+msgid "<strong>Missing timesheets:</strong>"
+msgstr "<strong>Feuilles de temps manquantes :</strong>"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 msgid "<strong>Match:</strong>"
 msgstr "<strong>Match :</strong>"
@@ -11644,6 +11649,7 @@ msgstr "Feuille de temps mise à jour."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_event_vendor_po_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_invoicing_wizard_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_timesheet_tree_for_invoicing_wizard
 msgid "Timesheets"
 msgstr "Feuilles de temps"
