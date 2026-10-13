@@ -162,3 +162,4 @@ from . import test_portal_flash_scope_1600
 from . import test_identity_guard_1600
 from . import test_identity_guard_tours_1600
 from . import test_identity_guard_i18n_1600
+from . import test_app_shell_theme_1602

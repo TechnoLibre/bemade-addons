@@ -42,6 +42,7 @@ class TestAppShellPrefs1538(AppShellCommon):
 
     # -- UC-P2 -----------------------------------------------------------
     def test_pref_route_sets_own_prefs_json(self):
+        self._theme_choice(True)  # task 1602: else the answer is the forced dark
         self._login_coach()
         resp = self._post_pref({'sc_theme': 'light'})
         self.assertEqual(resp.status_code, 200)
@@ -103,6 +104,7 @@ class TestAppShellPrefs1538(AppShellCommon):
 
     def test_more_lists_stock_portal_links(self):
         self._switch(True)
+        self._theme_choice(True)  # task 1602: the Appearance block needs it
         for login in (self._login_coach, self._login_tp):
             login()
             tree = self._more()

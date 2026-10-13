@@ -49,6 +49,10 @@ from ..models.patient import IDENTITY_CONFIRM_KEY, IDENTITY_FIELDS
 from .access_control_mixin import AccessControlMixin
 
 APP_SHELL_PARAM = 'bemade_sports_clinic.app_shell_enabled'
+# Task 1602: the dark / light choice. Absent or falsy = forced dark for
+# everyone and both theme toggles hidden; the saved ``sc_theme`` is kept and
+# applies again once this is on.
+THEME_CHOICE_PARAM = 'bemade_sports_clinic.sc_theme_choice_enabled'
 _TRUTHY = ('1', 'true', 'yes', 'on')
 # The ONLY fields /my/app/pref may write, with their allowed values.
 # Task 1579: no navigation setting any more — the screen width decides.
@@ -770,6 +774,19 @@ class AppShellMixin:
         raw = request.env['ir.config_parameter'].sudo().get_param(APP_SHELL_PARAM)
         return str(raw or '').strip().lower() in _TRUTHY
 
+    @staticmethod
+    def _sc_theme_choice_enabled():
+        raw = request.env['ir.config_parameter'].sudo().get_param(THEME_CHOICE_PARAM)
+        return str(raw or '').strip().lower() in _TRUTHY
+
+    @classmethod
+    def _sc_effective_theme(cls, user):
+        """The theme the app renders for ``user``: forced dark unless the
+        theme choice is enabled (task 1602)."""
+        if not cls._sc_theme_choice_enabled():
+            return 'dark'
+        return user.sc_theme or 'dark'
+
     def _sc_app_shell_active(self):
         """Switch on AND the viewer holds an app role."""
         if not self._sc_app_shell_enabled():
@@ -841,7 +858,9 @@ class AppShellMixin:
             'sc_rail': rail,
             'sc_plus': plus,
             'sc_nav_labels': labels,
-            'sc_theme': user.sc_theme or 'dark',
+            # Task 1602: forced dark (no toggles) unless the choice is on.
+            'sc_theme': self._sc_effective_theme(user),
+            'sc_theme_choice': self._sc_theme_choice_enabled(),
             'sc_langs': self._sc_lang_options(),
             'sc_current_url': path + ('?' + query if query else ''),
             'sc_search_url': '/my/players' if any(t['key'] == 'players' for t in rail) else False,
@@ -1335,7 +1354,7 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         accept = request.httprequest.headers.get('Accept', '')
         if 'application/json' in accept:
             response = request.make_json_response(
-                {'sc_theme': user.sc_theme, 'lang': user.lang})
+                {'sc_theme': self._sc_effective_theme(user), 'lang': user.lang})
         else:
             url = self._safe_return_url(redirect, '/my/app/more')
             if lang:
