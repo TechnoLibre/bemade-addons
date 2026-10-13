@@ -13,7 +13,9 @@
     the legacy scripts are NOT used here and stay unchanged.
 
     Every sheet posts to the SAME routes as today's page (CSRF token in each
-    form). The injury sheets load the unchanged fragment routes. No inline
+    form). Task 1590: the dossier's injuries are the player page's inline
+    cards (sc_injury_add_card / sc_injury_card) — the legacy fragment routes
+    are no longer loaded here (the legacy page still uses them). No inline
     script / style (lint test).
 -->
 <odoo>
@@ -201,8 +203,9 @@
                                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'user'"/></t>
                                     <span>Full file</span>
                                 </a>
-                                <a t-if="is_treatment_prof" t-attf-href="/my/patient/injury/new?patient_id=#{patient.id}#{dossier_ctx_qs}"
-                                   class="o_sc_btn o_sc_btn_primary o_sc_btn_sm" data-sc-sheet-open="sc_clinic_injury_new"
+                                <!-- Task 1590: jumps to the inline « Add Injury » card. -->
+                                <a t-if="is_treatment_prof" href="#sc_clinic_injury_add"
+                                   class="o_sc_btn o_sc_btn_primary o_sc_btn_sm"
                                    data-sc-action="clinic.injury_new">
                                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'injury'"/></t>
                                     <span>New injury</span>
@@ -238,16 +241,22 @@
                             <t t-call="bemade_sports_clinic.sc_section_header">
                                 <t t-set="title">Active injuries</t>
                             </t>
-                            <div t-if="sc_injury_rows" class="o_sc_list">
+                            <!-- Task 1590: the player page's inline cards — add
+                                 (coach visibility, then diagnosis), pencil edit
+                                 saved field by field, the quick notes with their
+                                 « last note » stamp; every create / undo lands
+                                 back here (sc_origin=clinic). -->
+                            <t t-set="clinic_event" t-value="event"/>
+                            <t t-set="card_origin" t-value="'clinic'"/>
+                            <t t-set="card_id_prefix" t-value="'clinic-injury-'"/>
+                            <t t-set="card_note_hint" t-value="True"/>
+                            <t t-call="bemade_sports_clinic.sc_injury_add_card">
+                                <t t-set="card_patient" t-value="patient"/>
+                                <t t-set="card_add_id" t-value="'sc_clinic_injury_add'"/>
+                            </t>
+                            <div t-if="sc_injury_rows" class="o_sc_list" data-sc-section="clinic.dossier.injury_list">
                                 <t t-foreach="sc_injury_rows" t-as="row">
-                                    <t t-call="bemade_sports_clinic.sc_entity_row">
-                                        <t t-set="href" t-value="'/my/injury/edit?injury_id=%s%s' % (row['id'], dossier_ctx_qs)"/>
-                                        <t t-set="dot" t-value="'red'"/>
-                                        <t t-set="title" t-value="row['title']"/>
-                                        <t t-set="subtitle" t-value="row['subtitle']"/>
-                                        <t t-set="row_attrs" t-value="{'data-sc-injury-id': row['id'], 'data-sc-sheet-open': 'sc_clinic_injury_%s' % row['id'], 'id': 'clinic-injury-%s' % row['id']}"/>
-                                        <span t-if="row['hidden']" class="o_sc_chip o_sc_chip_mauve">Hidden from coaches</span>
-                                    </t>
+                                    <t t-call="bemade_sports_clinic.sc_injury_card"/>
                                 </t>
                             </div>
                             <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
@@ -281,19 +290,6 @@
                             </t>
                         </section>
 
-                        <!-- Injury sheets: the unchanged fragment routes (task 1412). -->
-                        <t t-if="is_treatment_prof" t-call="bemade_sports_clinic.sc_sheet">
-                            <t t-set="sheet_id" t-value="'sc_clinic_injury_new'"/>
-                            <t t-set="title">Add Injury</t>
-                            <t t-set="lazy_url" t-value="'/my/patient/injury/new/fragment?patient_id=%s&amp;clinic_id=%s' % (patient.id, event.id)"/>
-                        </t>
-                        <t t-foreach="sc_injury_rows" t-as="row">
-                            <t t-call="bemade_sports_clinic.sc_sheet">
-                                <t t-set="sheet_id" t-value="'sc_clinic_injury_%s' % row['id']"/>
-                                <t t-set="title">Edit Injury</t>
-                                <t t-set="lazy_url" t-value="row['fragment_url']"/>
-                            </t>
-                        </t>
                     </t>
                 </section>
             </div>

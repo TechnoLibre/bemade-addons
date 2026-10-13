@@ -1098,6 +1098,54 @@ class AppShellMixin:
             self._sc_field_props(note, 'injury_id', env._("Injury"), 'select', options=options),
         ]
 
+    # ------------------------------------------------------------------
+    # Task 1590 — the inline injury cards, shared by the player page's
+    # Injuries tab and the clinic dossier (template sc_injury_card).
+    # ------------------------------------------------------------------
+    SC_INJURY_TONES = {'unverified': 'yellow', 'active': 'red', 'resolved': 'green'}
+
+    @staticmethod
+    def _sc_injury_tp_view(is_tp):
+        """A therapist who holds a therapist app role sees the TP fields."""
+        return bool(is_tp and request.env.user._sc_app_roles() & sc_app_roles.TP)
+
+    @staticmethod
+    def _sc_injury_card_options():
+        """The option lists an injury card's autosave fields need."""
+        env = request.env
+        Injury = env['sports.patient.injury']
+        # Labels first, keys zipped in (babel's extractor, see above).
+        visibility_labels = (env._("Coaches"), env._("Hidden"))
+        return {
+            'sc_injury_stage_options': list(Injury._fields['stage']._description_selection(env)),
+            'sc_visibility_options': list(zip(('0', '1'), visibility_labels)),
+            'sc_consent_options': [('', '')] + list(
+                Injury._fields['parental_consent']._description_selection(env)),
+        }
+
+    def _sc_injury_card_row(self, injury, ctx_qs, is_tp, tp_view, opened_id=0, created_id=0):
+        """One row of an injury card list: ?injury=<id> opens it read-only,
+        ?created=<id> (its creator only) opens it in edit mode with the
+        « Undo »."""
+        env = request.env
+        stages = dict(injury._fields['stage']._description_selection(env))
+        when = (format_date(env, injury.injury_date) if injury.injury_date
+                else env._("Date unknown"))
+        return {
+            'id': injury.id,
+            'title': injury.diagnosis or env._("Injury"),
+            'subtitle': ' · '.join(part for part in (when, stages.get(injury.stage, '')) if part),
+            'dot': self.SC_INJURY_TONES.get(injury.stage, 'green'),
+            'chip': stages.get(injury.stage, ''),
+            'hidden': bool(injury.hidden_from_coaches),
+            'url': '/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs),
+            'injury': injury,
+            'open': injury.id in (opened_id, created_id),
+            'created': injury.id == created_id and injury.create_uid == env.user,
+            'consent_todo': tp_view and not injury.parental_consent,
+            'diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
+        }
+
     @staticmethod
     def _sc_draft_props(draft_key, name, label, input_type='text', value='', **extra):
         """JSON props of a DRAFT-mode sc_autosave_field: a real form field

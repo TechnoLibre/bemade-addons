@@ -303,7 +303,8 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
         if sc_inline:
             return request.redirect(self._url_with_query(
-                injuries_url, 'created=%s' % injury.id) + '#injury-%s' % injury.id)
+                injuries_url, 'created=%s' % injury.id) + '#%s%s' % (
+                    self._sc_inline_card_prefix(post, clinic_event), injury.id))
 
         # Task 1412: created FROM a clinic (the form's return_url is a clinic
         # page) ⇒ go straight back there, same patient, the new card in view.
@@ -331,8 +332,24 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
     SC_UNDO_CREATE_MINUTES = 2
 
+    @staticmethod
+    def _sc_inline_from_clinic(post, clinic_event):
+        """Task 1590: the inline card was posted from the clinic dossier
+        (``sc_origin=clinic``, with a clinic the user may open) — not from
+        the player page, which carries ``clinic_id`` as navigation context
+        too and keeps landing on the player page."""
+        return bool(clinic_event) and post.get('sc_origin') == 'clinic'
+
+    def _sc_inline_card_prefix(self, post, clinic_event):
+        """The id prefix of an injury card on the page the create lands on."""
+        return 'clinic-injury-' if self._sc_inline_from_clinic(post, clinic_event) else 'injury-'
+
     def _sc_inline_injuries_url(self, patient, post, clinic_event=None):
-        """The player page's Injuries tab, with the team / clinic context."""
+        """The player page's Injuries tab, with the team / clinic context —
+        or, from the clinic dossier (task 1590), that clinic with the same
+        patient's file open."""
+        if self._sc_inline_from_clinic(post, clinic_event):
+            return '/my/clinic/%s?patient=%s&tab=dossier' % (clinic_event.id, patient.id)
         url = '/my/player?player_id=%s' % patient.id
         try:
             team_id = int(post.get('team_context_id') or post.get('team_id') or 0)
@@ -355,7 +372,10 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         except (UserError, AccessError, MissingError):
             return request.redirect('/my/players')
         patient = injury.patient_id
-        url = self._sc_inline_injuries_url(patient, post, self._clinic_context(post))
+        clinic_event = self._clinic_context(post)
+        url = self._sc_inline_injuries_url(patient, post, clinic_event)
+        if self._sc_inline_from_clinic(post, clinic_event):
+            url += '#clinic-injuries'
         record = injury.sudo()
         deadline = fields.Datetime.now() - timedelta(minutes=self.SC_UNDO_CREATE_MINUTES)
         allowed = (

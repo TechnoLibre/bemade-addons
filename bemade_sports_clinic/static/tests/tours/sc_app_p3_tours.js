@@ -77,13 +77,13 @@ tours.add("sc_1540_clinic", {
             },
         },
         {
-            content: "Open the injury sheet",
-            trigger: '[data-sc-section="clinic.dossier.injuries"] a[data-sc-injury-id]',
+            content: "Open the injury card (task 1590: inline, no sheet)",
+            trigger: '[data-sc-section="clinic.dossier.injuries"] details[data-sc-edit-card="injury"] > summary',
             run: "click",
         },
         {
-            content: "The unchanged injury form fragment is loaded in the sheet",
-            trigger: "dialog.o_sc_sheet[open] .o_sc_sheet_body form",
+            content: "The card's read view is shown, with its pencil",
+            trigger: '[data-sc-section="clinic.dossier.injuries"] details[data-sc-edit-card="injury"][open] button[data-sc-edit-toggle]',
         },
     ],
 });

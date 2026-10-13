@@ -167,3 +167,5 @@ from . import test_app_shell_admin_coach_1598
 from . import test_training_history_1601
 from . import test_note_replace_editor_1582
 from . import test_note_replace_tours_1582
+from . import test_clinic_dossier_inline_1590
+from . import test_clinic_dossier_tours_1590

@@ -913,7 +913,6 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     # ------------------------------------------------------------------
     # Task 1539 — the player page in the app shell
     # ------------------------------------------------------------------
-    SC_INJURY_TONES = {'unverified': 'yellow', 'active': 'red', 'resolved': 'green'}
     # Owner review 2026-10-11: no « Overview » (status in the header, the
     # training recommendation on Info) and no « Contacts » (on Info); the
     # page opens on « Injuries ». Old ?tab= values still land.
@@ -927,8 +926,6 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         user = env.user
         is_tp = values['is_treatment_prof']
         stage_labels = dict(env['sports.patient']._fields['stage']._description_selection(env))
-        injury_stages = dict(
-            env['sports.patient.injury']._fields['stage']._description_selection(env))
         ctx_qs = values['ctx_qs']
         base_url = '/my/player?player_id=%s%s' % (player.id, ctx_qs)
         can_activities = is_tp or user.has_group('bemade_sports_clinic.group_portal_team_coach')
@@ -948,26 +945,11 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         created = env['sports.patient.injury'].sudo().browse(created_id).exists()
         created_draft_clear = bool(
             created and created.patient_id == player and created.create_uid == user)
-        tp_view = bool(is_tp and user._sc_app_roles() & sc_app_roles.TP)
+        tp_view = self._sc_injury_tp_view(is_tp)
 
         def _injury_row(injury):
-            when = (format_date(env, injury.injury_date) if injury.injury_date
-                    else env._("Date unknown"))
-            return {
-                'id': injury.id,
-                'title': injury.diagnosis or env._("Injury"),
-                'subtitle': ' · '.join(part for part in (
-                    when, injury_stages.get(injury.stage, '')) if part),
-                'dot': self.SC_INJURY_TONES.get(injury.stage, 'green'),
-                'chip': injury_stages.get(injury.stage, ''),
-                'hidden': bool(injury.hidden_from_coaches),
-                'url': '/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs),
-                'injury': injury,
-                'open': injury.id == opened_id,
-                'created': injury.id == created_id and injury.create_uid == user,
-                'consent_todo': tp_view and not injury.parental_consent,
-                'diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
-            }
+            return self._sc_injury_card_row(
+                injury, ctx_qs, is_tp, tp_view, opened_id=opened_id, created_id=created_id)
 
         # Owner review 2026-10-10: current injuries (active, unverified)
         # first, then resolved; each by injury date, newest first.
@@ -1038,7 +1020,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         } for doc in values['patient_documents']]
 
         stage = player.stage or 'healthy'
-        return {
+        return dict(self._sc_injury_card_options(), **{
             'sc_player_tabs': sc_tabs,
             'sc_player_active_tab': active_tab,
             'sc_player_url': base_url,
@@ -1049,18 +1031,12 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_created_draft_clear': created_draft_clear,
             'sc_injury_rows': [_injury_row(i) for i in injuries],
             'sc_is_tp_view': tp_view,
-            'sc_injury_stage_options': list(
-                env['sports.patient.injury']._fields['stage']._description_selection(env)),
-            # Labels first, keys zipped in (babel's extractor, see app_shell).
-            'sc_visibility_options': list(zip(('0', '1'), (env._("Coaches"), env._("Hidden")))),
             'sc_active_injury_rows': [_injury_row(i) for i in active],
             'sc_player_events': events,
             'sc_status_options': self._sc_status_options(),
             # Inline « Add Injury » card (owner review 2026-10-10): the new
             # injury page's draft prefix and consent choices.
             'sc_new_injury_prefix': 'sports.patient.%s.new_injury.' % player.id,
-            'sc_consent_options': [('', '')] + list(
-                env['sports.patient.injury']._fields['parental_consent']._description_selection(env)),
             # Inline editing (owner review 2026-10-10).
             'sc_state_options': [('', '')] + [
                 (state.id, state.name) for state in env['res.country.state'].search(
@@ -1085,7 +1061,7 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_activities_return': '%s&tab=activities' % base_url,
             'today_date': fields.Date.context_today(player),
             'sc_flash': self._sc_player_flash(kw),
-        }
+        })
 
     @staticmethod
     def _sc_player_flash(kw):
