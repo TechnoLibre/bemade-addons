@@ -206,15 +206,19 @@
                             <dd><span class="o_sc_pre" t-att-data-sc-display="sc_display_key(injury, 'internal_notes')" t-out="injury.internal_notes or '—'"/></dd>
                         </t>
                     </dl>
+                    <!-- Task 1582: both notes use the « replace » editor (the
+                         current text above an empty « New note »), each with
+                         its own scoped « History » sheet. -->
                     <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                        <t t-set="sc_note_placeholder">Write the injury's current state — replaces the previous text</t>
                         <t t-set="lbl">External Notes</t>
                         <t t-call="bemade_sports_clinic.sc_field_autosave">
-                            <t t-set="props" t-value="sc_field_props(injury, 'external_notes', lbl, 'textarea', clearable=True, hint=injury.last_external_note_info or None)"/>
+                            <t t-set="props" t-value="sc_field_props(injury, 'external_notes', lbl, 'textarea', clearable=True, hint=injury.last_external_note_info or None, replace=True, placeholder=sc_note_placeholder, historySheet='sc_note_history_sheet_external', historyLabel=sc_note_history_label)"/>
                         </t>
                         <t t-if="sc_is_tp_view and sc_can('injury.internal_notes')">
                             <t t-set="lbl">Internal Notes (Medical Staff Only)</t>
                             <t t-call="bemade_sports_clinic.sc_field_autosave">
-                                <t t-set="props" t-value="sc_field_props(injury, 'internal_notes', lbl, 'textarea', clearable=True, hint=injury.last_internal_note_info or None)"/>
+                                <t t-set="props" t-value="sc_field_props(injury, 'internal_notes', lbl, 'textarea', clearable=True, hint=injury.last_internal_note_info or None, replace=True, placeholder=sc_note_placeholder, historySheet='sc_note_history_sheet_internal', historyLabel=sc_note_history_label)"/>
                             </t>
                         </t>
                         <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
@@ -229,6 +233,18 @@
                         <t t-set="sheet_id" t-value="'sc_note_history_sheet'"/>
                         <t t-set="title">Note History</t>
                         <t t-set="lazy_url" t-value="sc_note_history_url"/>
+                        <t t-set="lazy_fresh" t-value="True"/>
+                    </t>
+                    <t t-call="bemade_sports_clinic.sc_sheet">
+                        <t t-set="sheet_id" t-value="'sc_note_history_sheet_external'"/>
+                        <t t-set="title">External Notes History</t>
+                        <t t-set="lazy_url" t-value="sc_note_history_url + '?scope=external'"/>
+                        <t t-set="lazy_fresh" t-value="True"/>
+                    </t>
+                    <t t-if="sc_is_tp_view and sc_can('injury.internal_notes')" t-call="bemade_sports_clinic.sc_sheet">
+                        <t t-set="sheet_id" t-value="'sc_note_history_sheet_internal'"/>
+                        <t t-set="title">Internal Notes History</t>
+                        <t t-set="lazy_url" t-value="sc_note_history_url + '?scope=internal'"/>
                         <t t-set="lazy_fresh" t-value="True"/>
                     </t>
                 </section>

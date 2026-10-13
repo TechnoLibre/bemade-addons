@@ -14881,3 +14881,56 @@ msgstr "Dernière mise à jour de la recommandation d'entraînement"
 #: code:addons/bemade_sports_clinic/models/patient.py:0
 msgid "Updated on %(date)s by %(author)s"
 msgstr "Mis à jour le %(date)s par %(author)s"
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,help:bemade_sports_clinic.field_sports_patient_injury__external_notes
+#: model:ir.model.fields,help:bemade_sports_clinic.field_sports_patient_injury__internal_notes
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_form_body
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_injury_view_form
+msgid ""
+"Current state (replaces the previous text; the history keeps the versions)"
+msgstr "État actuel (remplace le texte précédent; l'historique conserve les versions)"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.xml:0
+msgid "Current text"
+msgstr "Texte actuel"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "External Notes History"
+msgstr "Historique des notes externes"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Internal Notes History"
+msgstr "Historique des notes internes"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.xml:0
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.dashboard_change_item
+msgid "New note"
+msgstr "Nouvelle note"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.xml:0
+msgid "Replaces the previous text; the old one is kept in the history."
+msgstr "Remplace le texte précédent ; l'ancien est conservé dans l'historique."
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.xml:0
+msgid "Reuse current text"
+msgstr "Reprendre le texte actuel"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Write the injury's current state — replaces the previous text"
+msgstr "Écrire l'état actuel de la blessure — remplace le texte précédent"
