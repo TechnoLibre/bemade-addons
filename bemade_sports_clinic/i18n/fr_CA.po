@@ -3517,6 +3517,7 @@ msgstr "Présences : %s"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__author_id
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__author_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team_note_history__author_id
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_note_history
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
@@ -4269,6 +4270,7 @@ msgstr "Créé le"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__create_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__create_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__create_uid
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__create_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__create_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__create_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__create_uid
@@ -4306,6 +4308,7 @@ msgstr "Créé par"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__create_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__create_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__create_date
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__create_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__create_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__create_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__create_date
@@ -4487,6 +4490,7 @@ msgstr "Les données sont hébergées au Québec. Responsable de la protection d
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__note_datetime
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__change_datetime
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team_note_history__note_datetime
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_treatment_note__date
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
@@ -4859,6 +4863,7 @@ msgstr "Traitées"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__display_name
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__display_name
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__display_name
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__display_name
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__display_name
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__display_name
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__display_name
@@ -6100,6 +6105,7 @@ msgstr "Je suis arrivé(e)"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__id
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__id
@@ -6657,6 +6663,7 @@ msgstr "Dernière activité de joueur visible par le professionnel de la santé"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__write_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__write_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__write_uid
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__write_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__write_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__write_uid
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__write_uid
@@ -6695,6 +6702,7 @@ msgstr "Dernière mise à jour par"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__write_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_contact_line__write_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_merge_wizard__write_date
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__write_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_quick_note__write_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__write_date
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team__write_date
@@ -8246,6 +8254,7 @@ msgstr "Feuilles de temps passées"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__patient_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_contact__patient_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__patient_id
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__patient_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_treatment_note__patient_id
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_search
@@ -11802,6 +11811,7 @@ msgstr "Formation"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__training_recommendation
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__content
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
@@ -14493,6 +14503,8 @@ msgid "Training recommendation history"
 msgstr "Historique des recommandations d'entraînement"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_training_history.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_history_entry
 msgid "Cleared"
 msgstr "Effacée"
@@ -14846,3 +14858,26 @@ msgstr "La modification sera notée au dossier du joueur."
 #: code:addons/bemade_sports_clinic/controllers/player_management_portal.py:0
 msgid "The player is no longer on any of your teams."
 msgstr "Le joueur ne fait plus partie d'aucune de vos équipes."
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_training_history__content_display
+msgid "Recommendation"
+msgstr "Recommandation"
+
+#. module: bemade_sports_clinic
+#: model:ir.model,name:bemade_sports_clinic.model_sports_patient_training_history
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__training_history_ids
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_view_form
+msgid "Training Recommendation History"
+msgstr "Historique de la recommandation d'entraînement"
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__last_training_recommendation_info
+msgid "Training recommendation last updated"
+msgstr "Dernière mise à jour de la recommandation d'entraînement"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient.py:0
+msgid "Updated on %(date)s by %(author)s"
+msgstr "Mis à jour le %(date)s par %(author)s"

@@ -103,6 +103,9 @@ export class ScAutosaveField extends Component {
             error: "",
             query: "", // tags: the search box
             identity: null, // task 1600: {message, old, new} awaiting confirmation
+            // Task 1601: the « updated on … by … » stamp under the field; a
+            // save answers the fresh one (``hint``).
+            hint: this.props.hint || "",
         });
         this.writeDate = this.props.writeDate || "";
         // The field value the server last held (sent as old_value: a record
@@ -442,6 +445,9 @@ export class ScAutosaveField extends Component {
             }
             this.lastSaved = result.value !== undefined ? asText(result.value) : this.state.value;
             this.state.message = result.message || "";
+            if (result.hint !== undefined) {
+                this.state.hint = result.hint || "";
+            }
             removeDraft(this.key);
             const now = new Date();
             this.state.savedAt = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;

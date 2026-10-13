@@ -28,6 +28,25 @@ def legacy_change_emails_enabled(env):
     return str(raw).strip().lower() not in ('', '0', 'false', 'none')
 
 
+def history_author_uid(env):
+    """The authenticated author of an audit-history row (tasks 1241, 1601).
+
+    Portal saves often go through ``record.sudo().write(vals)``, which rebinds
+    the environment to the superuser; an audit trail must credit the human
+    behind the request, so when running as sudo inside an HTTP request the
+    session uid is recovered instead."""
+    if env.su and request and request.session and request.session.uid:
+        return request.session.uid
+    return env.uid
+
+
+def history_stamp_date(record, when):
+    """``when`` (a UTC datetime) as the reader's local date, formatted in the
+    reader's lang — the date half of the « … on <date> by <author> » stamps
+    (tasks 1406, 1601)."""
+    return format_date(record.env, fields.Date.context_today(record, timestamp=when))
+
+
 external_tracking_fields = {
     "diagnosis",
     "predicted_resolution_date",
@@ -330,15 +349,9 @@ class PatientInjury(models.Model):
 
     def _note_history_author_id(self):
         """Resolve the authenticated author for note-history rows (task 1241).
-
-        Portal saves go through ``injury.sudo().write(vals)``, which rebinds
-        the environment to the superuser; the audit trail must credit the
-        human behind the request, so when running as sudo inside an HTTP
-        request we recover the session uid instead.
-        """
-        if self.env.su and request and request.session and request.session.uid:
-            return request.session.uid
-        return self.env.uid
+        Task 1601: shared with the training recommendation history
+        (``history_author_uid``)."""
+        return history_author_uid(self.env)
 
     def _last_note_history(self, scope):
         """The newest sports.injury.note.history row of ``scope`` for this
@@ -355,10 +368,9 @@ class PatientInjury(models.Model):
         is gone (task 1406)."""
         if not row:
             return ''
-        when = fields.Date.context_today(self, timestamp=row.note_datetime)
         return _(
             'Last note on %(date)s by %(author)s',
-            date=format_date(self.env, when),
+            date=history_stamp_date(self, row.note_datetime),
             author=row.author_id.name or '—',
         )
 

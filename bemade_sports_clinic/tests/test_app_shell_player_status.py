@@ -13,7 +13,7 @@ Acceptance criteria covered here:
 * UC-PS3 The « no match, practice » choice reads « Contact practice »
   (fr: « Pratique contact »), not « Practice only ».
 * UC-PS5 Training recommendation history (like the team announcement's):
-  every change (from the field's tracking) listed newest first with date,
+  every change (task 1601: from sports.patient.training.history) listed newest first with date,
   author and the text set (« Cleared » when emptied), in a sheet opened from
   the training recommendation card. Owner review 2026-10-11: the link is
   ALWAYS there, green (a link button), next to the « Training

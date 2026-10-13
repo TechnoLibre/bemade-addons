@@ -407,6 +407,11 @@ tours.add("sc_training_history_refresh", {
             trigger: '.o_sc_autosave[data-sc-field="training_recommendation"][data-sc-state="saved"]',
         },
         {
+            // Task 1601: the « Updated on … by … » stamp appears in place.
+            content: "The authorship stamp is updated without a reload",
+            trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] .o_sc_hint:contains(Updated on):contains(PC TP)',
+        },
+        {
             content: "Open the history again",
             trigger: '[data-sc-section="player.training"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
             run: "click",

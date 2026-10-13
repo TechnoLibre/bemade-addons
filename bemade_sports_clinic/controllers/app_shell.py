@@ -86,6 +86,13 @@ PREF_LANG = 'lang'
 #                                                    # payload keys (``message``).
 #           'read': callable(record, field) -> value # optional, for VIRTUAL
 #                                                    # fields (not on the model)
+#           'hint': callable(record, field) -> str | None
+#                                                    # optional (task 1601): the
+#                                                    # field's fresh « updated on
+#                                                    # … by … » stamp, answered
+#                                                    # as ``hint`` so the page
+#                                                    # updates it in place; None
+#                                                    # = the field has no stamp.
 #           'sudo_write': True,                      # the hook writes as sudo …
 #           'permission': callable(controller, record) -> bool,
 #                                                    # … which REQUIRES this
@@ -491,6 +498,13 @@ def _patient_write_field(ctrl, patient, field, value):
     return extra
 
 
+def _patient_hint(patient, field):
+    """Task 1601: the training recommendation's « Updated on … by … » stamp."""
+    if field == 'training_recommendation':
+        return patient.last_training_recommendation_info or ''
+    return None
+
+
 # -- sports.patient.injury ---------------------------------------------------
 def _injury_check(ctrl, injury):
     ctrl._check_access_to_injury(injury.id)
@@ -517,6 +531,17 @@ def _injury_display(injury, field):
         return format_date(env, injury.injury_date) if injury.injury_date else ''
     if field == 'hidden_from_coaches':
         return env._("Hidden from coaches") if injury.hidden_from_coaches else env._("Visible to coaches")
+    return None
+
+
+def _injury_hint(injury, field):
+    """Task 1601: the injury notes' « Last note on … by … » stamps refresh in
+    place after an autosave too (same mechanism as the training
+    recommendation's)."""
+    if field == 'external_notes':
+        return injury.last_external_note_info or ''
+    if field == 'internal_notes':
+        return injury.last_internal_note_info or ''
     return None
 
 
@@ -669,6 +694,7 @@ SAVE_REGISTRY = {
         'write': _patient_write,
         'read': _patient_read,
         'display': _patient_display,
+        'hint': _patient_hint,
     },
     'sports.patient.injury': {
         'fields': {
@@ -686,6 +712,7 @@ SAVE_REGISTRY = {
         'write': _injury_write,
         'read': _injury_read,
         'display': _injury_display,
+        'hint': _injury_hint,
     },
     'sports.treatment.note': {
         'fields': {'note': _TP_ROLES, 'date': _TP_ROLES, 'injury_id': _TP_ROLES},
@@ -1542,6 +1569,9 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     'value': self._sc_save_value(record, name),
                     'display': self._sc_save_display(record, name),
                 } for name in also}
+            hint = spec['hint'](record, field) if spec.get('hint') else None
+            if hint is not None:
+                payload['hint'] = hint
             payload.update(extra)
             return self._sc_save_json(payload)
         except (AccessError, MissingError):

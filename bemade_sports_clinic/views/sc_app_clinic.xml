@@ -224,12 +224,13 @@
                             </div>
                             <t t-set="sc_training_label">Training Recommendation</t>
                             <t t-if="is_treatment_prof and sc_can('patient.training.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
-                                <t t-set="props" t-value="sc_field_props(patient, 'training_recommendation', sc_training_label, 'textarea', clearable=True)"/>
+                                <t t-set="props" t-value="sc_field_props(patient, 'training_recommendation', sc_training_label, 'textarea', clearable=True, hint=patient.last_training_recommendation_info or None)"/>
                             </t>
                             <t t-elif="(patient.training_recommendation or '').strip()" t-call="bemade_sports_clinic.sc_field_static">
                                 <t t-set="label" t-value="sc_training_label"/>
                                 <t t-set="value" t-value="patient.training_recommendation"/>
                                 <t t-set="pre" t-value="True"/>
+                                <t t-set="static_hint" t-value="patient.last_training_recommendation_info"/>
                             </t>
                         </div>
 
