@@ -2833,6 +2833,11 @@ msgid "Activity created successfully."
 msgstr "Activité créée avec succès."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Actual return date"
+msgstr "Date de retour réelle"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_notepad
 msgid "Add"
@@ -4064,6 +4069,7 @@ msgstr ""
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__country_id
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Country"
 msgstr "Pays"
 
@@ -11569,6 +11575,12 @@ msgstr "Cette personne figure déjà dans le personnel de l'organisation."
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "This province does not belong to the player's country."
+msgstr "Cette province n'appartient pas au pays du joueur."
+
+#. module: bemade_sports_clinic
+#. odoo-python
 #: code:addons/bemade_sports_clinic/models/sports_quick_note.py:0
 msgid ""
 "This quick note has been sitting in your inbox for more than %(days)s days. "
@@ -13953,6 +13965,11 @@ msgid ""
 msgstr ""
 "<span class=\"o_sc_row_trailing\"><span class=\"o_sc_chip "
 "o_sc_chip_ghost\">Aucun accès</span></span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "<span>Actual return:</span>"
+msgstr "<span>Retour réel :</span>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player

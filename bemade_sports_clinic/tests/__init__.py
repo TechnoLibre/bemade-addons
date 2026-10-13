@@ -169,3 +169,4 @@ from . import test_note_replace_editor_1582
 from . import test_note_replace_tours_1582
 from . import test_clinic_dossier_inline_1590
 from . import test_clinic_dossier_tours_1590
+from . import test_app_shell_player_country_1594

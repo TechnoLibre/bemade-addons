@@ -119,6 +119,25 @@ SC_STATUS_KEYS = ('yes:yes', 'no:yes', 'no:no_contact', 'no:no')
 SC_STAGE_TONES = {'no_play': 'red', 'practice_ok': 'yellow', 'healthy': 'green'}
 
 
+def sc_state_options(env, country):
+    """Task 1594: the province choices of ``country`` — Canada's while the
+    player has no country (the clinic's players) — as [('', ''), (id, name)…].
+    A country without provinces offers the blank choice only."""
+    if not country:
+        country = env['res.country'].search([('code', '=', 'CA')], limit=1)
+    states = env['res.country.state'].search(
+        [('country_id', '=', country.id)], order='name') if country else env['res.country.state']
+    return [('', '')] + [(state.id, state.name) for state in states]
+
+
+def sc_country_options(env):
+    """Task 1594: the country choices — blank, Canada, then every other
+    country by name."""
+    countries = env['res.country'].search([], order='name')
+    canada = countries.filtered(lambda country: country.code == 'CA')
+    return [('', '')] + [(country.id, country.name) for country in canada + (countries - canada)]
+
+
 def sc_contact_href(kind, value):
     """Task 1585: the tap-to-call / tap-to-email href of a shown phone or
     email (``kind`` = ``'tel'`` / ``'mailto'``), or None when there is
@@ -166,6 +185,20 @@ def _selection_value(record, field, value):
     if value not in keys:
         raise ValidationError(_("Invalid value."))
     return value
+
+
+def _record_value(model, value):
+    """The record of ``model`` a select posted (empty = an empty recordset);
+    an unknown or malformed id is refused as an invalid value."""
+    if value in ('', None, False):
+        return model
+    try:
+        record = model.browse(int(value)).exists()
+    except (TypeError, ValueError):
+        record = None
+    if not record:
+        raise ValidationError(_("Invalid value."))
+    return record
 
 
 def _date_value(value):
@@ -485,14 +518,31 @@ def _patient_write_field(ctrl, patient, field, value):
                     'Date of Birth must not be in the future and not be more than 120 years ago.'))
         patient.write({field: dob})
         return extra
-    if field == 'last_consultation_date':
+    if field in ('last_consultation_date', 'return_date'):
         patient.write({field: _date_value(value)})
         return extra
+    if field == 'country_id':
+        # Task 1594: a province of another country goes with the change; the
+        # open card gets the new country's province choices in place.
+        country = _record_value(patient.env['res.country'], value)
+        vals = {'country_id': country.id or False}
+        if patient.state_id and patient.state_id.country_id != country:
+            vals['state_id'] = False
+        patient.write(vals)
+        extra['also_fields'] = ['state_id']
+        extra['also_options'] = {'state_id': sc_state_options(patient.env, country)}
+        return extra
     if field == 'state_id':
-        try:
-            patient.write({field: int(value) if value else False})
-        except (TypeError, ValueError):
-            raise ValidationError(_("Invalid value.")) from None
+        # Task 1594: the province must belong to the player's country; picked
+        # while no country is set, it sets its country too.
+        state = _record_value(patient.env['res.country.state'], value)
+        vals = {'state_id': state.id or False}
+        if state and patient.country_id and state.country_id != patient.country_id:
+            raise ValidationError(_("This province does not belong to the player's country."))
+        if state and not patient.country_id:
+            vals['country_id'] = state.country_id.id
+            extra['also_fields'] = ['country_id']
+        patient.write(vals)
         return extra
     patient.write({field: _clean_text(value)})
     return extra
@@ -680,10 +730,15 @@ SAVE_REGISTRY = {
             'email': _STAFF_ROLES, 'phone': _STAFF_ROLES,
             'street': _STAFF_ROLES, 'street2': _STAFF_ROLES,
             'city': _STAFF_ROLES, 'zip': _STAFF_ROLES, 'state_id': _STAFF_ROLES,
+            # Task 1594: the legacy form took the country from any staff.
+            'country_id': _STAFF_ROLES,
             # Therapists only (a coach posting them gets 403).
             'date_of_birth': _TP_ROLES, 'allergies': _TP_ROLES,
             'team_info_notes': _TP_ROLES, 'training_recommendation': _TP_ROLES,
             'last_consultation_date': _TP_ROLES,
+            # Task 1594: the actual return date — never a coach's (the legacy
+            # portal had no coach path to it; the backend form is clinic staff).
+            'return_date': _TP_ROLES,
             # Virtual: « match:practice », saved as a pair.
             'sc_status': _TP_ROLES,
             # Virtual: CSV of the assignable teams ticked (owner review
@@ -1612,11 +1667,17 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # resolution date with « Resolved »), so the page updates them
             # in place: {field: {value, display}}.
             also = extra.pop('also_fields', None) or ()
+            # Task 1594: and their fresh choices when they changed (a country
+            # save answers the province choices of the new country).
+            also_options = extra.pop('also_options', None) or {}
             if also:
                 payload['also'] = {name: {
                     'value': self._sc_save_value(record, name),
                     'display': self._sc_save_display(record, name),
                 } for name in also}
+                for name, options in also_options.items():
+                    if name in payload['also']:
+                        payload['also'][name]['options'] = AppShellMixin._sc_options(options)
             hint = spec['hint'](record, field) if spec.get('hint') else None
             if hint is not None:
                 payload['hint'] = hint

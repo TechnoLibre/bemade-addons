@@ -8,7 +8,7 @@ from odoo.exceptions import UserError, AccessError, MissingError
 
 from .access_control_mixin import AccessControlMixin
 from ..models import sc_app_roles
-from .app_shell import AppShellMixin
+from .app_shell import AppShellMixin, sc_country_options, sc_state_options
 
 # /my/teams sort modes (task 1401). Keys are what the page posts and what
 # res.users.teams_sort_mode stores; labels live in the template (translated).
@@ -1038,9 +1038,9 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # injury page's draft prefix and consent choices.
             'sc_new_injury_prefix': 'sports.patient.%s.new_injury.' % player.id,
             # Inline editing (owner review 2026-10-10).
-            'sc_state_options': [('', '')] + [
-                (state.id, state.name) for state in env['res.country.state'].search(
-                    [('country_id.code', '=', 'CA')], order='name')],
+            # Task 1594: the province choices follow the player's country.
+            'sc_state_options': sc_state_options(env, player.country_id),
+            'sc_country_options': sc_country_options(env),
             'sc_contact_type_options': list(
                 env['sports.patient.contact']._fields['contact_type']._description_selection(env)),
             'sc_team_options': [(team.id, team.name) for team in self._team_targets()] if is_tp else [],

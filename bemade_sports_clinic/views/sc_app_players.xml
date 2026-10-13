@@ -231,6 +231,10 @@
                         </t>
                     </t>
                     <div t-else="" class="o_sc_chips" data-sc-section="player.status.readonly">
+                        <!-- Task 1594: the player's status label (Play OK /
+                             Practice OK / Injured), as on the legacy page. -->
+                        <span t-attf-class="o_sc_chip o_sc_chip_#{sc_player_dot}" t-att-data-sc-stage-chip="player.id"
+                              t-out="sc_player_chip"/>
                         <span class="o_sc_chip o_sc_chip_ghost"><span>Match:</span> <span t-field="player.match_status"/></span>
                         <span class="o_sc_chip o_sc_chip_ghost"><span>Practice:</span> <span t-field="player.practice_status"/></span>
                     </div>
@@ -239,6 +243,14 @@
                     <span t-if="player.pending_removal" class="o_sc_chip o_sc_chip_ghost">Removal pending</span>
                     <span t-if="player.predicted_return_date" class="o_sc_chip o_sc_chip_ghost">
                         <span>Predicted return:</span> <span t-field="player.predicted_return_date"/>
+                    </span>
+                    <!-- Task 1594: the actual return date, for everyone; kept
+                         (hidden) while empty so a save on the Medical card
+                         shows it in place. -->
+                    <t t-set="sc_return_shown" t-value="sc_display(player, 'return_date')"/>
+                    <span class="o_sc_chip o_sc_chip_ghost" data-sc-section="player.return_date"
+                          data-sc-display-hide-empty="1" t-att-hidden="None if sc_return_shown else 'hidden'">
+                        <span>Actual return:</span> <span t-att-data-sc-display="sc_display_key(player, 'return_date')" t-out="sc_return_shown"/>
                     </span>
                 </div>
                 <t t-if="is_treatment_prof and sc_can('patient.allergies') and (player.allergies or '').replace('\xa0', '').strip()"
@@ -358,6 +370,7 @@
                                 <t t-if="sc_can('patient.allergies')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Allergies</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'allergies'"/></t>
                                 <t t-if="sc_can('patient.internal_notes')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Team Notes</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'team_info_notes'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Last consultation</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'last_consultation_date'"/></t>
+                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Actual return date</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'return_date'"/></t>
                             </dl>
                             <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
                                 <t t-if="sc_can('patient.allergies')">
@@ -370,6 +383,8 @@
                                 </t>
                                 <t t-set="lbl">Last consultation</t>
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'last_consultation_date', lbl, 'date')"/></t>
+                                <t t-set="lbl">Actual return date</t>
+                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'return_date', lbl, 'date', clearable=True)"/></t>
                                 <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
                             </div>
                         </section>
@@ -387,6 +402,7 @@
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">City</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'city'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Province</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'state_id'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Postal code</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'zip'"/></t>
+                                <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Country</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'country_id'"/></t>
                             </dl>
                             <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
                                 <t t-set="lbl">Email</t>
@@ -399,8 +415,12 @@
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'street2', lbl)"/></t>
                                 <t t-set="lbl">City</t>
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'city', lbl)"/></t>
+                                <!-- Task 1594: the country first — the province choices
+                                     follow it (none: the field hides). -->
+                                <t t-set="lbl">Country</t>
+                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'country_id', lbl, 'select', options=sc_country_options)"/></t>
                                 <t t-set="lbl">Province</t>
-                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'state_id', lbl, 'select', options=sc_state_options)"/></t>
+                                <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'state_id', lbl, 'select', options=sc_state_options, hideEmpty=True)"/></t>
                                 <t t-set="lbl">Postal code</t>
                                 <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'zip', lbl)"/></t>
                                 <t t-call="bemade_sports_clinic.sc_edit_card_done"/>

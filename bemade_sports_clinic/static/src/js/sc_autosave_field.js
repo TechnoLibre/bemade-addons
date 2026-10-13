@@ -42,6 +42,10 @@
  * Input types: textarea | text | email | tel | date | select | segmented |
  * date_na (a date + « N/A » box, value "na" or YYYY-MM-DD) | tags (CSV of the
  * chosen option keys: removable chips + a search box suggesting a few options).
+ *
+ * Task 1594: a sibling save may answer THIS field's fresh choices
+ * (``also[field].options``, e.g. a country change → the new country's
+ * provinces); ``hideEmpty`` hides a select left with no real choice.
  */
 import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -81,6 +85,7 @@ export class ScAutosaveField extends Component {
         placeholder: { type: String, optional: true },
         value: { optional: true },
         options: { type: Array, optional: true }, // [[value, label], ...]
+        hideEmpty: { type: Boolean, optional: true }, // task 1594
         required: { type: Boolean, optional: true },
         disabled: { type: Boolean, optional: true },
         instant: { type: Boolean, optional: true },
@@ -118,6 +123,8 @@ export class ScAutosaveField extends Component {
             // Task 1601: the « updated on … by … » stamp under the field; a
             // save answers the fresh one (``hint``).
             hint: this.props.hint || "",
+            // Task 1594: choices answered by a sibling save (null = props').
+            options: null,
         });
         this.writeDate = this.props.writeDate || "";
         // The field value the server last held (sent as old_value: a record
@@ -139,9 +146,14 @@ export class ScAutosaveField extends Component {
                 !also ||
                 !(this.props.field in also) ||
                 detail.model !== this.props.model ||
-                detail.recordId !== this.props.recordId ||
-                ["dirty", "saving"].includes(this.state.status)
+                detail.recordId !== this.props.recordId
             ) {
+                return;
+            }
+            if (Array.isArray(also[this.props.field].options)) {
+                this.state.options = also[this.props.field].options;
+            }
+            if (["dirty", "saving"].includes(this.state.status)) {
                 return;
             }
             const value = asText(also[this.props.field].value);
@@ -165,6 +177,20 @@ export class ScAutosaveField extends Component {
         if (this.isServer) {
             window.addEventListener("online", this.onOnline);
         }
+    }
+
+    /** The choices: the latest a sibling save answered, else the props'. */
+    get options() {
+        return this.state.options || this.props.options || [];
+    }
+
+    /** Task 1594: a ``hideEmpty`` select with nothing but the blank choice. */
+    get isHidden() {
+        return (
+            Boolean(this.props.hideEmpty) &&
+            this.type === "select" &&
+            !this.options.some((opt) => norm(opt[0]) !== "")
+        );
     }
 
     get isServer() {
@@ -372,7 +398,7 @@ export class ScAutosaveField extends Component {
 
     get chosenOptions() {
         const keys = this.checkedKeys;
-        return (this.props.options || []).filter((opt) => keys.includes(String(opt[0])));
+        return this.options.filter((opt) => keys.includes(String(opt[0])));
     }
 
     get tagMatches() {
@@ -381,7 +407,7 @@ export class ScAutosaveField extends Component {
             return [];
         }
         const words = query.split(/\s+/);
-        return (this.props.options || [])
+        return this.options
             .filter((opt) => !this.isChecked(opt[0]))
             .filter((opt) => words.every((word) => fold(opt[1]).includes(word)))
             .slice(0, TAGS_MAX_MATCHES);
