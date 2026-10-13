@@ -840,6 +840,7 @@ class AppShellMixin:
         self._sc_profile_lang_guard()
         user = request.env.user
         roles = user._sc_app_roles()
+        is_system = user.has_group('base.group_system')
         ctx = {'booking_card_enable': self._sc_booking_enabled()}
         tabs = self._sc_nav_items(sc_app_roles.visible_nav(roles, 'tab', ctx))
         rail = self._sc_nav_items(sc_app_roles.visible_nav(roles, 'rail', ctx))
@@ -853,7 +854,9 @@ class AppShellMixin:
         shell = {
             'sc_app_shell': True,
             'sc_roles': roles,
-            'sc_can': lambda key: sc_app_roles.can(key, roles),
+            # Task 1598: a system admin also sees the TP actions legacy
+            # granted them (registry keys flagged ``system``).
+            'sc_can': lambda key: sc_app_roles.can(key, roles, is_system=is_system),
             'sc_tabs': tabs,
             'sc_rail': rail,
             'sc_plus': plus,

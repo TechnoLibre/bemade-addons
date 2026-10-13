@@ -41,6 +41,18 @@ Registries
   role server-side (field ``groups=`` / ACL / record rule) — the tests assert
   it. **The registry decides what is SHOWN, never what is ALLOWED**; security
   stays in ACLs and record rules.
+
+System administrators (task 1598)
+---------------------------------
+``base.group_system`` is not a role (it maps to no shell entry on its own),
+but the legacy pages granted a system admin the therapist ACTIONS paired
+with an ``_is_tp_or_system()``-style server value (add a player directly,
+edit the announcement, remove a player…). A key flagged ``'system': True``
+is therefore also visible to a system admin (``can(..., is_system=True)``),
+whatever their roles — a coach who is also a system admin gets « Add »,
+not nothing. ``exclude`` still wins. Plain coaches are unaffected: the
+flag only ever widens for ``is_system``. Only flag ACTION keys whose
+template gate is a server value that is already True for a system admin.
 """
 from odoo.tools.translate import LazyTranslate
 
@@ -171,11 +183,11 @@ VISIBILITY_REGISTRY = {
     #                             refuses users who may add directly)
     #   team.activities         + can_view_activities (mail.activity ACLs)
     #   team.pending_removals   + can_remove_on_team (_may_remove_from_team)
-    'team.announcement.edit': {'include': TP},
-    'team.add_player': {'include': TP},
+    'team.announcement.edit': {'include': TP, 'system': True},
+    'team.add_player': {'include': TP, 'system': True},
     'team.request_add': {'include': STAFF},
     'team.activities': {'include': STAFF},
-    'team.pending_removals': {'include': TP},
+    'team.pending_removals': {'include': TP, 'system': True},
     # Task 1539 (P2) — players, injuries, notes, documents, activities. Same
     # rule: each key is ALSO gated in the template by the controller's
     # existing server-side value (the legacy page's ``is_treatment_prof`` /
@@ -193,7 +205,7 @@ VISIBILITY_REGISTRY = {
     'patient.contacts.tab': {'include': STAFF},
     'patient.notes.tab': {'include': TP},
     'patient.activities.tab': {'include': STAFF},
-    'patient.remove': {'include': TP},
+    'patient.remove': {'include': TP, 'system': True},
     'patient.request_removal': {'include': STAFF},
     'injury.stage.edit': {'include': TP},
     'injury.visibility.edit': {'include': TP},
@@ -227,7 +239,12 @@ def visible_nav(roles, placement, ctx=None):
     return sorted(entries, key=lambda entry: entry['sequence'])
 
 
-def can(key, roles):
+def can(key, roles, is_system=False):
     """``sc_can`` — may this role set SEE ``key``? Unknown keys raise (typos
-    must fail loudly, not silently hide a section)."""
-    return is_visible(VISIBILITY_REGISTRY[key], roles)
+    must fail loudly, not silently hide a section). ``is_system`` (the viewer
+    is in ``base.group_system``) also opens the keys flagged ``system``
+    (task 1598), unless one of the roles is excluded."""
+    spec = VISIBILITY_REGISTRY[key]
+    if is_system and spec.get('system'):
+        return not frozenset(roles or ()) & frozenset(spec.get('exclude') or ())
+    return is_visible(spec, roles)
