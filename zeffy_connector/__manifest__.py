@@ -11,7 +11,7 @@
 #
 {
     "name": "Zeffy Connector",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Sales/CRM",
     "summary": "Read-only synchronization of Zeffy campaigns, contacts and "
     "payments (donations) into Odoo.",
@@ -53,6 +53,16 @@ written. After a complete, error-free pass, a payment that Zeffy no longer
 returns is flagged *Deleted in Zeffy* (never deleted in Odoo); the flag is
 cleared if the payment reappears.
 
+Installation
+------------
+
+Install the module from the Apps menu. It needs no Python dependency beyond
+``requests``, which Odoo already requires, and it needs no public URL: Odoo
+calls Zeffy, Zeffy never calls Odoo. The first synchronization reads the
+whole Zeffy history; later ones are incremental for contacts and re-read
+payments, so a few dozen requests at most for most organizations, within
+Zeffy's rate limits (100 requests per minute).
+
 Configuration
 -------------
 
@@ -84,7 +94,16 @@ created or updated by a synchronization.
         "contacts",
         "utm",
     ],
-    "data": [],
+    "data": [
+        "security/zeffy_security.xml",
+        "security/ir.model.access.csv",
+        "data/ir_cron.xml",
+        "views/zeffy_campaign_views.xml",
+        "views/zeffy_contact_views.xml",
+        "views/zeffy_payment_views.xml",
+        "views/res_config_settings_views.xml",
+        "views/zeffy_menus.xml",
+    ],
     "installable": True,
     "application": False,
 }
