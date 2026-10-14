@@ -416,10 +416,14 @@ class AccessControlMixin:
         * ``detail_url``: the lazy expanded detail (``row-detail`` route),
           with the team context when given.
 
-        Rows a later task needs more on (e.g. the activities clock of #1592)
-        extend this dict."""
+        Task 1592: ``clock`` — the activity clock chip (``_sc_activity_clocks``,
+        ONE grouped query for the whole list), opening the player page's
+        Activities tab (with the team context when given); None at 0."""
         env = request.env
         links = self._sc_team_links(players.sudo().team_ids) if team_links else {}
+        team_qs = '&team_id=%s' % team.id if team else ''
+        clocks = self._sc_activity_clocks(
+            players, lambda p: '/my/player?player_id=%s%s&tab=activities' % (p.id, team_qs))
         extras = {}
         for player in players:
             injured = (player.stage or 'healthy') != 'healthy'
@@ -437,8 +441,62 @@ class AccessControlMixin:
                 'return_label': return_label,
                 'team_links': [links[t.id] for t in player.sudo().team_ids if t.id in links],
                 'detail_url': detail_url,
+                'clock': clocks.get(player.id),
             }
         return extras
+
+    # ------------------------------------------------------------------
+    # Task 1592 — the activity clock on player / team / event rows and
+    # injury cards
+    # ------------------------------------------------------------------
+    def _sc_activity_clocks(self, records, url):
+        """``{record_id: clock}`` for the clock chip (``sc_activity_clock``)
+        of every row of a list — the activities ASSIGNED TO THE VIEWER on
+        each record (an injury: the patient-scoped activities about it, task
+        1409's ``injury_id``) and how many of them are overdue, in ONE
+        grouped query for the whole list (never a per-row ``search_count``;
+        ``sports.team.activity_count`` is per record).
+
+        ``clock``: ``{'count', 'overdue', 'url', 'label'}``; ``url`` (from
+        ``url(record)``) is the record's own activities section. A record
+        with none is absent: the chip is hidden at 0.
+
+        sudo(): the domain is restricted to the viewer's OWN assignments on
+        records the caller already lists (and may open); mail.activity's
+        per-document access check would add a query per model."""
+        if not records:
+            return {}
+        env = request.env
+        if records._name == 'sports.patient.injury':
+            key = 'injury_id'
+            domain = [('injury_id', 'in', records.ids)]
+        else:
+            key = 'res_id'
+            domain = [('res_model', '=', records._name), ('res_id', 'in', records.ids)]
+        domain.append(('user_id', '=', env.uid))
+        today = fields.Date.context_today(env.user)
+        counts = {}
+        for target, deadline, count in env['mail.activity'].sudo()._read_group(
+                domain, [key, 'date_deadline:day'], ['__count']):
+            target_id = target.id if key == 'injury_id' else target
+            total, overdue = counts.get(target_id, (0, 0))
+            late = count if deadline and fields.Date.to_date(deadline) < today else 0
+            counts[target_id] = (total + count, overdue + late)
+        clocks = {}
+        for record in records:
+            total, overdue = counts.get(record.id, (0, 0))
+            if not total:
+                continue
+            label = (env._("My activities: %(count)s (%(overdue)s overdue)",
+                           count=total, overdue=overdue)
+                     if overdue else env._("My activities: %(count)s", count=total))
+            clocks[record.id] = {
+                'count': total,
+                'overdue': overdue,
+                'url': url(record),
+                'label': label,
+            }
+        return clocks
 
     @classmethod
     def _activity_scope_teams(cls):

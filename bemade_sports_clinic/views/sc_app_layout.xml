@@ -124,6 +124,26 @@
                                 <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'moon'"/></t>
                             </button>
                         </form>
+                        <!-- Task 1592: the activity clock (the slot the theme toggle
+                             left, #1602; both fit when the choice is on). The red
+                             badge = MY overdue activities, fetched by
+                             sc_live_count.js from a light JSON route (at once,
+                             then every 60 s while the tab is visible) — never
+                             computed on every page; hidden at 0. -->
+                        <t t-if="sc_activity_clock">
+                            <t t-set="sc_clock_label">My activities</t>
+                            <t t-set="sc_clock_badge_label">Overdue activities</t>
+                            <a href="/my/activities?sc_clock=1"
+                               class="o_sc_icon_btn o_sc_appbar_clock" data-sc-activity-clock-bar="1"
+                               t-att-title="sc_clock_label">
+                                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'clock'"/></t>
+                                <span class="visually-hidden" t-out="sc_clock_label"/>
+                                <span class="o_sc_appbar_badge" hidden="hidden"
+                                      data-sc-live-count-url="/my/activities/overdue/count"
+                                      data-sc-live-poll="60" data-sc-live-eager="1" data-sc-live-hide-zero="1"
+                                      t-att-title="sc_clock_badge_label">0</span>
+                            </a>
+                        </t>
                         <a t-if="sc_search_url" t-att-href="sc_search_url" class="o_sc_icon_btn"
                            aria-label="Search for a player" title="Search for a player">
                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'search'"/></t>

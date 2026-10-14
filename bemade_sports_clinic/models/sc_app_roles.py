@@ -216,6 +216,8 @@ VISIBILITY_REGISTRY = {
     'documents.delete': {'include': TP},
     'notes.add': {'include': TP},
     'activities.reassign': {'include': STAFF},
+    # Task 1592 — the app bar's activity clock (+ its overdue count route).
+    'app.activity_clock': {'include': STAFF},
 }
 
 

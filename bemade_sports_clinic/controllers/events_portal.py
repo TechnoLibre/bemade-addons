@@ -1349,6 +1349,12 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         }
         segments = [(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS]
 
+        # Task 1592: the activity clocks of every listed event (the groups
+        # hold the same events) in ONE query, each opening the event's
+        # activities page.
+        clocks = self._sc_activity_clocks(
+            values['events'], lambda e: '/my/event/activities?event_id=%s' % e.id)
+
         def _row(event):
             staff = values['assigned_staff_by_event'].get(event.id)
             sudo = event.sudo()
@@ -1364,6 +1370,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'kind': event_types.get(sudo.event_type, ''),
                 'cancelled': sudo.state == 'cancelled',
                 'url': '/my/event/%s' % event.id,
+                'clock': clocks.get(event.id),
             }
 
         rows = [_row(event) for event in values['events']]

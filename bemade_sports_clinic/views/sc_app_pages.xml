@@ -56,13 +56,7 @@
                 </t>
                 <div t-if="sc_team_rows" class="o_sc_list">
                     <t t-foreach="sc_team_rows" t-as="row">
-                        <t t-call="bemade_sports_clinic.sc_entity_row">
-                            <t t-set="href" t-value="row['url']"/>
-                            <t t-set="dot" t-value="row['status']"/>
-                            <t t-set="title" t-value="row['title']"/>
-                            <t t-set="subtitle" t-value="row['subtitle']"/>
-                            <t t-set="row_attrs" t-value="{'data-sc-team-id': row['id']}"/>
-                        </t>
+                        <t t-call="bemade_sports_clinic.sc_team_list_row"/>
                     </t>
                 </div>
                 <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
@@ -88,6 +82,22 @@
                     <t t-set="message">Nothing scheduled soon.</t>
                 </t>
             </section>
+        </t>
+    </template>
+
+    <!-- One team row (home « My teams », /my/teams). Variable: row
+         (_sc_team_row). Task 1592: a link row (sc_link_row) so the activity
+         clock chip is its own link; data-sc-team-id on the main link. -->
+    <template id="sc_team_list_row" name="App shell: team list row">
+        <t t-call="bemade_sports_clinic.sc_link_row">
+            <t t-set="href" t-value="row['url']"/>
+            <t t-set="dot" t-value="row['status']"/>
+            <t t-set="title" t-value="row['title']"/>
+            <t t-set="subtitle" t-value="row['subtitle']"/>
+            <t t-set="main_attrs" t-value="{'data-sc-team-id': row['id']}"/>
+            <t t-call="bemade_sports_clinic.sc_activity_clock">
+                <t t-set="clock" t-value="row.get('clock')"/>
+            </t>
         </t>
     </template>
 
@@ -124,16 +134,10 @@
 
             <div t-if="teams" class="o_sc_list">
                 <t t-foreach="teams" t-as="team">
-                    <t t-set="row" t-value="sc_team_row(team, True)"/>
+                    <t t-set="row" t-value="sc_team_row(team, True, sc_team_clocks)"/>
                     <div t-attf-class="o_sc_row_wrap #{'o_sc_row_wrap_reorder' if sort_mode == 'mine' else ''}"
                          t-attf-id="team-#{team.id}">
-                        <t t-call="bemade_sports_clinic.sc_entity_row">
-                            <t t-set="href" t-value="row['url']"/>
-                            <t t-set="dot" t-value="row['status']"/>
-                            <t t-set="title" t-value="row['title']"/>
-                            <t t-set="subtitle" t-value="row['subtitle']"/>
-                            <t t-set="row_attrs" t-value="{'data-sc-team-id': row['id']}"/>
-                        </t>
+                        <t t-call="bemade_sports_clinic.sc_team_list_row"/>
                         <!-- « My order »: the up/down posts of task 1401 (no drag in the shell). -->
                         <div t-if="sort_mode == 'mine'" class="o_sc_reorder">
                             <form action="/my/teams/reorder" method="post">

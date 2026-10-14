@@ -13448,6 +13448,28 @@ msgid "My account"
 msgstr "Mon compte"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "My activities"
+msgstr "Mes activités"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/access_control_mixin.py:0
+msgid "My activities: %(count)s"
+msgstr "Mes activités : %(count)s"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/access_control_mixin.py:0
+msgid "My activities: %(count)s (%(overdue)s overdue)"
+msgstr "Mes activités : %(count)s (%(overdue)s en retard)"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "Overdue activities"
+msgstr "Activités en retard"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_home
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_teams
 msgid "My teams"

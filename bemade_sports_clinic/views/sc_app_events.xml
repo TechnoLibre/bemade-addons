@@ -170,12 +170,17 @@
 
     <!-- One event row of the list (variable: row). -->
     <template id="sc_event_list_row" name="App shell: event list row">
-        <t t-call="bemade_sports_clinic.sc_entity_row">
+        <!-- Task 1592: a link row (sc_link_row) so the activity clock chip
+             is its own link; data-sc-event-id on the main link. -->
+        <t t-call="bemade_sports_clinic.sc_link_row">
             <t t-set="href" t-value="row['url']"/>
             <t t-set="lead_icon" t-value="'calendar'"/>
             <t t-set="title" t-value="row['title']"/>
             <t t-set="subtitle" t-value="row['subtitle']"/>
-            <t t-set="row_attrs" t-value="{'data-sc-event-id': row['id']}"/>
+            <t t-set="main_attrs" t-value="{'data-sc-event-id': row['id']}"/>
+            <t t-call="bemade_sports_clinic.sc_activity_clock">
+                <t t-set="clock" t-value="row.get('clock')"/>
+            </t>
             <span t-if="row['cancelled']" class="o_sc_chip o_sc_chip_red">Cancelled</span>
             <span t-elif="row['kind']" class="o_sc_chip o_sc_chip_ghost" t-out="row['kind']"/>
         </t>

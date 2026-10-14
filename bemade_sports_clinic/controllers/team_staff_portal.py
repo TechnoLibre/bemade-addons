@@ -273,6 +273,10 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                                        'search': search_term,
                                        'sort_mode': sort_mode,
                                        'can_rank': self._teams_can_rank(),
+                                       # Task 1592: the rows' activity clocks
+                                       # (one query, the shell only).
+                                       'sc_team_clocks': (self._sc_team_clocks(teams)
+                                                          if self._sc_app_shell_active() else {}),
                                        'page': page,
                                        # 1577 review: a refused team lands
                                        # here with a CODE, never raw text.
@@ -997,9 +1001,17 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             created and created.patient_id == player and created.create_uid == user)
         tp_view = self._sc_injury_tp_view(is_tp)
 
+        # Task 1592: the cards' activity clocks (one query). An injury holds
+        # no activities of its own (task 1409: they are scheduled on the
+        # patient with the injury link) — the clock opens this page's
+        # Activities tab.
+        injury_clocks = self._sc_activity_clocks(
+            values['injuries'], lambda i: '%s&tab=activities' % base_url)
+
         def _injury_row(injury):
             return self._sc_injury_card_row(
-                injury, ctx_qs, is_tp, tp_view, opened_id=opened_id, created_id=created_id)
+                injury, ctx_qs, is_tp, tp_view, opened_id=opened_id, created_id=created_id,
+                clocks=injury_clocks)
 
         # Owner review 2026-10-10: current injuries (active, unverified)
         # first, then resolved; each by injury date, newest first.

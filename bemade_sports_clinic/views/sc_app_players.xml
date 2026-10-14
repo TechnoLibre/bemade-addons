@@ -762,6 +762,11 @@
                     </span>
                 </span>
                 <span class="o_sc_row_trailing">
+                    <!-- Task 1592: the activity clock (a link: activating it
+                         follows the link, it does not toggle the card). -->
+                    <t t-call="bemade_sports_clinic.sc_activity_clock">
+                        <t t-set="clock" t-value="row.get('clock')"/>
+                    </t>
                     <t t-call="bemade_sports_clinic.sc_status_chip">
                         <t t-set="tone" t-value="row['dot']"/>
                         <t t-set="label" t-value="row['chip']"/>

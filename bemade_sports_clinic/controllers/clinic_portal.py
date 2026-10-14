@@ -1070,10 +1070,15 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             current = selected.injury_ids.filtered(
                 lambda i: i.stage in ('active', 'unverified')).sorted(lambda i: (
                     -(i.injury_date or date.min).toordinal(), -i.id))
+        # Task 1592: the cards' activity clocks (one query), opening the
+        # player page's Activities tab (an injury has no activities section
+        # of its own — task 1409), in the clinic context.
+        injury_clocks = self._sc_activity_clocks(current, lambda i: (
+            '/my/player?player_id=%s%s&tab=activities' % (i.patient_id.id, values['dossier_ctx_qs'])))
         injury_rows = [
             self._sc_injury_card_row(
                 injury, values['dossier_ctx_qs'], is_tp, tp_view,
-                opened_id=opened_id, created_id=created_id)
+                opened_id=opened_id, created_id=created_id, clocks=injury_clocks)
             for injury in current]
         staff = event_sudo.assigned_staff_ids
         return {

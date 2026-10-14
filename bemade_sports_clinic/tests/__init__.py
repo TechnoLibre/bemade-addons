@@ -174,3 +174,4 @@ from . import test_event_org_team_filter_1597
 from . import test_app_shell_calendar_filters_1591
 from . import test_app_shell_activity_rows_1595
 from . import test_app_shell_roster_rows_1593
+from . import test_app_shell_activity_clock_1592

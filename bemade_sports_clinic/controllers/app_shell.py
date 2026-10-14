@@ -949,6 +949,9 @@ class AppShellMixin:
             'sc_langs': self._sc_lang_options(),
             'sc_current_url': path + ('?' + query if query else ''),
             'sc_search_url': '/my/players' if any(t['key'] == 'players' for t in rail) else False,
+            # Task 1592: the app bar's activity clock (its overdue badge is
+            # fetched by sc_live_count.js, not computed here).
+            'sc_activity_clock': sc_app_roles.can('app.activity_clock', roles, is_system=is_system),
             'sc_user_initials': initials or '?',
             # Task 1542: the device draft store is namespaced by db + uid.
             'sc_db': request.db or '',
@@ -1181,10 +1184,12 @@ class AppShellMixin:
                 Injury._fields['parental_consent']._description_selection(env)),
         }
 
-    def _sc_injury_card_row(self, injury, ctx_qs, is_tp, tp_view, opened_id=0, created_id=0):
+    def _sc_injury_card_row(self, injury, ctx_qs, is_tp, tp_view, opened_id=0, created_id=0,
+                            clocks=None):
         """One row of an injury card list: ?injury=<id> opens it read-only,
         ?created=<id> (its creator only) opens it in edit mode with the
-        « Undo »."""
+        « Undo ». Task 1592: ``clocks`` (``_sc_activity_clocks`` of the
+        whole card list, ONE query) gives the card its activity clock."""
         env = request.env
         stages = dict(injury._fields['stage']._description_selection(env))
         when = (format_date(env, injury.injury_date) if injury.injury_date
@@ -1202,6 +1207,7 @@ class AppShellMixin:
             'created': injury.id == created_id and injury.create_uid == env.user,
             'consent_todo': tp_view and not injury.parental_consent,
             'diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
+            'clock': (clocks or {}).get(injury.id),
         }
 
     @staticmethod
@@ -1307,7 +1313,9 @@ class AppShellMixin:
         return count == 1 or (count == 0 and lang.startswith('fr'))
 
     @staticmethod
-    def _sc_team_row(team, with_org=False):
+    def _sc_team_row(team, with_org=False, clocks=None):
+        """Task 1592: ``clocks`` (``_sc_activity_clocks`` of the whole
+        list, ONE query) gives the row its activity clock chip."""
         no_play = team.stage_no_play_count or 0
         practice_ok = team.stage_practice_ok_count or 0
         if no_play:
@@ -1331,7 +1339,14 @@ class AppShellMixin:
             'subtitle': ' · '.join(part for part in (org, counts) if part),
             'status': status,
             'url': '/my/team?team_id=%s' % team.id,
+            'clock': (clocks or {}).get(team.id),
         }
+
+    def _sc_team_clocks(self, teams):
+        """Task 1592: the activity clocks of a team list (one query), each
+        opening the team page's Activities tab."""
+        return self._sc_activity_clocks(
+            teams, lambda t: '/my/team?team_id=%s&tab=activities' % t.id)
 
 
 class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
@@ -1369,9 +1384,11 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 teams = teams.search(
                     [('staff_ids.user_ids', '=', user.id)], order=order)
             players = teams.patient_ids
+            clocks = self._sc_team_clocks(teams[:HOME_TEAMS_LIMIT])
             values.update({
                 'sc_teams_count': len(teams),
-                'sc_team_rows': [self._sc_team_row(team) for team in teams[:HOME_TEAMS_LIMIT]],
+                'sc_team_rows': [self._sc_team_row(team, clocks=clocks)
+                                 for team in teams[:HOME_TEAMS_LIMIT]],
                 'sc_stat_injured': len(players.filtered(lambda p: p.stage == 'no_play')),
                 'sc_stat_returning': len(players.filtered(lambda p: p.stage == 'practice_ok')),
                 'sc_stat_available': len(players.filtered(lambda p: p.stage == 'healthy')),
