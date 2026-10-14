@@ -851,17 +851,15 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         
         # Task 1539: the app shell (switch on) or today's template (off).
         if self._sc_app_shell_active():
-            related_url = False
-            if context_patient:
-                related_url = '/my/player?player_id=%s' % context_patient.id
-            elif context_team:
-                related_url = '/my/team?team_id=%s' % context_team.id
-            elif context_event:
-                related_url = '/my/event/%s' % context_event.id
+            # Task 1595: the related records' links, each gated by the
+            # page it leads to (no link to a record the viewer may not open).
+            related_links = self._sc_activity_related(activity)
+            related_url = related_links[0]['url'] if related_links else False
             assignable = self._activity_assignable_users_for(request.env.user)
             users = (assignable | activity.sudo().user_id).sorted('name')
             values.update({
                 'sc_related_url': related_url,
+                'sc_related_links': related_links,
                 'today_date': fields.Date.context_today(request.env.user),
                 'sc_flash': self._sc_activity_flash(),
                 # Owner review 2026-10-11: the pencil card's assignee choices.

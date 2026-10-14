@@ -548,6 +548,96 @@ $sc-laptop: 992px;
         }
     }
 
+    // Task 1595 — link row (sc_link_row): the title is the main link, its
+    // ::after stretched over the row so a tap anywhere opens it; every
+    // other interactive element is layered above it (own tap target).
+    .o_sc_link_row {
+        position: relative;
+
+        .o_sc_link_row_main {
+            color: inherit;
+
+            &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+                border-radius: inherit;
+                cursor: pointer;
+            }
+
+            // The focus ring outlines the whole row, not the title text.
+            &:focus-visible {
+                outline: none;
+
+                &::after {
+                    outline: 2px solid var(--sc-focus);
+                    outline-offset: -2px;
+                }
+            }
+        }
+
+        a:not(.o_sc_link_row_main),
+        button,
+        summary,
+        input,
+        select,
+        textarea,
+        label {
+            position: relative;
+            z-index: 1;
+        }
+    }
+
+    // Secondary links line (sc_row_links): related records, team links…
+    .o_sc_row_links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 12px;
+        margin-top: 4px;
+        font-size: var(--sc-text-sm);
+    }
+
+    .o_sc_row_link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 24px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: var(--sc-fg);
+        font-weight: 600;
+
+        .o_sc_icon {
+            flex: none;
+            width: 14px;
+            height: 14px;
+            color: var(--sc-fg-3);
+        }
+    }
+
+    a.o_sc_row_link {
+        text-decoration: underline;
+        text-decoration-color: var(--sc-line);
+        text-underline-offset: 3px;
+
+        &:hover {
+            text-decoration-color: currentColor;
+        }
+    }
+
+    .o_sc_row_link_plain {
+        color: var(--sc-fg-2);
+        font-weight: 400;
+    }
+
+    // The activity detail's « Related Record » value (no row above it).
+    .o_sc_kv dd.o_sc_row_links {
+        margin-top: 0;
+        font-size: inherit;
+    }
+
     .o_sc_row_text {
         display: flex;
         flex-direction: column;

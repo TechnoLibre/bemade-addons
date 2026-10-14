@@ -4243,6 +4243,11 @@ msgid "Create/Update Quotation"
 msgstr "Créer/Mettre à jour la soumission"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activity_detail
+msgid "Created"
+msgstr "Créée le"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_treatment_note_search

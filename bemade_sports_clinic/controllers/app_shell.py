@@ -970,6 +970,9 @@ class AppShellMixin:
             # Task 1589: an activity row's Done / Reschedule / Reassign /
             # Cancel buttons follow the one act rule (the routes re-check).
             'sc_activity_can_act': self._activity_act_access,
+            # Task 1595: an activity row's related-record links (player /
+            # team / event, the injury it is about), access-gated.
+            'sc_activity_related': self._sc_activity_related,
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page

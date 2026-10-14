@@ -299,6 +299,81 @@ class AccessControlMixin:
         ])
         return attached | activity.sudo().attachment_ids
 
+    # Task 1595: the record(s) an activity row / detail links to. Kind →
+    # (portal URL pattern, sc_icon key).
+    _SC_ACTIVITY_RELATED_KINDS = {
+        'sports.patient': ('/my/player?player_id=%s', 'players'),
+        'sports.team': ('/my/team?team_id=%s', 'teams'),
+        'sports.event': ('/my/event/%s', 'calendar'),
+        'sports.patient.injury': ('/my/injury/edit?injury_id=%s', 'injury'),
+    }
+
+    def _sc_activity_record_link(self, record):
+        """``{'model', 'id', 'name', 'url', 'icon'}`` of ONE related record
+        (patient / team / event / injury) of an activity (task 1595).
+
+        ``url`` is False — and the name the activity's own ``res_name`` /
+        nothing — when the viewer may not open that record: the same gate
+        as the page the link leads to (``_check_access_to_*``) AND the
+        record rules (``has_access('read')``), so a row never links to a
+        403 nor reads a field the viewer may not see. Returns None for a
+        model the portal has no page for or a deleted record."""
+        model = record._name
+        if model not in self._SC_ACTIVITY_RELATED_KINDS or not record.exists():
+            return None
+        pattern, icon = self._SC_ACTIVITY_RELATED_KINDS[model]
+        checks = {
+            'sports.patient': self._check_access_to_patient,
+            'sports.team': self._check_team_access,
+            'sports.event': self._check_access_to_event,
+            'sports.patient.injury': self._check_access_to_injury,
+        }
+        try:
+            checks[model](record.id)
+            allowed = record.has_access('read')
+        except (AccessError, MissingError, UserError):
+            allowed = False
+        link = {'model': model, 'id': record.id, 'icon': icon, 'url': False, 'name': ''}
+        if not allowed:
+            return link
+        link['url'] = pattern % record.id
+        if model == 'sports.patient':
+            link['name'] = record._portal_list_name(with_jersey=False)
+        elif model == 'sports.patient.injury':
+            link['name'] = record.diagnosis or record.display_name
+        else:
+            link['name'] = record.display_name
+        return link
+
+    def _sc_activity_related(self, activity):
+        """The links of ``activity``'s related records for its row and
+        detail (task 1595): the record it is scheduled on (player / team /
+        event, or a legacy injury), then the injury it is ABOUT (task 1409's
+        technical ``injury_id``) when there is one. Each entry follows
+        ``_sc_activity_record_link``; a record the viewer may not open comes
+        with ``url`` False and the activity's ``res_name`` as its label
+        (already visible to whoever sees the activity), never a link.
+        sudo(): only to read the activity's own target ids — every label
+        and link is gated per record above."""
+        act = activity.sudo()
+        links = []
+        if act.res_model and act.res_id and act.res_model in self._SC_ACTIVITY_RELATED_KINDS:
+            link = self._sc_activity_record_link(request.env[act.res_model].browse(act.res_id))
+            if link:
+                if not link['url']:
+                    link['name'] = act.res_name or ''
+                if link['name']:
+                    links.append(link)
+        if act.injury_id and not (act.res_model == 'sports.patient.injury'
+                                  and act.res_id == act.injury_id.id):
+            link = self._sc_activity_record_link(request.env['sports.patient.injury'].browse(act.injury_id.id))
+            # An injury the viewer may not open is not named at all (its
+            # diagnosis is medical data; the summary prefix already says
+            # what the activity is about to those allowed to read it).
+            if link and link['url']:
+                links.append(link)
+        return links
+
     @classmethod
     def _activity_scope_teams(cls):
         """The teams whose activities the viewer lists / acts on (task 1577

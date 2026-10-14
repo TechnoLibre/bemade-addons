@@ -400,33 +400,110 @@
     </template>
 
     <!--
+        Task 1595 — LINK ROW: a list row with ONE main link plus secondary
+        links / chips, without nesting anchors. Shared by the activity rows
+        and meant for the player rows with their team links + expand control
+        (#1593) and the activities clock chip on player / team / event rows
+        and injury cards (#1592).
+
+        How it works: the row is a plain container (not an <a>); the TITLE is
+        the main <a>, whose ::after is stretched over the whole row (the
+        Bootstrap « stretched link » pattern, no JS) — a tap anywhere on the
+        row opens ``href``. Every other <a> / <button> / <summary> / form
+        control inside the row is layered above it, so it gets its own tap.
+        Keyboard: the main link is one tab stop (its focus ring outlines the
+        whole row), each secondary link / control its own; screen readers
+        read the main link's text (the title), then the rest as plain text.
+
+        Slots (variables set in the t-call body):
+          href          main target (required)
+          title         main link text (required)
+          main_attrs    dict of extra attributes of the main <a> (data-*, aria-label…)
+          subtitle      text or markup (a t-set body) under the title — never
+                        put a link here, use ``links`` or ``meta``
+          dot / lead_icon   leading dot tone (red|yellow|green) or sc_icon key, as sc_entity_row
+          meta          optional markup under the subtitle (t-set body): chips,
+                        status lines, extra links (layered above automatically)
+          links         list of secondary links on their own line under the text:
+                        dicts {label|name, url (False → plain text), icon (sc_icon
+                        key, optional), title (tooltip, optional), model (data
+                        attribute, optional)} — see sc_row_links
+          row_class     extra classes of the row container
+          row_attrs     dict of extra attributes of the row container
+          chevron       trailing chevron (default True)
+          body (0)      trailing content: chips, counts, icon buttons / links
+                        (each clickable on its own, the rest of the row opens href)
+    -->
+    <template id="sc_link_row" name="App shell: link row">
+        <div t-attf-class="o_sc_entity_row o_sc_link_row #{row_class or ''}" t-att="row_attrs or {}">
+            <span t-if="dot" t-attf-class="o_sc_dot o_sc_tone_#{dot}" aria-hidden="true"/>
+            <span t-elif="lead_icon" class="o_sc_row_lead"><t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="lead_icon"/></t></span>
+            <span t-else="" class="o_sc_row_lead o_sc_row_lead_empty" aria-hidden="true"/>
+            <span class="o_sc_row_text">
+                <a t-att-href="href" class="o_sc_link_row_main o_sc_row_title" t-att="main_attrs or {}" t-out="title"/>
+                <span t-if="subtitle" class="o_sc_row_subtitle" t-out="subtitle"/>
+                <t t-if="meta" t-out="meta"/>
+                <span t-if="links" class="o_sc_row_links" data-sc-row-links="1">
+                    <t t-call="bemade_sports_clinic.sc_row_links"/>
+                </span>
+            </span>
+            <span class="o_sc_row_trailing">
+                <t t-out="0"/>
+                <t t-if="chevron is not False" t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'chevron'"/></t>
+            </span>
+        </div>
+    </template>
+
+    <!-- Task 1595 — the secondary links of a link row (or any « record
+         links » line, e.g. the activity detail's related record). Variable:
+         links (see sc_link_row). A link without url is plain text. -->
+    <template id="sc_row_links" name="App shell: row links">
+        <t t-foreach="links" t-as="row_link">
+            <t t-set="row_link_label" t-value="row_link.get('label') or row_link.get('name')"/>
+            <a t-if="row_link.get('url')" t-att-href="row_link['url']" class="o_sc_row_link"
+               t-att-title="row_link.get('title')" t-att-data-sc-row-link="row_link.get('model') or '1'">
+                <t t-if="row_link.get('icon')" t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="row_link['icon']"/></t>
+                <span t-out="row_link_label"/>
+            </a>
+            <span t-else="" class="o_sc_row_link o_sc_row_link_plain" t-att-title="row_link.get('title')"
+                  t-att-data-sc-row-link-plain="row_link.get('model') or '1'">
+                <t t-if="row_link.get('icon')" t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="row_link['icon']"/></t>
+                <span t-out="row_link_label"/>
+            </span>
+        </t>
+    </template>
+
+    <!--
         Task 1539 — activity row with its due-date state chip. Variables:
-        activity, today_date, related (dict: name, url), show_assignee,
+        activity, today_date, related_links (sc_activity_related: the
+        access-gated related-record links, task 1595), show_assignee,
         can_reassign. Actions open the shared sheets (sc_activity_sheets)
         through sc_activities.js.
+        Task 1595: a link row (sc_link_row) — the title opens the activity,
+        the related player / team / event / injury link opens that record;
+        the activity type shows in the subtitle when a summary is the title.
     -->
     <template id="sc_activity_row" name="App shell: activity row">
         <t t-set="act_state" t-value="'overdue' if activity.date_deadline &lt; today_date else ('today' if activity.date_deadline == today_date else 'planned')"/>
         <!-- ONE card, actions inside it (owner review 2026-10-10: same UX as
              the other tabs' cards). -->
         <div class="o_sc_card o_sc_activity" t-att-data-sc-activity-row="activity.id" t-att-data-sc-activity-state="act_state">
-            <a t-attf-href="/my/activity/#{activity.id}" class="o_sc_entity_row">
-                <span t-att-class="'o_sc_dot o_sc_tone_%s' % ('red' if act_state == 'overdue' else ('yellow' if act_state == 'today' else 'green'))" aria-hidden="true"/>
-                <span class="o_sc_row_text">
-                    <span class="o_sc_row_title" t-out="activity.summary or activity.activity_type_id.name"/>
-                    <span class="o_sc_row_subtitle">
-                        <span t-field="activity.date_deadline" t-options="{'widget': 'date'}"/>
-                        <t t-if="related and related.get('name')"> · <t t-out="related['name']"/></t>
-                        <t t-if="show_assignee and activity.user_id"> · <t t-out="activity.user_id.name"/></t>
-                    </span>
-                </span>
-                <span class="o_sc_row_trailing">
-                    <span t-if="act_state == 'overdue'" class="o_sc_chip o_sc_chip_red">Overdue</span>
-                    <span t-elif="act_state == 'today'" class="o_sc_chip o_sc_chip_yellow">Today</span>
-                    <span t-else="" class="o_sc_chip o_sc_chip_ghost">Planned</span>
-                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'chevron'"/></t>
-                </span>
-            </a>
+            <t t-call="bemade_sports_clinic.sc_link_row">
+                <t t-set="href" t-value="'/my/activity/%s' % activity.id"/>
+                <t t-set="title" t-value="activity.summary or activity.activity_type_id.name"/>
+                <t t-set="dot" t-value="'red' if act_state == 'overdue' else ('yellow' if act_state == 'today' else 'green')"/>
+                <t t-set="subtitle">
+                    <span t-if="activity.summary and activity.activity_type_id" class="o_sc_activity_type"
+                          t-out="activity.activity_type_id.name"/>
+                    <t t-if="activity.summary and activity.activity_type_id"> · </t>
+                    <span t-field="activity.date_deadline" t-options="{'widget': 'date'}"/>
+                    <t t-if="show_assignee and activity.user_id"> · <t t-out="activity.user_id.name"/></t>
+                </t>
+                <t t-set="links" t-value="related_links"/>
+                <span t-if="act_state == 'overdue'" class="o_sc_chip o_sc_chip_red">Overdue</span>
+                <span t-elif="act_state == 'today'" class="o_sc_chip o_sc_chip_yellow">Today</span>
+                <span t-else="" class="o_sc_chip o_sc_chip_ghost">Planned</span>
+            </t>
             <!-- Task 1589: actions only for who may act on the activity. -->
             <div t-if="sc_activity_can_act(activity)" class="o_sc_card_actions o_sc_activity_actions">
                 <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" data-sc-sheet-open="sc_activity_complete_sheet"
