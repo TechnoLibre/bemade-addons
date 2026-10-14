@@ -136,13 +136,27 @@ class AccessControlMixin:
         return fields.Datetime.to_string(utc_dt)
 
     def _apply_event_filters(self, domain, team_id=None, organization_id=None,
-                             assigned_user_id=None, date_from=None, date_to=None):
+                             assigned_user_id=None, date_from=None, date_to=None,
+                             event_type=None, search=None):
         """Append the portal list-style filter leaves (team / organization /
-        assigned professional / date range) to an events domain.
+        assigned professional / date range / event type / free-text search)
+        to an events domain.
 
         Shared by the list view and the calendar JSON feed so both honor an
-        identical set of filters. Mutates and returns ``domain``.
+        identical set of filters (task 1591 added ``event_type`` and
+        ``search``; ``event_type`` must already be a known selection key).
+        Mutates and returns ``domain``.
         """
+        if event_type:
+            domain.append(('event_type', '=', event_type))
+        if search:
+            domain.extend([
+                '|', '|', '|',
+                ('name', 'ilike', search),
+                ('description', 'ilike', search),
+                ('team_ids.name', 'ilike', search),
+                ('venue_id.name', 'ilike', search),
+            ])
         if team_id:
             domain.append(('team_ids', 'in', [int(team_id)]))
         if organization_id:

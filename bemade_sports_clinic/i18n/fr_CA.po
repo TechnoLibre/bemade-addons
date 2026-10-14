@@ -1436,8 +1436,8 @@ msgstr "<option value=\"\">Toutes les équipes</option>"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "<option value=\"\">All organizations</option>"
 msgstr "<option value=\"\">Toutes les organisations</option>"
 
@@ -1445,7 +1445,7 @@ msgstr "<option value=\"\">Toutes les organisations</option>"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "<option value=\"\">All teams</option>"
 msgstr "<option value=\"\">Toutes les équipes</option>"
 
@@ -3300,7 +3300,7 @@ msgstr "Appliquer"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Apply filters"
 msgstr "Appliquer les filtres"
 
@@ -3435,7 +3435,7 @@ msgstr "Assigné à :"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Assigned"
 msgstr "Assigné"
 
@@ -4462,7 +4462,7 @@ msgstr "Externes"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "From"
 msgstr "Du"
 
@@ -4519,16 +4519,16 @@ msgstr "Date (mois)"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Date (asc)"
 msgstr "Date (croissant)"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Date (desc)"
 msgstr "Date (décroissant)"
 
@@ -5878,8 +5878,8 @@ msgstr "Événements accordant l'accès"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Group by"
 msgstr "Grouper par"
 
@@ -7049,8 +7049,8 @@ msgstr "Lun"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_clinic_attendance_view_search
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 msgid "Month"
 msgstr "Mois"
 
@@ -7163,7 +7163,7 @@ msgstr "S/O"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_contact_fields
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Name"
 msgstr "Nom"
 
@@ -7585,8 +7585,8 @@ msgstr ""
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "None"
 msgstr "Aucun"
 
@@ -8011,11 +8011,11 @@ msgstr "Ordre enregistré."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_organization_staff_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_staff_grant_view_search
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
 msgid "Organization"
 msgstr "Organisation"
 
@@ -9657,7 +9657,7 @@ msgstr "Reprogrammer l'activité"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -10261,8 +10261,8 @@ msgstr "Trier"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Sort by"
 msgstr "Trier par"
 
@@ -10691,12 +10691,12 @@ msgstr "Touchez de nouveau pour retirer"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_notepad_links
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_clinic_attendance_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_staff_grant_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_team_digest_view_search
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 msgid "Team"
 msgstr "Équipe"
 
@@ -11325,11 +11325,11 @@ msgstr "L'ordre de la liste de travail n'a pas pu être enregistré."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_clinic_attendance_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_timesheet_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_invoicing_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_timesheet_tree_for_invoicing_wizard
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 msgid "Therapist"
 msgstr "Thérapeute"
 
@@ -11722,7 +11722,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "To"
 msgstr "Au"
 
@@ -12448,7 +12448,7 @@ msgstr "Mer"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Week"
 msgstr "Semaine"
 
@@ -14010,7 +14010,7 @@ msgstr "<span>Fait</span>"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "<span>Filters</span>"
 msgstr "<span>Filtres</span>"
 
@@ -14704,17 +14704,17 @@ msgstr ""
 "autre jour que celui de sa rédaction (p. ex. antidatée)."
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Assigned professional"
 msgstr "Professionnel assigné"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "<option value=\"\">All assigned professionals</option>"
 msgstr "<option value=\"\">Tous les professionnels assignés</option>"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "<span>Show cancelled events</span>"
 msgstr "<span>Afficher les événements annulés</span>"
 

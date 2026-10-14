@@ -14,6 +14,11 @@ _logger = logging.getLogger(__name__)
 
 # Task 1540: the shell's events segments, in display order.
 SC_EVENT_SEGMENTS = ('upcoming', 'past', 'calendar')
+# Task 1591: the events list's own query parameters — never carried to the
+# calendar (the list's default « from today » range would clip it; the
+# calendar navigates by its own visible range) and dropped from its links.
+SC_EVENT_LIST_ONLY_ARGS = ('page', 'date_from', 'date_to', 'sortby', 'group_by',
+                           'no_default_dates', 'segment')
 # Where an event page's back link may lead (owner review 2026-10-10: an event
 # opened from the app home goes back home).
 EVENT_RETURN_PREFIXES = ('/my/events', '/my/home')
@@ -104,8 +109,16 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         include_cancelled = bool(show_cancelled)
         domain = self._prepare_events_domain(view_type, include_cancelled=include_cancelled)
 
+        # Task 1540: the shell's type chips (?event_type=); ignored unless a
+        # known type, so the legacy page is unaffected.
+        event_types = self._sc_event_types()
+        event_type = kw.get('event_type')
+        if event_type not in event_types:
+            event_type = None
+
         # Apply additional filters (team / organization / assigned / date
-        # range) via the shared helper so the calendar feed stays in sync.
+        # range / type / search) via the shared helper so the calendar feed
+        # stays in sync (task 1591).
         self._apply_event_filters(
             domain,
             team_id=team_id,
@@ -113,26 +126,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             assigned_user_id=assigned_user_id,
             date_from=date_from,
             date_to=date_to,
+            event_type=event_type,
+            search=search,
         )
-
-        # Task 1540: the shell's type chips (?event_type=); ignored unless a
-        # known type, so the legacy page is unaffected.
-        event_types = dict(http.request.env['sports.event']._fields['event_type']._description_selection(
-            http.request.env))
-        event_type = kw.get('event_type')
-        if event_type in event_types:
-            domain.append(('event_type', '=', event_type))
-        else:
-            event_type = None
-
-        if search:
-            domain.extend([
-                '|', '|', '|',
-                ('name', 'ilike', search),
-                ('description', 'ilike', search),
-                ('team_ids.name', 'ilike', search),
-                ('venue_id.name', 'ilike', search)
-            ])
         
         # Sorting options - default to date ascending as requested
         sort_options = {
@@ -351,6 +347,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'date_to': date_to,
             'view_type': kw.get('view_type') or 'all',
             'show_cancelled': bool(kw.get('show_cancelled')),
+            'search': kw.get('search'),
             'is_therapist': is_therapist,
         }
         # Task 1540: the shell calendar (sc_calendar component, same feed).
@@ -387,8 +384,12 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if view_type not in ('all', 'my', 'unassigned', 'missing_timesheets'):
             view_type = 'all'
         domain = self._prepare_events_domain(view_type, include_cancelled=include_cancelled)
-        # Apply the same list-style filters (team / organization / assigned /
-        # date range) the calendar's filter bar exposes.
+        # Apply the same list-style filters the calendar's filter bar
+        # exposes (task 1591: the event type and the list's free-text search
+        # too; an unknown type is ignored, as on the list).
+        event_type = kw.get('event_type')
+        if event_type not in self._sc_event_types():
+            event_type = None
         self._apply_event_filters(
             domain,
             team_id=team_id,
@@ -396,6 +397,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             assigned_user_id=assigned_user_id,
             date_from=date_from,
             date_to=date_to,
+            event_type=event_type,
+            search=kw.get('search'),
         )
         # FullCalendar passes ISO datetimes (with or without tz). Normalize
         # to naive UTC so the comparison against Odoo's UTC-stored
@@ -424,7 +427,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if end_dt is not None:
             domain.append(('date_start', '<=', fields.Datetime.to_string(end_dt)))
 
-        events = http.request.env['sports.event'].search(domain, limit=500)
+        # Task 1591: the 500 cap stays — the feed is bounded by the visible
+        # range (a month at most) and now narrowed by the filters.
+        events = http.request.env['sports.event'].search(domain, order='date_start', limit=500)
         payload = []
         # Resolve team and assigned-user names with sudo so the popover
         # can show ALL covered teams / assigned therapists, even when
@@ -1255,6 +1260,49 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return dict(zip(SC_EVENT_SEGMENTS, labels))
 
     @staticmethod
+    def _sc_event_types():
+        """{key: label} of the event types (the type chips, ``?event_type=``)."""
+        env = http.request.env
+        return dict(env['sports.event']._fields['event_type']._description_selection(env))
+
+    @staticmethod
+    def _sc_event_url(path, args):
+        """``path`` with ``args`` as its query string (empty values dropped)."""
+        query = urllib.parse.urlencode({k: v for k, v in args.items() if v not in (None, '', False)})
+        return path + ('?' + query if query else '')
+
+    def _sc_event_filter_bar(self, url, event_types, event_type, view_type):
+        """The events filter bar shared by the list and the calendar (task
+        1591): type chips and view chips (« All / My events / Unassigned /
+        Missing timesheets »), each link built by ``url(**overrides)`` so the
+        page's other filters are kept."""
+        env = http.request.env
+        user = env.user
+        chips = [('', env._("All"), url(event_type=''), not event_type)]
+        chips += [(key, label, url(event_type=key), key == event_type)
+                  for key, label in event_types.items()]
+        view_labels = (env._("All"), env._("My events"), env._("Unassigned"), env._("Missing timesheets"))
+        view_keys = ['all', 'my', 'unassigned']
+        if (user.has_group('bemade_sports_clinic.group_portal_treatment_professional')
+                or user.has_group('bemade_sports_clinic.group_sports_clinic_treatment_professional')):
+            view_keys.append('missing_timesheets')
+        view_over = {
+            'all': {'view_type': 'all', 'assigned_user_id': ''},
+            'my': {'view_type': 'my', 'assigned_user_id': user.id},
+            'unassigned': {'view_type': 'unassigned', 'assigned_user_id': ''},
+            'missing_timesheets': {'view_type': 'missing_timesheets', 'assigned_user_id': user.id,
+                                   'no_default_dates': '1'},
+        }
+        views = [(key, dict(zip(('all', 'my', 'unassigned', 'missing_timesheets'), view_labels))[key],
+                  url(**view_over[key]), key == view_type) for key in view_keys]
+        return {
+            'sc_event_views': views,
+            'sc_event_view': view_type,
+            'sc_event_type': event_type or '',
+            'sc_event_chips': chips,
+        }
+
+    @staticmethod
     def _sc_calendar_locale():
         """FullCalendar locale code of the request language (``fr_CA`` ->
         ``fr-ca``, the ``locales-all`` keys)."""
@@ -1281,26 +1329,25 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if event_type:
                 args['event_type'] = event_type
             args.update(over)
-            query = urllib.parse.urlencode({k: v for k, v in args.items() if v not in (None, '')})
-            return path + ('?' + query if query else '')
+            return self._sc_event_url(path, args)
 
         today = fields.Date.to_string(fields.Datetime.context_timestamp(env.user, fields.Datetime.now()).date())
         yesterday = fields.Date.to_string(fields.Date.from_string(today) - timedelta(days=1))
         # Labels first, keys zipped in: babel's extractor would take a
         # literal that follows an _() call in the same tuple for a term.
         labels = self._sc_event_segment_labels()
+        back_url = self._sc_events_back_url()
+        # Task 1591: the calendar opens on the list's filters — minus the
+        # list's own parameters (its default « from today » would clip it).
+        calendar_args = {key: val for key, val in req_args.items()
+                         if key not in SC_EVENT_LIST_ONLY_ARGS + ('event_type', 'return_url')}
+        calendar_args.update({'event_type': event_type or '', 'return_url': back_url or ''})
         urls = {
             'upcoming': _url(segment='', no_default_dates='', sortby='', date_to=''),
             'past': _url(segment='past', no_default_dates='1', sortby='date_desc', date_to=yesterday),
-            'calendar': '/my/events/calendar',
+            'calendar': self._sc_event_url('/my/events/calendar', calendar_args),
         }
-        back_url = self._sc_events_back_url()
-        if back_url:
-            urls['calendar'] += '?' + urllib.parse.urlencode({'return_url': back_url})
         segments = [(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS]
-        chips = [('', env._("All"), _url(event_type=''), not event_type)]
-        chips += [(key, label, _url(event_type=key), key == event_type)
-                  for key, label in event_types.items()]
 
         def _row(event):
             staff = values['assigned_staff_by_event'].get(event.id)
@@ -1324,22 +1371,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # back — « All / My events / Unassigned / Missing timesheets » and a
         # filter panel (organization, team, professional, dates, cancelled,
         # sort, group by), the legacy route doing the filtering.
-        user = env.user
         view_type = values.get('view_type') or 'all'
-        view_labels = (env._("All"), env._("My events"), env._("Unassigned"), env._("Missing timesheets"))
-        view_keys = ['all', 'my', 'unassigned']
-        if (user.has_group('bemade_sports_clinic.group_portal_treatment_professional')
-                or user.has_group('bemade_sports_clinic.group_sports_clinic_treatment_professional')):
-            view_keys.append('missing_timesheets')
-        view_over = {
-            'all': {'view_type': 'all', 'assigned_user_id': ''},
-            'my': {'view_type': 'my', 'assigned_user_id': user.id},
-            'unassigned': {'view_type': 'unassigned', 'assigned_user_id': ''},
-            'missing_timesheets': {'view_type': 'missing_timesheets', 'assigned_user_id': user.id,
-                                   'no_default_dates': '1'},
-        }
-        views = [(key, dict(zip(('all', 'my', 'unassigned', 'missing_timesheets'), view_labels))[key],
-                  _url(**view_over[key]), key == view_type) for key in view_keys]
+        bar = self._sc_event_filter_bar(_url, event_types, event_type, view_type)
         groups = []
         if values.get('group_by') and values.get('grouped_events'):
             groups = [{'key': str(group['key']), 'label': group['label'],
@@ -1348,18 +1381,18 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         filters_open = any(values.get(key) for key in (
             'organization_id', 'team_id', 'assigned_user_id', 'date_from', 'show_cancelled', 'group_by',
             'search')) or (values.get('sortby') not in (None, '', 'date', 'date_desc'))
-        return {
-            'sc_event_views': views,
-            'sc_event_view': view_type,
-            'sc_event_groups': groups,
-            'sc_event_type': event_type or '',
-            'sc_event_filters_open': filters_open,
-            'sc_event_segments': segments,
-            'sc_event_segment': segment,
-            'sc_event_chips': chips,
-            'sc_event_rows': rows,
-            'sc_events_back_url': back_url,
-        }
+        return dict(
+            bar,
+            sc_event_groups=groups,
+            sc_event_filters_open=filters_open,
+            sc_event_filter_action='/my/events',
+            sc_event_filter_reset='/my/events?view_type=all&no_default_dates=1',
+            sc_event_filter_list=True,
+            sc_event_segments=segments,
+            sc_event_segment=segment,
+            sc_event_rows=rows,
+            sc_events_back_url=back_url,
+        )
 
     def _sc_events_back_url(self):
         """The events list / calendar back link's target when the page was
@@ -1368,28 +1401,64 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return self._safe_return_url(http.request.httprequest.args.get('return_url'), False)
 
     def _sc_events_calendar_values(self, values):
-        params = {key: val for key, val in http.request.httprequest.args.items()
-                  if val and key != 'return_url'}
+        """/my/events/calendar in the shell. Task 1591: the list's filter bar
+        (type chips, view chips, organization / team / professional /
+        cancelled), carried in the URL both ways — the segment links back to
+        the list keep the filters, and the feed reads them from the
+        component's params. No date range here: the calendar navigates by its
+        own visible range (a stale ``date_from`` / ``date_to`` is dropped)."""
+        env = http.request.env
+        req_args = http.request.httprequest.args
+        event_types = self._sc_event_types()
+        event_type = req_args.get('event_type')
+        if event_type not in event_types:
+            event_type = None
+        back_url = self._sc_events_back_url()
+        base_args = {key: val for key, val in req_args.items()
+                     if key not in SC_EVENT_LIST_ONLY_ARGS + ('event_type', 'return_url')}
+        params = {key: val for key, val in base_args.items() if val}
+        if event_type:
+            params['event_type'] = event_type
+
+        def _url(path='/my/events/calendar', **over):
+            args = dict(base_args, event_type=event_type or '')
+            args.update(over)
+            if path == '/my/events/calendar':
+                for key in SC_EVENT_LIST_ONLY_ARGS:
+                    args.pop(key, None)
+            args['return_url'] = back_url or ''
+            return self._sc_event_url(path, args)
+
+        today = fields.Datetime.context_timestamp(env.user, fields.Datetime.now()).date()
+        yesterday = fields.Date.to_string(today - timedelta(days=1))
         labels = self._sc_event_segment_labels()
         urls = {
-            'upcoming': '/my/events',
-            'past': '/my/events?segment=past&no_default_dates=1&sortby=date_desc',
-            'calendar': '/my/events/calendar',
+            'upcoming': _url('/my/events'),
+            'past': _url('/my/events', segment='past', no_default_dates='1', sortby='date_desc',
+                         date_to=yesterday),
+            'calendar': _url(),
         }
-        back_url = self._sc_events_back_url()
-        if back_url:
-            back_qs = urllib.parse.urlencode({'return_url': back_url})
-            urls = {key: url + ('&' if '?' in url else '?') + back_qs for key, url in urls.items()}
-        return {
-            'sc_events_back_url': back_url,
-            'sc_calendar_props': json.dumps({
+        view_type = values.get('view_type') or 'all'
+        bar = self._sc_event_filter_bar(_url, event_types, event_type, view_type)
+        filters_open = any(values.get(key) for key in (
+            'organization_id', 'team_id', 'assigned_user_id', 'show_cancelled', 'search'))
+        return dict(
+            bar,
+            sc_events_back_url=back_url,
+            sc_event_filters_open=filters_open,
+            sc_event_filter_action='/my/events/calendar',
+            sc_event_filter_reset=_url(event_type='', view_type='', team_id='', organization_id='',
+                                       assigned_user_id='', show_cancelled='', search=''),
+            sc_event_filter_list=False,
+            sc_event_segment='calendar',
+            sc_calendar_props=json.dumps({
                 'feedUrl': '/my/events/calendar/data',
                 'params': params,
                 'locale': self._sc_calendar_locale(),
                 'detailKeys': [],
             }),
-            'sc_event_segments': [(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS],
-        }
+            sc_event_segments=[(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS],
+        )
 
     def _sc_event_values(self, event, event_sudo, values, kw):
         env = http.request.env

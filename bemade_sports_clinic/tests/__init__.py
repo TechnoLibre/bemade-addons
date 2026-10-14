@@ -171,3 +171,4 @@ from . import test_clinic_dossier_inline_1590
 from . import test_clinic_dossier_tours_1590
 from . import test_app_shell_player_country_1594
 from . import test_event_org_team_filter_1597
+from . import test_app_shell_calendar_filters_1591
