@@ -47,7 +47,12 @@
                    t-att-aria-pressed="'true' if view[3] else 'false'" t-att-data-sc-view="view[0]" t-out="view[1]"/>
             </t>
         </div>
-        <form method="get" t-att-action="sc_event_filter_action" class="o_sc_filters" data-sc-section="events.filters">
+        <!-- Owner review 2026-10-14: the filters apply as soon as they change
+             (sc_forms.js, data-sc-autosubmit; a date once complete); without
+             JS, the « Apply filters » button stays. Sort / group by are not
+             filters: their own labelled group. -->
+        <form method="get" t-att-action="sc_event_filter_action" class="o_sc_filters" data-sc-section="events.filters"
+              data-sc-autosubmit="1">
             <input type="hidden" name="view_type" t-att-value="sc_event_view"/>
             <input type="hidden" name="event_type" t-att-value="sc_event_type"/>
             <input t-if="search" type="hidden" name="search" t-att-value="search"/>
@@ -98,6 +103,15 @@
                             <label for="sc_ev_to" class="o_sc_field_label">To</label>
                             <input type="date" id="sc_ev_to" name="date_to" class="o_sc_input" t-att-value="date_to or ''"/>
                         </div>
+                    </t>
+                    <label class="o_sc_check">
+                        <input type="checkbox" name="show_cancelled" value="1" t-att-checked="'checked' if show_cancelled else None"/>
+                        <span>Show cancelled events</span>
+                    </label>
+                </div>
+                <fieldset t-if="sc_event_filter_list" class="o_sc_filter_group" data-sc-section="events.sort">
+                    <legend class="o_sc_filter_group_title">Sort / Group by</legend>
+                    <div class="o_sc_filter_grid">
                         <div class="o_sc_field">
                             <label for="sc_ev_sort" class="o_sc_field_label">Sort by</label>
                             <select id="sc_ev_sort" name="sortby" class="o_sc_input o_sc_select">
@@ -118,15 +132,11 @@
                                 <option value="therapist" t-att-selected="'selected' if group_by == 'therapist' else None">Therapist</option>
                             </select>
                         </div>
-                    </t>
-                    <label class="o_sc_check">
-                        <input type="checkbox" name="show_cancelled" value="1" t-att-checked="'checked' if show_cancelled else None"/>
-                        <span>Show cancelled events</span>
-                    </label>
-                </div>
+                    </div>
+                </fieldset>
                 <div class="o_sc_form_actions">
                     <a t-att-href="sc_event_filter_reset" class="o_sc_btn o_sc_btn_ghost">Reset</a>
-                    <button type="submit" class="o_sc_btn o_sc_btn_primary">Apply filters</button>
+                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-autosubmit-fallback="1">Apply filters</button>
                 </div>
             </details>
         </form>
@@ -569,7 +579,11 @@
                     </div>
                     <div class="o_sc_field">
                         <label class="o_sc_field_label" for="sc_event_date_end">Event End</label>
-                        <input type="datetime-local" id="sc_event_date_end" name="date_end" class="o_sc_input" required="required" t-att-value="sc_form['date_end']"/>
+                        <input type="datetime-local" id="sc_event_date_end" name="date_end" class="o_sc_input" required="required" t-att-value="sc_form['date_end']"
+                               t-att-aria-invalid="'true' if sc_form['field_errors'].get('date_end') else None"
+                               t-att-aria-describedby="'sc_event_date_end_error' if sc_form['field_errors'].get('date_end') else None"/>
+                        <div t-if="sc_form['field_errors'].get('date_end')" id="sc_event_date_end_error" class="o_sc_field_message o_sc_field_error"
+                             role="alert" t-att-data-sc-field-error="'date_end'" t-out="sc_form['field_errors']['date_end']"/>
                     </div>
                     <div class="o_sc_field">
                         <label class="o_sc_field_label" for="sc_event_therapist_start">Therapist Start</label>
@@ -577,7 +591,11 @@
                     </div>
                     <div class="o_sc_field">
                         <label class="o_sc_field_label" for="sc_event_therapist_end">Therapist End</label>
-                        <input type="datetime-local" id="sc_event_therapist_end" name="therapist_end" class="o_sc_input" t-att-value="sc_form['therapist_end']"/>
+                        <input type="datetime-local" id="sc_event_therapist_end" name="therapist_end" class="o_sc_input" t-att-value="sc_form['therapist_end']"
+                               t-att-aria-invalid="'true' if sc_form['field_errors'].get('therapist_end') else None"
+                               t-att-aria-describedby="'sc_event_therapist_end_error' if sc_form['field_errors'].get('therapist_end') else None"/>
+                        <div t-if="sc_form['field_errors'].get('therapist_end')" id="sc_event_therapist_end_error" class="o_sc_field_message o_sc_field_error"
+                             role="alert" t-att-data-sc-field-error="'therapist_end'" t-out="sc_form['field_errors']['therapist_end']"/>
                     </div>
                 </section>
                 <section class="o_sc_card o_sc_fields" data-sc-section="event.form.teams">

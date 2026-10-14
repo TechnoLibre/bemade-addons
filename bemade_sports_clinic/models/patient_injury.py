@@ -395,11 +395,14 @@ class PatientInjury(models.Model):
         doesn't change the field produces no row (task 1241).
 
         Task 1404: comparison is strip-normalized so whitespace-only diffs
-        log nothing, and an essentially-empty NEW value — including a genuine
-        clear — logs nothing (customer decision; the traceability trade-off on
-        clear events is explicitly accepted). Stored content stays raw
-        (un-stripped); normalization is for comparison only. The invariant is
-        that no history row ever has essentially-empty content."""
+        log nothing. Stored content stays raw (un-stripped); normalization is
+        for comparison only.
+
+        Owner review 2026-10-14 (supersedes 1404's « a clear logs nothing »):
+        a genuine clear — a non-empty note made essentially empty — IS
+        recorded, as ONE empty-content row (the history shows it « Cleared »,
+        like the training recommendation's). Empty -> whitespace-only still
+        logs nothing (nothing was there to clear)."""
         changed_fields = [f for f in note_history_scope_by_field if f in vals]
         if not changed_fields:
             return []
@@ -412,13 +415,11 @@ class PatientInjury(models.Model):
                 new_norm = (vals.get(fname) or "").strip()
                 if old_norm == new_norm:
                     continue
-                if not new_norm:
-                    # Clears and whitespace-only writes log nothing.
-                    continue
                 history_vals.append({
                     'injury_id': rec.id,
                     'scope': note_history_scope_by_field[fname],
-                    'content': vals.get(fname),
+                    # A clear: an empty row (rendered « Cleared »).
+                    'content': vals.get(fname) if new_norm else '',
                     'author_id': author_id,
                     'note_datetime': now,
                 })
@@ -450,7 +451,10 @@ class PatientInjury(models.Model):
 
         # Update subscriptions if internal_notes changes (unless suppressed)
         if not suppress_followers and 'internal_notes' in vals:
-            for rec in self:
+            # sudo (owner review 2026-10-14): follower-subtype upkeep reads
+            # the followers' users and groups, which a portal therapist saving
+            # the internal notes may not read (res.groups ACL -> 403).
+            for rec in self.sudo():
                 rec._manage_treatment_professional_subscriptions()
 
         # Task 1272: propagate non-note injury changes to the owning player's

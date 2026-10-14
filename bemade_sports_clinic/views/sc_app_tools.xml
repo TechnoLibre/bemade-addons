@@ -19,7 +19,10 @@
             <t t-set="sc_active_nav" t-value="'timesheets'"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
-            <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters">
+            <!-- Owner review 2026-10-14: applied on change (sc_forms.js); sort /
+                 group by in their own labelled group (they are not filters). -->
+            <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters"
+                  data-sc-autosubmit="1">
                 <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id or organization_id or group_by or (sortby and sortby != 'date')) else None">
                     <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'filter'"/></t>
@@ -57,29 +60,34 @@
                                 </t>
                             </select>
                         </div>
-                        <div class="o_sc_field">
-                            <label for="sc_ts_sort" class="o_sc_field_label">Sort by</label>
-                            <select id="sc_ts_sort" name="sortby" class="o_sc_input o_sc_select">
-                                <option value="date" t-att-selected="'selected' if (not sortby or sortby == 'date') else None">Date (asc)</option>
-                                <option value="date_desc" t-att-selected="'selected' if sortby == 'date_desc' else None">Date (desc)</option>
-                                <option value="team" t-att-selected="'selected' if sortby == 'team' else None">Team</option>
-                                <option value="org" t-att-selected="'selected' if sortby == 'org' else None">Organization</option>
-                                <option value="state" t-att-selected="'selected' if sortby == 'state' else None">Status</option>
-                            </select>
-                        </div>
-                        <div class="o_sc_field">
-                            <label for="sc_ts_group" class="o_sc_field_label">Group by</label>
-                            <select id="sc_ts_group" name="group_by" class="o_sc_input o_sc_select">
-                                <option value="" t-att-selected="'selected' if not group_by else None">None</option>
-                                <option value="date" t-att-selected="'selected' if group_by == 'date' else None">Date</option>
-                                <option value="organization" t-att-selected="'selected' if group_by == 'organization' else None">Organization</option>
-                                <option value="team" t-att-selected="'selected' if group_by == 'team' else None">Team</option>
-                            </select>
-                        </div>
                     </div>
+                    <fieldset class="o_sc_filter_group" data-sc-section="timesheets.sort">
+                        <legend class="o_sc_filter_group_title">Sort / Group by</legend>
+                        <div class="o_sc_filter_grid">
+                            <div class="o_sc_field">
+                                <label for="sc_ts_sort" class="o_sc_field_label">Sort by</label>
+                                <select id="sc_ts_sort" name="sortby" class="o_sc_input o_sc_select">
+                                    <option value="date" t-att-selected="'selected' if (not sortby or sortby == 'date') else None">Date (asc)</option>
+                                    <option value="date_desc" t-att-selected="'selected' if sortby == 'date_desc' else None">Date (desc)</option>
+                                    <option value="team" t-att-selected="'selected' if sortby == 'team' else None">Team</option>
+                                    <option value="org" t-att-selected="'selected' if sortby == 'org' else None">Organization</option>
+                                    <option value="state" t-att-selected="'selected' if sortby == 'state' else None">Status</option>
+                                </select>
+                            </div>
+                            <div class="o_sc_field">
+                                <label for="sc_ts_group" class="o_sc_field_label">Group by</label>
+                                <select id="sc_ts_group" name="group_by" class="o_sc_input o_sc_select">
+                                    <option value="" t-att-selected="'selected' if not group_by else None">None</option>
+                                    <option value="date" t-att-selected="'selected' if group_by == 'date' else None">Date</option>
+                                    <option value="organization" t-att-selected="'selected' if group_by == 'organization' else None">Organization</option>
+                                    <option value="team" t-att-selected="'selected' if group_by == 'team' else None">Team</option>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
                     <div class="o_sc_form_actions">
                         <a href="/my/sc/timesheets" class="o_sc_btn o_sc_btn_ghost">Reset</a>
-                        <button type="submit" class="o_sc_btn o_sc_btn_primary">Apply filters</button>
+                        <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-autosubmit-fallback="1">Apply filters</button>
                     </div>
                 </details>
             </form>

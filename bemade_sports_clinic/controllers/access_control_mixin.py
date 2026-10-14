@@ -375,6 +375,52 @@ class AccessControlMixin:
                 links.append(link)
         return links
 
+    @staticmethod
+    def _sc_title_find(title, name):
+        """Case-insensitive position of ``name`` in ``title`` (-1 if absent)."""
+        if not name:
+            return -1
+        lowered = title.lower()
+        if len(lowered) != len(title):
+            return title.find(name)
+        return lowered.find(name.lower())
+
+    def _sc_activity_title_parts(self, title, links):
+        """Owner review 2026-10-14: an activity row's title split so the
+        related record's name in it is a link to that record — ``[{text[,
+        url, model]}]`` segments, the first (earliest, then longest) name of
+        an ALLOWED link of ``links`` (``_sc_activity_related``: a record the
+        viewer may not open has no url and stays plain text). The names
+        looked for: the link's label and the record's own name / display
+        name (« One, Pat » or « Pat One »). One plain segment when no name
+        shows in the title."""
+        title = title or ''
+        best = None
+        for link in links or ():
+            if not link.get('url') or not link.get('model') or not link.get('id'):
+                continue
+            # sudo: names only, of a record the link gate already allowed.
+            record = request.env[link['model']].sudo().browse(link['id'])
+            names = {link.get('name') or ''}
+            if 'name' in record._fields:
+                names.add(record.name or '')
+            names.add(record.display_name or '')
+            for name in sorted({n.strip() for n in names if n and n.strip()}, key=len, reverse=True):
+                pos = self._sc_title_find(title, name)
+                if pos < 0:
+                    continue
+                if best is None or (pos, -len(name)) < (best[0], -best[1]):
+                    best = (pos, len(name), link)
+                break
+        if best is None:
+            return [{'text': title}]
+        pos, length, link = best
+        parts = [{'text': title[:pos]}] if pos else []
+        parts.append({'text': title[pos:pos + length], 'url': link['url'], 'model': link['model']})
+        if title[pos + length:]:
+            parts.append({'text': title[pos + length:]})
+        return parts
+
     # ------------------------------------------------------------------
     # Task 1593 — player rows carry the legacy card's content
     # ------------------------------------------------------------------

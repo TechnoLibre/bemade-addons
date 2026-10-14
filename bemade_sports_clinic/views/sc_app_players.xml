@@ -252,6 +252,31 @@
                         <span>Actual return:</span> <span t-att-data-sc-display="sc_display_key(player, 'return_date')" t-out="sc_return_shown"/>
                     </span>
                 </div>
+                <!-- Owner review 2026-10-14: the training recommendation (always
+                     live, with its stamp and history) in the header, right above
+                     the allergies; therapists edit it, coaches read it. -->
+                <div class="o_sc_fields o_sc_hero_training" data-sc-section="player.training">
+                    <t t-set="sc_training_label">Training Recommendation</t>
+                    <t t-set="sc_training_history_label">History</t>
+                    <t t-if="is_treatment_prof and sc_can('patient.training.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
+                        <t t-set="props" t-value="sc_field_props(player, 'training_recommendation', sc_training_label, 'textarea', clearable=True, historySheet='sc_training_history_sheet', historyLabel=sc_training_history_label, hint=player.last_training_recommendation_info or None)"/>
+                    </t>
+                    <t t-else="" t-call="bemade_sports_clinic.sc_field_static">
+                        <t t-set="label" t-value="sc_training_label"/>
+                        <t t-set="value" t-value="player.training_recommendation"/>
+                        <t t-set="pre" t-value="True"/>
+                        <t t-set="history_sheet" t-value="'sc_training_history_sheet'"/>
+                        <t t-set="history_label" t-value="sc_training_history_label"/>
+                        <!-- Task 1601: who changed it last, and when. -->
+                        <t t-set="static_hint" t-value="player.last_training_recommendation_info"/>
+                    </t>
+                    <t t-call="bemade_sports_clinic.sc_sheet">
+                        <t t-set="sheet_id" t-value="'sc_training_history_sheet'"/>
+                        <t t-set="title">Training recommendation history</t>
+                        <t t-set="lazy_url" t-value="'/my/player/%s/training-history' % player.id"/>
+                        <t t-set="lazy_fresh" t-value="True"/>
+                    </t>
+                </div>
                 <t t-if="is_treatment_prof and sc_can('patient.allergies') and (player.allergies or '').replace('\xa0', '').strip()"
                    t-call="bemade_sports_clinic.sc_banner">
                     <t t-set="tone" t-value="'warn'"/>
@@ -331,32 +356,6 @@
                                 </t>
                                 <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
                             </div>
-                        </section>
-
-                        <!-- Owner review 2026-10-11: the training recommendation
-                             (always live, with its history) just above the
-                             allergies. -->
-                        <section class="o_sc_card o_sc_fields" data-sc-section="player.training">
-                            <t t-set="sc_training_label">Training Recommendation</t>
-                            <t t-set="sc_training_history_label">History</t>
-                            <t t-if="is_treatment_prof and sc_can('patient.training.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
-                                <t t-set="props" t-value="sc_field_props(player, 'training_recommendation', sc_training_label, 'textarea', clearable=True, historySheet='sc_training_history_sheet', historyLabel=sc_training_history_label, hint=player.last_training_recommendation_info or None)"/>
-                            </t>
-                            <t t-else="" t-call="bemade_sports_clinic.sc_field_static">
-                                <t t-set="label" t-value="sc_training_label"/>
-                                <t t-set="value" t-value="player.training_recommendation"/>
-                                <t t-set="pre" t-value="True"/>
-                                <t t-set="history_sheet" t-value="'sc_training_history_sheet'"/>
-                                <t t-set="history_label" t-value="sc_training_history_label"/>
-                                <!-- Task 1601: who changed it last, and when. -->
-                                <t t-set="static_hint" t-value="player.last_training_recommendation_info"/>
-                            </t>
-                        <t t-call="bemade_sports_clinic.sc_sheet">
-                            <t t-set="sheet_id" t-value="'sc_training_history_sheet'"/>
-                            <t t-set="title">Training recommendation history</t>
-                            <t t-set="lazy_url" t-value="'/my/player/%s/training-history' % player.id"/>
-                            <t t-set="lazy_fresh" t-value="True"/>
-                        </t>
                         </section>
 
                         <section t-if="is_treatment_prof and sc_can('patient.edit.tp_fields')"

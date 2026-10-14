@@ -419,6 +419,12 @@
           href          main target (required)
           title         main link text (required)
           main_attrs    dict of extra attributes of the main <a> (data-*, aria-label…)
+          title_parts   optional split title (owner review 2026-10-14): a list of
+                        {text[, url, model]} segments; a segment with ``url`` is
+                        its own link (e.g. the related record's name in an
+                        activity title), layered above the main link, which
+                        then carries the whole title as its aria-label (never
+                        an <a> inside an <a>)
           subtitle      text or markup (a t-set body) under the title — never
                         put a link here, use ``links`` or ``meta``
           dot / lead_icon   leading dot tone (red|yellow|green) or sc_icon key, as sc_entity_row
@@ -440,7 +446,16 @@
             <span t-elif="lead_icon" class="o_sc_row_lead"><t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="lead_icon"/></t></span>
             <span t-else="" class="o_sc_row_lead o_sc_row_lead_empty" aria-hidden="true"/>
             <span class="o_sc_row_text">
-                <a t-att-href="href" class="o_sc_link_row_main o_sc_row_title" t-att="main_attrs or {}" t-out="title"/>
+                <span t-if="title_parts and any(part.get('url') for part in title_parts)"
+                      class="o_sc_row_title o_sc_row_title_split" data-sc-title-split="1">
+                    <a t-att-href="href" class="o_sc_link_row_main" t-att-aria-label="title" t-att="main_attrs or {}"/>
+                    <t t-foreach="title_parts" t-as="title_part">
+                        <a t-if="title_part.get('url')" t-att-href="title_part['url']" class="o_sc_row_title_link"
+                           t-att-data-sc-title-link="title_part.get('model') or '1'" t-out="title_part['text']"/>
+                        <span t-else="" t-out="title_part['text']"/>
+                    </t>
+                </span>
+                <a t-else="" t-att-href="href" class="o_sc_link_row_main o_sc_row_title" t-att="main_attrs or {}" t-out="title"/>
                 <span t-if="subtitle" class="o_sc_row_subtitle" t-out="subtitle"/>
                 <t t-if="meta" t-out="meta"/>
                 <span t-if="links" class="o_sc_row_links" data-sc-row-links="1">
@@ -586,6 +601,9 @@
             <t t-call="bemade_sports_clinic.sc_link_row">
                 <t t-set="href" t-value="'/my/activity/%s' % activity.id"/>
                 <t t-set="title" t-value="activity.summary or activity.activity_type_id.name"/>
+                <!-- Owner review 2026-10-14: the related record's name in the
+                     title is a link to it too (same access-gated URL). -->
+                <t t-set="title_parts" t-value="sc_activity_title_parts(title, related_links)"/>
                 <t t-set="dot" t-value="'red' if act_state == 'overdue' else ('yellow' if act_state == 'today' else 'green')"/>
                 <t t-set="subtitle">
                     <span t-if="activity.summary and activity.activity_type_id" class="o_sc_activity_type"

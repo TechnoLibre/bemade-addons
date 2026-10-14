@@ -635,7 +635,8 @@ def _injury_write(ctrl, injury, field, value):
         injury.write({field: _date_value(value)})
         return {}
     # Note fields: raw text; an essentially-empty value is a genuine clear
-    # (the note-history hook logs nothing for it, task 1404).
+    # (the note-history hook logs it as an empty « Cleared » row, owner
+    # review 2026-10-14).
     injury.write({field: value if (value or '').strip() else False})
     return {}
 
@@ -976,6 +977,9 @@ class AppShellMixin:
             # Task 1595: an activity row's related-record links (player /
             # team / event, the injury it is about), access-gated.
             'sc_activity_related': self._sc_activity_related,
+            # Owner review 2026-10-14: the related record's name in an
+            # activity title is a link too.
+            'sc_activity_title_parts': self._sc_activity_title_parts,
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page
@@ -1648,10 +1652,15 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if spec.get('sudo_write') and not spec['permission'](self, record):
                 raise AccessError(_("You cannot edit this record."))
             current = fields.Datetime.to_string(record.write_date)
-            if current != write_date and not self._sc_field_unchanged(record, field, old_value):
+            # Owner review 2026-10-14: the stale-check and the 409 payload read
+            # the field through sudo — the caller's role allowlist and the
+            # spec's check passed above, and a group-restricted field (the
+            # injury's internal notes) is not readable by a portal therapist
+            # through the ORM after a sibling save changed the write_date.
+            if current != write_date and not self._sc_field_unchanged(record.sudo(), field, old_value):
                 return self._sc_save_json({
                     'conflict': True,
-                    'current_value': self._sc_save_value(record, field),
+                    'current_value': self._sc_save_value(record.sudo(), field),
                     'current_write_date': current,
                     'by': record.sudo().write_uid.name or '',
                 }, 409)

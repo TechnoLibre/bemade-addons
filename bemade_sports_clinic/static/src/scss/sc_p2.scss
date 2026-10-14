@@ -380,6 +380,32 @@ $sc-p2-laptop: 992px;
         }
     }
 
+    // Owner review 2026-10-14: sort / group by are not filters — their own
+    // labelled group under the filters.
+    .o_sc_filter_group {
+        margin: var(--sc-space-3) 0 0;
+        padding: var(--sc-space-3) 0 0;
+        border: 0;
+        border-top: 1px solid var(--sc-line);
+        min-width: 0;
+    }
+
+    .o_sc_filter_group_title {
+        float: left; // keeps the legend inside the fieldset's flow
+        width: 100%;
+        margin: 0 0 var(--sc-space-2);
+        padding: 0;
+        font-size: var(--sc-text-sm);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--sc-fg-2);
+
+        + * {
+            clear: both;
+        }
+    }
+
     .o_sc_add_to_team {
         display: flex;
         flex-wrap: wrap;

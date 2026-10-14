@@ -32,7 +32,9 @@
                 <t t-set="active" t-value="time_filter"/>
             </t>
 
-            <form method="get" action="/my/clinics" class="o_sc_filters" data-sc-section="clinics.filters">
+            <!-- Owner review 2026-10-14: applied on change (sc_forms.js). -->
+            <form method="get" action="/my/clinics" class="o_sc_filters" data-sc-section="clinics.filters"
+                  data-sc-autosubmit="1">
                 <input type="hidden" name="filters_applied" value="1"/>
                 <input type="hidden" name="time_filter" t-att-value="time_filter"/>
                 <div class="o_sc_chips">
@@ -70,7 +72,7 @@
                     </div>
                     <div class="o_sc_form_actions">
                         <a href="/my/clinics" class="o_sc_btn o_sc_btn_ghost">Reset</a>
-                        <button type="submit" class="o_sc_btn o_sc_btn_primary">Apply filters</button>
+                        <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-autosubmit-fallback="1">Apply filters</button>
                     </div>
                 </details>
             </form>

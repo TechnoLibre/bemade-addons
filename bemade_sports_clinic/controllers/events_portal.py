@@ -1599,6 +1599,19 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         form['organization_id'] = self._sc_default_event_org(
             values['teams'], form['team_ids'],
             None if mode == 'edit' else (values.get('organization_id_selected') or kw.get('organization_id')))
+        # Owner review 2026-10-14: a time-order refusal shows next to its
+        # field (not as a page banner).
+        field_errors = {}
+        if error:
+            per_field = {
+                env._("Event end time must be after start time."): 'date_end',
+                env._("Therapist end time must be after start time."): 'therapist_end',
+            }
+            name = per_field.get(str(error).strip())
+            if name:
+                field_errors[name] = error
+                error = None
+        form['field_errors'] = field_errors
         return {
             'sc_form_mode': mode,
             'sc_form': form,

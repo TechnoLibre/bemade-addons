@@ -347,30 +347,23 @@
                                 </div>
                             </div>
                             <p t-else="" class="o_sc_empty">No matching player.</p>
+                            <!-- Owner review 2026-10-14: ONE set of name fields — the
+                                 new player gets the name / date of birth entered in the
+                                 search fields above (sc_forms.js copies the current
+                                 values in; without JS, those of the last search). -->
+                            <t t-set="sc_create_ready" t-value="bool((sc_add_search['first'] or '').strip() and (sc_add_search['last'] or '').strip())"/>
                             <form t-attf-action="/my/team/#{team.id}/player/add" method="post" class="o_sc_form" data-sc-form="player.create">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <input type="hidden" name="sc_inline" value="1"/>
                                 <input type="hidden" name="force_new" value="1"/>
-                                <div class="o_sc_filter_grid">
-                                    <div class="o_sc_field">
-                                        <label class="o_sc_field_label" for="sc_new_first">First name</label>
-                                        <input type="text" id="sc_new_first" name="first_name" class="o_sc_input" required="required"
-                                               t-att-value="sc_add_search['first']"/>
-                                    </div>
-                                    <div class="o_sc_field">
-                                        <label class="o_sc_field_label" for="sc_new_last">Last name</label>
-                                        <input type="text" id="sc_new_last" name="last_name" class="o_sc_input" required="required"
-                                               t-att-value="sc_add_search['last']"/>
-                                    </div>
-                                    <div class="o_sc_field">
-                                        <label class="o_sc_field_label" for="sc_new_dob">Date of birth (optional)</label>
-                                        <input type="date" id="sc_new_dob" name="date_of_birth" class="o_sc_input"
-                                               t-att-value="sc_add_search['dob']"/>
-                                    </div>
-                                </div>
+                                <input type="hidden" name="first_name" data-sc-copy-from="add_first" t-att-value="sc_add_search['first']"/>
+                                <input type="hidden" name="last_name" data-sc-copy-from="add_last" t-att-value="sc_add_search['last']"/>
+                                <input type="hidden" name="date_of_birth" data-sc-copy-from="add_dob" t-att-value="sc_add_search['dob']"/>
                                 <div class="o_sc_form_actions">
-                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="player.create">Create a new player</button>
+                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="player.create"
+                                            t-att-disabled="None if sc_create_ready else 'disabled'">Create a new player</button>
                                 </div>
+                                <small class="o_sc_hint" data-sc-create-hint="1" t-att-hidden="'hidden' if sc_create_ready else None">Enter a first and a last name above to create a new player.</small>
                             </form>
                         </t>
                     </t>

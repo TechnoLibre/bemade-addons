@@ -558,7 +558,7 @@ class SportsEvent(models.Model):
         for event in self:
             if event.date_start and event.date_end:
                 if event.date_end <= event.date_start:
-                    raise ValidationError("Event end time must be after start time.")
+                    raise ValidationError(_("Event end time must be after start time."))
     
     @api.constrains('therapist_start', 'therapist_end')
     def _check_therapist_dates(self):
@@ -566,7 +566,7 @@ class SportsEvent(models.Model):
         for event in self:
             if event.therapist_start and event.therapist_end:
                 if event.therapist_end <= event.therapist_start:
-                    raise ValidationError("Therapist end time must be after start time.")
+                    raise ValidationError(_("Therapist end time must be after start time."))
     
     # ========================================
     # PORTAL ACCESS METHODS

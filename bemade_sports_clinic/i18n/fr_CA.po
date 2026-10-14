@@ -4151,6 +4151,12 @@ msgid "Coverage Total"
 msgstr "Total de la couverture"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event_timesheet.py:0
+msgid "Coverage end must be after coverage start."
+msgstr "La fin de la couverture doit être après son début."
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_add_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_recurrence_wizard
 msgid "Create"
@@ -5202,6 +5208,11 @@ msgid "Ends"
 msgstr "Se termine"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Enter a first and a last name above to create a new player."
+msgstr "Entrez un prénom et un nom ci-dessus pour créer un nouveau joueur."
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
 msgid "Enter allergies information here"
 msgstr "Entrez les informations sur les allergies ici"
@@ -5444,6 +5455,13 @@ msgstr "Durée de l'événement en heures"
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 msgid "Event end time is required."
 msgstr "L'heure de fin de l'événement est requise."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+#: code:addons/bemade_sports_clinic/models/sports_event.py:0
+msgid "Event end time must be after start time."
+msgstr "La fin de l'événement doit être après le début."
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -10284,6 +10302,12 @@ msgid "Sort"
 msgstr "Trier"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
+msgid "Sort / Group by"
+msgstr "Trier / Regrouper"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
@@ -11437,6 +11461,13 @@ msgid "Therapist coverage duration in hours"
 msgstr "Durée de la couverture du thérapeute en heures"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+#: code:addons/bemade_sports_clinic/models/sports_event.py:0
+msgid "Therapist end time must be after start time."
+msgstr "La fin de la présence du thérapeute doit être après son début."
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,help:bemade_sports_clinic.field_sports_event_timesheet__user_id
 msgid "Therapist entering this timesheet"
 msgstr "Thérapeute saisissant cette feuille de temps"
@@ -11723,6 +11754,12 @@ msgid "Timesheets"
 msgstr "Feuilles de temps"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event_timesheet.py:0
+msgid "Timesheets are read-only once invoiced."
+msgstr "Les feuilles de temps ne peuvent plus être modifiées une fois facturées."
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,help:bemade_sports_clinic.field_sports_event__timesheet_ids
 msgid "Timesheets logged by assigned therapists for this event"
 msgstr ""
@@ -11911,6 +11948,18 @@ msgstr "Début du déplacement"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_timesheet_tree
 msgid "Travel Total"
 msgstr "Total du déplacement"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event_timesheet.py:0
+msgid "Travel end must be on or after coverage end."
+msgstr "Le déplacement doit se terminer au plus tôt à la fin de la couverture."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event_timesheet.py:0
+msgid "Travel start must be on or before coverage start."
+msgstr "Le déplacement doit commencer au plus tard au début de la couverture."
 
 #. module: bemade_sports_clinic
 #: model:ir.model,name:bemade_sports_clinic.model_sports_treatment_note
@@ -12764,6 +12813,12 @@ msgstr "Vous n'avez pas accès à ce patient."
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "You do not have access to this activity."
+msgstr "Vous n'avez pas accès à cette activité."
+
+#. module: bemade_sports_clinic
+#. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/access_control_mixin.py:0
 msgid "You do not have access to this event."
 msgstr "Vous n'avez pas accès à cet événement."
@@ -13404,6 +13459,12 @@ msgid "Injured players"
 msgstr "Blessés"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event_timesheet.py:0
+msgid "Invoiced timesheets cannot be deleted."
+msgstr "Les feuilles de temps facturées ne peuvent pas être supprimées."
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
 
 msgid "Invoices, quotes and the classic portal"
@@ -14023,6 +14084,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "<span>Actual return:</span>"
 msgstr "<span>Retour réel :</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_add_sheet
+msgid "<span>Add Activity</span>"
+msgstr "<span>Ajouter une activité</span>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
