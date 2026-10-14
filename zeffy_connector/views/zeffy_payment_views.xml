@@ -20,7 +20,13 @@
                 <field name="status" optional="show" />
                 <field name="refund_status" optional="show" />
                 <field name="fund_name" optional="hide" />
-                <field name="receipt_url" widget="url" text="PDF" optional="show" />
+                <field
+          name="receipt_url"
+          widget="url"
+          text="PDF"
+          optional="show"
+          invisible="not receipt_url"
+        />
                 <field name="zeffy_deleted" optional="hide" />
                 <field name="company_id" groups="base.group_multi_company" />
             </list>

@@ -11,7 +11,7 @@
 #
 {
     "name": "Zeffy Connector",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "category": "Sales/CRM",
     "summary": "Read-only synchronization of Zeffy campaigns, contacts and "
     "payments (donations) into Odoo.",
