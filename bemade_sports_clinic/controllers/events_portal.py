@@ -981,14 +981,19 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 # If no staff selected, clear the field
                 staff_command = [(6, 0, [])]
 
-            # Update the event
-            event.write(update_vals)
+            # Task 1597: one unit — a refused write (e.g. the teams of two
+            # organizations) must not stay half-applied: the error below is
+            # caught, so without the savepoint the request would commit it.
+            with http.request.env.cr.savepoint():
+                # Update the event
+                event.write(update_vals)
 
-            # assigned_staff_ids is an m2m to res.users; portal users can't read
-            # other users, so write it under sudo to avoid an AccessError when the
-            # selected staff isn't the current user. (Access already enforced above.)
-            if staff_command is not None:
-                event.sudo().write({'assigned_staff_ids': staff_command})
+                # assigned_staff_ids is an m2m to res.users; portal users can't read
+                # other users, so write it under sudo to avoid an AccessError when the
+                # selected staff isn't the current user. (Access already enforced above.)
+                if staff_command is not None:
+                    event.sudo().write({'assigned_staff_ids': staff_command})
+                event.flush_recordset()
 
             return http.request.redirect(f'/my/event/{event_id}?success=1{return_qs}')
 
@@ -1443,6 +1448,34 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_flash': {'success': success, 'error': error},
         }
 
+    @staticmethod
+    def _sc_default_event_org(teams, selected_ids, requested=None):
+        """Task 1597 — the organization the event form's team list opens
+        filtered on (an id, or False = all organizations). The form unticks
+        the teams it hides, so an organization is only ever chosen when every
+        selected team belongs to it:
+
+        * ``requested`` (the posted one after a refusal, or the events list's
+          ``?organization_id=`` filter) when it is the organization of one of
+          the offered teams;
+        * else the selected teams' organization, when they all have that one;
+        * else, nothing selected, the only organization when every offered
+          team belongs to it (a team without one would otherwise be hidden).
+        """
+        teams = teams.sudo()
+        orgs = teams.parent_id
+        selected = teams.filtered(lambda team: team.id in set(selected_ids or ()))
+        try:
+            requested = int(requested or 0)
+        except (TypeError, ValueError):
+            requested = 0
+        if requested in orgs.ids and all(team.parent_id.id == requested for team in selected):
+            return requested
+        candidates = selected if selected else teams
+        if candidates and len(candidates.parent_id) == 1 and all(team.parent_id for team in candidates):
+            return candidates.parent_id.id
+        return False
+
     def _sc_event_form_values(self, mode, values, kw):
         """Create / edit in the shell: ONE form template, submit-based, same
         routes and field names as today's forms (task 1540). Teams and staff
@@ -1486,6 +1519,10 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'cancel_url': '/my/events',
             }
             error = values.get('error')
+        # Task 1597: the organization the team list opens filtered on.
+        form['organization_id'] = self._sc_default_event_org(
+            values['teams'], form['team_ids'],
+            None if mode == 'edit' else (values.get('organization_id_selected') or kw.get('organization_id')))
         return {
             'sc_form_mode': mode,
             'sc_form': form,

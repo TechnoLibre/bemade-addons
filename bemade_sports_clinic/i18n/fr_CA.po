@@ -1435,6 +1435,7 @@ msgstr "<option value=\"\">Toutes les équipes</option>"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
 msgid "<option value=\"\">All organizations</option>"
@@ -8008,6 +8009,7 @@ msgstr "Ordre enregistré."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_search
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_organization_staff_view_search
@@ -14952,3 +14954,20 @@ msgstr "Reprendre le texte actuel"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Write the injury's current state — replaces the previous text"
 msgstr "Écrire l'état actuel de la blessure — remplace le texte précédent"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event.py:0
+msgid ""
+"An event's teams must all belong to the same organization (here: "
+"%(organizations)s). Choose the organization first, then its teams."
+msgstr ""
+"Les équipes d'un événement doivent toutes appartenir à la même organisation "
+"(ici : %(organizations)s). Choisissez d'abord l'organisation, puis ses "
+"équipes."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_event.py:0
+msgid "Please select at least one team for the event."
+msgstr "Veuillez choisir au moins une équipe pour l'événement."

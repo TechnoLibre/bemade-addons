@@ -595,12 +595,23 @@ class SportsEvent(models.Model):
     # ========================================
     @api.constrains('team_ids')
     def _check_team_ids_same_org_and_nonempty(self):
+        """At least one team, and never the teams of two organizations.
+
+        Task 1597: the messages are translated (the portal shows them as is)
+        and the refusal names the organizations involved. Teams without an
+        organization never count: they may join the teams of any ONE
+        organization. sudo: a portal user may not read the organizations."""
         for event in self:
             if not event.team_ids:
-                raise ValidationError("Please select at least one team for the event.")
-            orgs = event.team_ids.mapped('parent_id').filtered(lambda p: p)
-            if orgs and len(set(orgs.mapped('id'))) > 1:
-                raise ValidationError("All selected teams must belong to the same organization.")
+                raise ValidationError(self.env._("Please select at least one team for the event."))
+            orgs = event.sudo().team_ids.parent_id
+            if len(orgs) > 1:
+                raise ValidationError(self.env._(
+                    "An event's teams must all belong to the same organization "
+                    "(here: %(organizations)s). Choose the organization first, "
+                    "then its teams.",
+                    organizations=', '.join(orgs.sorted('name').mapped('name')),
+                ))
     
     # ========================================
     # CRUD OVERRIDES

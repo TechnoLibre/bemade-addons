@@ -29,7 +29,8 @@
             <t t-set="sc_active_nav" t-value="'events'"/>
             <t t-if="can_edit">
                 <t t-set="sc_create_label">New event</t>
-                <t t-set="sc_primary_action" t-value="{'url': '/my/event/create', 'label': sc_create_label, 'key': 'events.create'}"/>
+                <!-- Task 1597: « New event » opens on the list's organization filter. -->
+                <t t-set="sc_primary_action" t-value="{'url': ('/my/event/create?organization_id=%s' % organization_id) if organization_id else '/my/event/create', 'label': sc_create_label, 'key': 'events.create'}"/>
             </t>
             <t t-call="bemade_sports_clinic.sc_event_segments">
                 <t t-set="active" t-value="sc_event_segment"/>
@@ -556,8 +557,20 @@
                 </section>
                 <section class="o_sc_card o_sc_fields" data-sc-section="event.form.teams">
                     <h2 class="o_sc_section_header"><span>Teams</span></h2>
+                    <!-- Task 1597: picking an organization narrows the teams
+                         to its own and unticks the others (sc_events.js); the
+                         model refuses the teams of two organizations. -->
+                    <div t-if="organizations" class="o_sc_field">
+                        <label class="o_sc_field_label" for="sc_event_org">Organization</label>
+                        <select id="sc_event_org" name="organization_id" class="o_sc_input o_sc_select" data-sc-org-select="1">
+                            <option value="">All organizations</option>
+                            <t t-foreach="organizations" t-as="org">
+                                <option t-att-value="org.id" t-att-selected="'selected' if org.id == sc_form['organization_id'] else None" t-out="org.name"/>
+                            </t>
+                        </select>
+                    </div>
                     <t t-foreach="teams" t-as="team">
-                        <label class="o_sc_check">
+                        <label class="o_sc_check" t-att-data-sc-org-id="team.parent_id.id or None">
                             <input type="checkbox" name="sc_team" t-att-value="team.id"
                                    t-att-checked="'checked' if team.id in sc_form['team_ids'] else None"/>
                             <span t-out="team.name"/>
