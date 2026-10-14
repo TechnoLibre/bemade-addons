@@ -423,12 +423,18 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     # ------------------------------------------------------------------
     # Task 1542 — the team page in the app shell
     # ------------------------------------------------------------------
-    def _sc_player_row(self, player, team, stage_labels, with_position=True):
+    def _sc_player_row(self, player, team, stage_labels, with_position=True, extras=None):
         """One roster / dashboard row: « #12 Last, First », stage dot + chip,
-        position; links to the player page like the legacy card."""
+        position; links to the player page like the legacy card.
+        Task 1593: ``extras`` (``_sc_player_row_extras``, computed once for
+        the whole page) adds the legacy card's content — training
+        recommendation, « Retour prévu », the lazy expanded detail; no team
+        links on a team's own page (as legacy)."""
         stage = player.stage or 'healthy'
         position = player.position if with_position else False
-        return {
+        if extras is None:
+            extras = self._sc_player_row_extras(player, team_links=False, team=team)
+        return dict(extras[player.id], **{
             'id': player.id,
             'title': player._portal_list_name(),
             'subtitle': position or '',
@@ -437,7 +443,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'url': '/my/player?player_id=%s&team_id=%s' % (player.id, team.id),
             'pending_removal': bool(player.pending_removal),
             'status': player._sc_row_status(),
-        }
+        })
 
     def _sc_add_player_search(self, team):
         """The inline « Add a player » search (owner review 2026-10-11): the
@@ -486,20 +492,26 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # nothing (owner review 2026-10-11) is not a change: such a red or
         # yellow player joins « Other players to watch » instead.
         changed = set(values.get('changed_player_ids') or ())
-        dashboard_rows = []
-        for player in values['dashboard_players'].filtered(lambda p: p.id in changed):
-            row = self._sc_player_row(player, team, stage_labels, show_position)
-            row['changed'] = True
-            dashboard_rows.append(row)
         quiet = values['dashboard_players'].filtered(
             lambda p: p.id not in changed and p.stage in ('no_play', 'practice_ok'))
+        watched = (team.dashboard_watchlist_patient_ids | quiet).sorted(
+            key=lambda p: (p.sort_order, p.last_name or '', p.first_name or ''))
+        # Task 1593: the rows' legacy-card content for every listed player
+        # at once (no per-row queries); no team links on the team's own page.
+        extras = self._sc_player_row_extras(
+            values['dashboard_players'] | watched | values['players'],
+            team_links=False, team=team)
+        dashboard_rows = []
+        for player in values['dashboard_players'].filtered(lambda p: p.id in changed):
+            row = self._sc_player_row(player, team, stage_labels, show_position, extras)
+            row['changed'] = True
+            dashboard_rows.append(row)
         watch_rows = [
-            self._sc_player_row(player, team, stage_labels, show_position)
-            for player in (team.dashboard_watchlist_patient_ids | quiet).sorted(
-                key=lambda p: (p.sort_order, p.last_name or '', p.first_name or ''))
+            self._sc_player_row(player, team, stage_labels, show_position, extras)
+            for player in watched
         ]
         roster_rows = [
-            self._sc_player_row(player, team, stage_labels)
+            self._sc_player_row(player, team, stage_labels, extras=extras)
             for player in values['players']
         ]
         tz = user.tz or env.context.get('tz')

@@ -132,8 +132,14 @@ class TestAppShellPlayersList1539(PlayersCommon1539):
         self.player.sudo().team_ids = [Command.link(self.team_b.id)]
         self._switch(True)
         self._login_coach()
-        text, _tree = self._get('/my/players')
-        self.assertIn('PC Team A, PC Team B', text)
+        _text, tree = self._get('/my/players')
+        # Task 1593: the teams are a links line (team B, not staffed by the
+        # coach, as plain text), no longer a joined subtitle.
+        row = tree.xpath('//*[@data-sc-section="players.list"]//*[@data-sc-player-id="%s"]'
+                         % self.player.id)[0]
+        teams = [' '.join(node.text_content().split())
+                 for node in row.xpath('.//*[contains(concat(" ", @class, " "), " o_sc_row_link ")]')]
+        self.assertEqual(teams, ['PC Team A', 'PC Team B'])
 
 
 @tagged('post_install', '-at_install')

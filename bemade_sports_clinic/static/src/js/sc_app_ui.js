@@ -317,6 +317,29 @@ document.addEventListener(
     true
 );
 
+// Task 1593: a player row's « Details » control ([data-sc-row-expand] =
+// the id of the detail region under the row) shows / hides that region and
+// fetches its body on first open. A button, not a <details>: the row's main
+// link stays one stretched link and the detail spans the row's full width.
+document.addEventListener("click", (ev) => {
+    const toggle = ev.target.closest && ev.target.closest("[data-sc-row-expand]");
+    if (!toggle || !toggle.closest(".o_sc_app")) {
+        return;
+    }
+    const region = document.getElementById(toggle.dataset.scRowExpand);
+    if (!region) {
+        return;
+    }
+    ev.preventDefault();
+    const open = region.hidden;
+    region.hidden = !open;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.closest(".o_sc_player_row")?.classList.toggle("o_sc_row_open", open);
+    if (open && region.dataset.scLazyUrl) {
+        loadLazy(region, region.dataset.scLazyUrl, region.querySelector(".o_sc_lazy_body"));
+    }
+});
+
 // --------------------------------------------------------------- sheets
 function refetchSheet(dialog, url) {
     const body = dialog.querySelector(".o_sc_sheet_body");

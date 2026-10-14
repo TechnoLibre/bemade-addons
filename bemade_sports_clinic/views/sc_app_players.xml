@@ -118,14 +118,10 @@
 
             <div t-if="sc_player_rows" class="o_sc_list" data-sc-section="players.list">
                 <t t-foreach="sc_player_rows" t-as="row">
-                    <t t-if="row['accessible']" t-call="bemade_sports_clinic.sc_entity_row">
-                        <t t-set="href" t-value="row['url']"/>
-                        <t t-set="dot" t-value="row['dot']"/>
-                        <t t-set="title" t-value="row['title']"/>
-                        <t t-set="subtitle" t-value="row['subtitle']"/>
-                        <t t-set="row_attrs" t-value="{'data-sc-player-id': row['id']}"/>
-                        <t t-set="row_status" t-value="row['status']"/>
-                        <t t-set="row_changed" t-value="row['changed']"/>
+                    <!-- Task 1593: the legacy card's content — teams as links,
+                         training recommendation, « Retour prévu », details. -->
+                    <t t-if="row['accessible']" t-call="bemade_sports_clinic.sc_player_row">
+                        <t t-set="row_scope" t-value="'players'"/>
                     </t>
                     <!-- Task 1225: a player found by the broadened search whom
                          the viewer cannot open: « Ajouter à l'équipe » instead
@@ -214,7 +210,10 @@
                     <div>
                         <h2 class="o_sc_hero_title" data-sc-heading="list_name" t-out="player._portal_list_name()"/>
                         <p class="o_sc_meta">
-                            <span t-att-data-sc-display="sc_display_key(player, 'sc_team_ids')" t-out="', '.join(player.sudo().team_ids.mapped('name'))"/>
+                            <!-- Task 1593: the team names are links (plain text for a
+                                 team the viewer may not open). An inline Teams save
+                                 shows the new names as text until « Done » reloads. -->
+                            <span t-att-data-sc-display="sc_display_key(player, 'sc_team_ids')" data-sc-hero-teams="1"><t t-foreach="sc_hero_team_links or []" t-as="hero_team"><t t-if="not hero_team_first">, </t><a t-if="hero_team['url']" t-att-href="hero_team['url']" class="o_sc_hero_team_link" data-sc-row-link="sports.team" t-out="hero_team['name']"/><t t-else="" t-out="hero_team['name']"/></t></span>
                             <span data-sc-heading="position_suffix" t-out="(' · %s' % player.position) if player.position else ''"/>
                         </p>
                     </div>

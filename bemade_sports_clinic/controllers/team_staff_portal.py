@@ -569,14 +569,23 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         env = http.request.env
         stage_labels = dict(env['sports.patient']._fields['stage']._description_selection(env))
         rows = []
+        # Task 1593: the legacy card's content (team links, training
+        # recommendation, « Retour prévu », expanded detail) for the openable
+        # rows, computed for the whole page at once.
+        accessible_players = values['players'].filtered(
+            lambda p: p.id in values['accessible_ids'])
+        extras = self._sc_player_row_extras(accessible_players)
         for player in values['players']:
             stage = player.stage or 'healthy'
             teams = player.sudo().team_ids
             accessible = player.id in values['accessible_ids']
             rows.append({
+                **extras.get(player.id, {}),
                 'id': player.id,
                 'title': player._portal_list_name(),
-                'subtitle': ', '.join(teams.mapped('name')),
+                # Openable rows carry the teams as links (task 1593); a
+                # locked row keeps the plain names.
+                'subtitle': '' if accessible else ', '.join(teams.mapped('name')),
                 'dot': self.SC_STAGE_TONES.get(stage, 'green'),
                 'chip': stage_labels.get(stage, ''),
                 'accessible': accessible,
@@ -648,6 +657,47 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'bemade_sports_clinic.portal_card_recent_changes_fragment',
             {'items': items, 'player': player},
         )
+
+    @http.route(route=['/my/player/<int:player_id>/row-detail'], type='http',
+                auth='user', website=True)
+    def portal_player_row_detail(self, player_id, team_id=None, **kw):
+        """Task 1593: the expanded detail of ONE player row (roster,
+        dashboard / watch lists, /my/players) — the legacy card's
+        expandable: the whole training recommendation (+ its « Updated on »
+        stamp), « Retour prévu », the last consultation and the active
+        injuries. Fetched when a row is expanded, never for every row.
+
+        Same access as the player page (``_check_access_to_patient``). The
+        injuries come from ``_card_active_injuries`` read as the CURRENT
+        user: the coach record rule drops hidden-from-coaches injuries (Loi
+        25) and a non-therapist never gets an internal note."""
+        try:
+            player = self._check_access_to_patient(int(player_id))
+        except (UserError, AccessError, MissingError) as e:
+            response = http.request.render('http_routing.http_error', {
+                'status_code': 403,
+                'status_message': 'Forbidden',
+                'error_message': self._user_error_text(e, 'patient'),
+            })
+            response.status_code = 403
+            return response
+        team = http.request.env['sports.team']
+        try:
+            team_id = int(team_id) if team_id else 0
+        except ValueError:
+            team_id = 0
+        if team_id and team_id in player.sudo().team_ids.ids:
+            team = team.browse(team_id)
+        player_url = '/my/player?player_id=%s' % player.id
+        if team:
+            player_url += '&team_id=%s' % team.id
+        is_tp = self._is_tp_or_system()
+        return http.request.render('bemade_sports_clinic.sc_player_row_detail', {
+            'player': player,
+            'team': team,
+            'player_url': player_url,
+            'active_injuries': player._card_active_injuries(is_tp),
+        })
 
     @http.route(route=['/my/player/<int:player_id>/training-history'], type='http',
                 auth='user', website=True)
@@ -1052,6 +1102,9 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_can_activities': can_activities,
             'sc_note_props': note_props,
             'sc_memberships': memberships,
+            # Task 1593: the hero's team names are links (same gate as the
+            # player rows' team links).
+            'sc_hero_team_links': list(self._sc_team_links(all_teams).values()),
             'sc_document_rows': document_rows,
             'sc_injury_choices': [(i.id, i.display_name or i.diagnosis or str(i.id))
                                   for i in injuries],

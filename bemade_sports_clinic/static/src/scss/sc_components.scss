@@ -698,6 +698,83 @@ $sc-laptop: 992px;
         color: var(--sc-fg-2);
     }
 
+    // Task 1593 — player row (sc_player_row): the legacy card's lines and
+    // the « Details » control under the status line; the expanded detail
+    // spans the whole row group, under the row.
+    .o_sc_row_line {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        min-width: 0;
+        margin-top: 4px;
+        font-size: var(--sc-text-sm);
+        color: var(--sc-fg-2);
+
+        > .fa {
+            flex: none;
+            width: 14px;
+            text-align: center;
+            color: var(--sc-fg-3);
+        }
+    }
+
+    // One line on every width: the full text is in the expanded detail.
+    .o_sc_row_training .o_sc_row_line_text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_row_line_value {
+        color: var(--sc-fg);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .o_sc_row_expand {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        margin-top: 2px;
+        padding: 0 4px 0 0;
+        border: 0;
+        background: none;
+        color: var(--sc-fg);
+        font-size: var(--sc-text-sm);
+        font-weight: 600;
+        cursor: pointer;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            color: var(--sc-fg-3);
+            transition: transform .15s ease;
+        }
+
+        &[aria-expanded="true"] .o_sc_icon {
+            transform: rotate(180deg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--sc-focus);
+            outline-offset: 2px;
+            border-radius: var(--sc-radius-sm, 4px);
+        }
+    }
+
+    .o_sc_row_detail {
+        border-top: 1px solid var(--sc-line);
+        padding: var(--sc-space-2) var(--sc-space-3) var(--sc-space-3);
+        min-width: 0;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
     // Expanded recent-changes detail: « Active injuries » / « Resolved
     // injuries » subtitles above the injury cards.
     .o_sc_change_detail_sub {

@@ -695,6 +695,15 @@ msgid "<i class=\"fa fa-clock-o me-1\"/> Temporary staff"
 msgstr "<i class=\"fa fa-clock-o me-1\"/> Personnel temporaire"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_lines
+msgid ""
+"<i class=\"fa fa-clock-o\" aria-hidden=\"true\"/>\n"
+"            <span>Predicted return:</span>"
+msgstr ""
+"<i class=\"fa fa-clock-o\" aria-hidden=\"true\"/>\n"
+"            <span>Retour prévu :</span>"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.team_digest_render
 msgid "<i class=\"fa fa-clock-o\" title=\"Estimated Return\"/>"
 msgstr "<i class=\"fa fa-clock-o\" title=\"Retour estimé\"/>"
@@ -2216,6 +2225,11 @@ msgid "<span>Delete</span>"
 msgstr "<span>Supprimer</span>"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row
+msgid "<span>Details</span>"
+msgstr "<span>Détails</span>"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid ""
 "<span>Did you use personal material for this event? Report it so the client "
@@ -2730,6 +2744,7 @@ msgstr "Flux de travail actif"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_change_detail
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_status_line
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.team_digest_render
 msgid "Active injuries"
@@ -7333,6 +7348,11 @@ msgid "No access"
 msgstr "Aucun accès"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
+msgid "No active injuries."
+msgstr "Aucune blessure active."
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 msgid "No active injury on file."
@@ -11831,6 +11851,7 @@ msgstr "Formation"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
 msgid "Training Recommendation"
 msgstr "Recommandation d'entraînement"
 
@@ -13722,6 +13743,7 @@ msgstr "Le Fit Crew a besoin d'une connexion pour afficher les équipes et les j
 #. odoo-javascript
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_calendar
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_sheet
 #: code:addons/bemade_sports_clinic/static/src/js/sc_app_ui.js:0
 msgid "Loading…"
@@ -13770,6 +13792,7 @@ msgstr "Hors ligne — en attente"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
 msgid "Open the player page"
 msgstr "Ouvrir la fiche du joueur"
 
@@ -13812,6 +13835,7 @@ msgstr "Enregistrement introuvable."
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row
 msgid "Removal pending"
 msgstr "Retrait en attente"
 
@@ -14558,6 +14582,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_change_detail
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
 msgid ""
 "<i class=\"fa fa-clock-o\" title=\"Estimated Return\"/>\n"
 "                <span class=\"ms-1\">Predicted return:</span>"
@@ -14567,6 +14592,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_change_detail
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row_detail
 msgid ""
 "<i class=\"fa fa-stethoscope\" title=\"Last Consultation Date\"/>\n"
 "                <span class=\"ms-1\">Last consultation:</span>"

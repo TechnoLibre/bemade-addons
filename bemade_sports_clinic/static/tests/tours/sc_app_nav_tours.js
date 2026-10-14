@@ -40,7 +40,7 @@ tours.add("sc_1579_back_came_from", {
     steps: () => [
         {
             content: "Filtered players list (top level: logo, no back)",
-            trigger: '.o_sc_app[data-sc-top="1"] [data-sc-section="players.list"] a[data-sc-player-id]:contains("One")',
+            trigger: '.o_sc_app[data-sc-top="1"] [data-sc-section="players.list"] [data-sc-player-id] a.o_sc_link_row_main:contains("One")',
             run(helpers) {
                 reloadIfRestored();
                 return helpers.click();

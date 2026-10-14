@@ -20,6 +20,7 @@
 from odoo import http, _, fields
 from odoo.exceptions import UserError, AccessError, MissingError
 from odoo.http import request
+from odoo.tools import format_date
 
 from ..models import sc_app_nav
 from datetime import datetime, time
@@ -373,6 +374,71 @@ class AccessControlMixin:
             if link and link['url']:
                 links.append(link)
         return links
+
+    # ------------------------------------------------------------------
+    # Task 1593 — player rows carry the legacy card's content
+    # ------------------------------------------------------------------
+    def _sc_team_links(self, teams):
+        """``{team_id: link}`` for ``teams`` (sc_row_links dicts: name, url,
+        icon, model). ``url`` is False — the name stays plain text — when the
+        viewer may not open the team page: ``_check_team_access``'s rule
+        (staff, clinic administrator, or the historical portal-TP branch)
+        AND the record rules (one search for the whole set), so a link never
+        leads to a refusal. sudo() reads the names only."""
+        env = request.env
+        teams = teams.sudo()
+        if not teams:
+            return {}
+        readable = set(env['sports.team'].search([('id', 'in', teams.ids)]).ids)
+        user = env.user
+        if not (self._is_clinic_admin()
+                or user.has_group('bemade_sports_clinic.group_portal_treatment_professional')):
+            readable &= set(user.partner_id.team_staff_rel_ids.mapped('team_id').ids)
+        return {team.id: {
+            'name': team.name or '',
+            'url': '/my/team?team_id=%s' % team.id if team.id in readable else False,
+            'icon': 'teams',
+            'model': 'sports.team',
+        } for team in teams}
+
+    def _sc_player_row_extras(self, players, team_links=True, team=None):
+        """The legacy card's content for each row of ``players`` (task 1593),
+        ``{player_id: {...}}`` — computed for the whole list at once (the
+        teams, their names and the readable set in a few queries, never per
+        row):
+
+        * ``training``: the training recommendation on one line (the row
+          truncates it; the expanded detail shows it whole);
+        * ``injured`` / ``return_label``: « Retour prévu » for an injured
+          player — the date, or « — » when unset (the legacy hint);
+        * ``team_links``: the player's teams as links (``_sc_team_links``),
+          empty when ``team_links`` is False (a team's own page, as legacy);
+        * ``detail_url``: the lazy expanded detail (``row-detail`` route),
+          with the team context when given.
+
+        Rows a later task needs more on (e.g. the activities clock of #1592)
+        extend this dict."""
+        env = request.env
+        links = self._sc_team_links(players.sudo().team_ids) if team_links else {}
+        extras = {}
+        for player in players:
+            injured = (player.stage or 'healthy') != 'healthy'
+            text = ' '.join((player.training_recommendation or '').split())
+            return_label = False
+            if injured:
+                return_label = (format_date(env, player.predicted_return_date)
+                                if player.predicted_return_date else '—')
+            detail_url = '/my/player/%s/row-detail' % player.id
+            if team:
+                detail_url += '?team_id=%s' % team.id
+            extras[player.id] = {
+                'training': text,
+                'injured': injured,
+                'return_label': return_label,
+                'team_links': [links[t.id] for t in player.sudo().team_ids if t.id in links],
+                'detail_url': detail_url,
+            }
+        return extras
 
     @classmethod
     def _activity_scope_teams(cls):

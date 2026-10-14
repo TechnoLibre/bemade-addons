@@ -33,7 +33,7 @@ tours.add("sc_1539_players_to_player", {
         },
         {
             content: "Open the first player",
-            trigger: '[data-sc-section="players.list"] a.o_sc_entity_row[data-sc-player-id]',
+            trigger: '[data-sc-section="players.list"] [data-sc-player-id] a.o_sc_link_row_main',
             run: "click",
             expectUnloadPage: true,
         },

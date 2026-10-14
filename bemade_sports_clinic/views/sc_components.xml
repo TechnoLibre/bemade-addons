@@ -474,6 +474,77 @@
     </template>
 
     <!--
+        Task 1593 — the legacy card's always-on lines of a player row: the
+        training recommendation on ONE line (truncated; whole in the expanded
+        detail) and « Retour prévu » for an injured player (the date, « — »
+        when unset). Variable: row (_sc_player_row_extras keys).
+    -->
+    <template id="sc_player_row_lines" name="App shell: player row lines">
+        <span t-if="row.get('training')" class="o_sc_row_line o_sc_row_training" data-sc-row-training="1">
+            <i class="fa fa-graduation-cap" aria-hidden="true"/>
+            <span class="o_sc_row_line_text" t-out="row['training']"/>
+        </span>
+        <span t-if="row.get('return_label')" class="o_sc_row_line o_sc_row_return" data-sc-row-return="1">
+            <i class="fa fa-clock-o" aria-hidden="true"/>
+            <span>Predicted return:</span>
+            <span class="o_sc_row_line_value" t-out="row['return_label']"/>
+        </span>
+    </template>
+
+    <!--
+        Task 1593 — PLAYER ROW (roster, dashboard « to watch », /my/players):
+        a link row (sc_link_row) carrying the legacy card's content — the
+        name opens the player page, the teams are separate links (none on a
+        team's own page), the Match / Practice / injuries status line, the
+        training recommendation and « Retour prévu » lines, and a « Details »
+        control that expands the active-injury detail UNDER the row,
+        lazy-loaded from ``row['detail_url']`` (sc_app_ui.js) — never
+        rendered for every row.
+
+        Variables: row (from _sc_player_row / _sc_players_values: id, url,
+        title, subtitle, dot, status, changed, pending_removal, training,
+        return_label, team_links, detail_url), row_scope (a short key making
+        the detail's id unique when one player is listed twice on a page).
+        Body (0) = extra trailing chips.
+    -->
+    <template id="sc_player_row" name="App shell: player row">
+        <t t-set="sc_row_detail_id" t-value="'sc-row-detail-%s-%s' % (row_scope or 'row', row['id'])"/>
+        <div class="o_sc_row_group o_sc_player_row" t-att-data-sc-player-id="row['id']">
+            <t t-call="bemade_sports_clinic.sc_link_row">
+                <t t-set="href" t-value="row['url']"/>
+                <t t-set="dot" t-value="row['dot']"/>
+                <t t-set="title" t-value="row['title']"/>
+                <t t-set="subtitle" t-value="row['subtitle']"/>
+                <t t-set="links" t-value="row.get('team_links')"/>
+                <t t-set="meta">
+                    <t t-call="bemade_sports_clinic.sc_player_status_line">
+                        <t t-set="row_status" t-value="row.get('status')"/>
+                        <t t-set="row_changed" t-value="row.get('changed')"/>
+                    </t>
+                    <t t-call="bemade_sports_clinic.sc_player_row_lines"/>
+                    <button t-if="row.get('detail_url')" type="button" class="o_sc_row_expand"
+                            t-att-data-sc-row-expand="sc_row_detail_id" t-att-aria-controls="sc_row_detail_id"
+                            aria-expanded="false">
+                        <span>Details</span>
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'down'"/></t>
+                    </button>
+                </t>
+                <t t-out="0"/>
+                <t t-if="row.get('pending_removal')" t-call="bemade_sports_clinic.sc_status_chip">
+                    <t t-set="tone" t-value="'ghost'"/>
+                    <t t-set="label">Removal pending</t>
+                </t>
+            </t>
+            <div t-if="row.get('detail_url')" t-att-id="sc_row_detail_id" class="o_sc_row_detail"
+                 t-att-data-sc-lazy-url="row['detail_url']" data-sc-row-detail="1" hidden="hidden">
+                <div class="o_sc_lazy_body">
+                    <p class="o_sc_empty o_sc_lazy_loading">Loading…</p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!--
         Task 1539 — activity row with its due-date state chip. Variables:
         activity, today_date, related_links (sc_activity_related: the
         access-gated related-record links, task 1595), show_assignee,
