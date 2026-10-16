@@ -27,6 +27,7 @@ import email.message
 import email.policy
 import re
 import socketserver
+import sys
 import threading
 import time
 
@@ -256,6 +257,7 @@ if __name__ == "__main__":  # stand-alone demo mailbox
         login=options.login,
         password=options.password,
     )
-    print(server.start(port=options.port), flush=True)
+    sys.stdout.write("%d\n" % server.start(port=options.port))
+    sys.stdout.flush()
     time.sleep(options.seconds)
     server.stop()

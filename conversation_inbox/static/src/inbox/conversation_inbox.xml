@@ -84,7 +84,9 @@
                     <div class="text-muted">Loading...</div>
                 </t>
                 <t t-elif="!state.items.length and state.activeQuery">
-                    <div class="text-muted o_conversation_inbox_no_match">No messages match your search.</div>
+                    <div
+            class="text-muted o_conversation_inbox_no_match"
+          >No messages match your search.</div>
                 </t>
                 <t t-elif="!state.items.length">
                     <div class="text-muted">No messages on this page.</div>

@@ -115,7 +115,8 @@ export class ConversationInboxAction extends Component {
         page,
       ]);
       if (requestId !== this._requestId) {
-        return; // a newer request superseded this one
+        // A newer request superseded this one.
+        return;
       }
       this.state.items = result.items || [];
       this.state.page = result.page || page;
