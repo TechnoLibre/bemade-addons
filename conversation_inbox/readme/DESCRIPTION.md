@@ -19,6 +19,16 @@ it.
   `action_dismiss`). Hide removes the row from the list only: it archives an
   already-filed *conversation*, and is otherwise a pure client-side no-op --
   the message stays in the real mailbox and returns on the next browse.
+- **Search box** next to the account selector, shown for transports with
+  `searchable` set (tick it on the account's form). Type a word -- a name, an
+  address, a word of the subject or of the message -- and press Enter or the
+  magnifier: the list shows only the matching messages of that mailbox, newest
+  first, with the same actions, and Previous / Next page through the results.
+  The cross (or an emptied field) returns to the normal list; so does changing
+  account. The text is sent to `browse_page` as typed and matched literally by
+  the engine (never as search syntax, accents included); searching reads the
+  mailbox only and files nothing in Odoo. Too broad a search asks to be
+  narrowed.
 - **Mailbox-side triage**, on transports with
   `mailbox_writable` set: **Archive** (the message leaves the browse folder
   but stays retrievable), **Delete** (after a confirmation, moves it to the

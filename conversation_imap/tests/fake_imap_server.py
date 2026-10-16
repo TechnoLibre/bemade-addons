@@ -43,6 +43,7 @@ class FakeImapServer:
         self.login = login
         self.password = password
         self.commands = []
+        self.search_terms = []  # decoded TEXT/SUBJECT values received
         self._server = None
         self._parsed = [
             email.message_from_bytes(raw, policy=email.policy.default)
@@ -186,6 +187,7 @@ class _Handler(socketserver.StreamRequestHandler):
             if charset is None and any(byte > 127 for byte in value):
                 self._send("%s BAD non-ASCII search needs CHARSET\r\n" % tag)
                 return
+            fx.search_terms.append(value.decode("utf-8"))
             hits = fx.search_text(value.decode("utf-8"), tokens[0].upper() == b"SUBJECT")
         else:
             self._send("%s BAD unsupported SEARCH criteria\r\n" % tag)
