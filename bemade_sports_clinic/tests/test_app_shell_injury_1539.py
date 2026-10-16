@@ -22,9 +22,9 @@ Acceptance criteria covered here:
   posting to today's route (therapists only); only the notes the viewer
   authored are editable in place (server autosave); the « added » landing
   drops the draft.
-* UC-N3 (AC5) Note history as a timeline: a coach gets the external rows
-  only (even with ?scope=internal), a therapist all of them + the scope
-  filter.
+* UC-N3 (AC5) Note history (task 1581: the injury page's sheet fragment):
+  a coach gets the external rows only (even with ?scope=internal), a
+  therapist all of them + the scope filter.
 * UC-D1 (AC1/AC2/AC5) Injury documents: switch OFF = today's page; in the
   shell a therapist gets upload + a delete sheet posting (CSRF) to today's
   POST route, a coach only the list and the download links.
@@ -170,7 +170,10 @@ class TestAppShellInjury1539(AppShellCommon):
         self.assertIn('Visible synthetic remark', text)
         self.assertNotIn('TP-only synthetic remark', text)
         self.assertFalse(tree.xpath('//*[@data-sc-action="injury.delete"]'))
-        self.assertTrue(tree.xpath('//*[@data-sc-section="injury.stage.readonly"]'))
+        # The status reads in the details card's read view (pencil paradigm).
+        read = tree.xpath('//*[@data-sc-edit-card="injury-details"]//*[@data-sc-edit-view="read"]')[0]
+        self.assertIn(self.injury.diagnosis or '', read.text_content())
+        self.assertFalse([p for p in tree.xpath('//owl-component/@props') if '"stage"' in p])
 
     # -- UC-I4 -----------------------------------------------------------
     def test_hidden_injury_never_reaches_a_coach(self):
@@ -234,21 +237,25 @@ class TestAppShellNotes1539(AppShellCommon):
         self._login_coach()
         _text, tree = self._get(self.notes_url)
         self.assertFalse(tree.xpath('//form[@data-sc-form="notes.add"]'))
-        self.assertFalse(tree.xpath('//owl-component'))
+        self.assertFalse(tree.xpath('//owl-component[contains(@props, \'"field": "note"\')]'))
 
     # -- UC-N3 -----------------------------------------------------------
     def test_history_scopes(self):
+        # Task 1581 (deliberate update): the shell's note history is the
+        # injury page's sheet; its body is the fragment route (the page
+        # redirects to the injury page in the shell). Same role rules.
         self._switch(True)
         self._login_tp()
-        text, tree = self._get(self.history_url)
-        scopes = tree.xpath('//*[@data-sc-section="history.list"]/li/@data-sc-scope')
+        fragment = self.history_url + '/fragment'
+        text, tree = self._get(fragment)
+        scopes = tree.xpath('//*[@data-sc-section="injury.notes.history"]//li/@data-sc-scope')
         self.assertIn('internal', scopes)
         self.assertIn('external', scopes)
         self.assertTrue(tree.xpath('//*[@data-sc-section="history.scope"]'))
         self._login_coach()
-        for url in (self.history_url, self.history_url + '?scope=internal'):
+        for url in (fragment, fragment + '?scope=internal'):
             text, tree = self._get(url)
-            scopes = tree.xpath('//*[@data-sc-section="history.list"]/li/@data-sc-scope')
+            scopes = tree.xpath('//*[@data-sc-section="injury.notes.history"]//li/@data-sc-scope')
             self.assertEqual(set(scopes), {'external'}, url)
             self.assertNotIn('Internal synthetic history', text)
             self.assertFalse(tree.xpath('//*[@data-sc-section="history.scope"]'))

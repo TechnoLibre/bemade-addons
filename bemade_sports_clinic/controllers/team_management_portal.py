@@ -192,7 +192,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
             # PRG: a failed submit stashed the error + submitted fields in the
             # session; surface them and re-prefill the form.
-            flash_error, flash_data = self._portal_pop_flash()
+            flash_error, flash_data = self._portal_pop_flash(('team_add', team.id))
             if flash_error:
                 values['error'] = flash_error
                 for field in ('first_name', 'last_name', 'email', 'phone', 'date_of_birth'):
@@ -436,7 +436,42 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'chip': stage_labels.get(stage, ''),
             'url': '/my/player?player_id=%s&team_id=%s' % (player.id, team.id),
             'pending_removal': bool(player.pending_removal),
+            'status': player._sc_row_status(),
         }
+
+    def _sc_add_player_search(self, team):
+        """The inline « Add a player » search (owner review 2026-10-11): the
+        add_link page's lookup (therapists may FIND any patient by name / date
+        of birth, archived ones too — sudo, name / DOB only) on the team page's
+        ?add_first= / ?add_last= / ?add_dob=. None when no search was made."""
+        args = request.httprequest.args
+        if not any(key in args for key in ('add_first', 'add_last', 'add_dob')):
+            return None
+        first = (args.get('add_first') or '').strip()
+        last = (args.get('add_last') or '').strip()
+        dob = (args.get('add_dob') or '').strip()
+        result = {'first': first, 'last': last, 'dob': dob, 'rows': [], 'error': False}
+        if not (first or last):
+            result['error'] = _('Provide at least a first or last name to search')
+            return result
+        domain = [('first_name', 'ilike', '%%%s%%' % first if first else '%'),
+                  ('last_name', 'ilike', '%%%s%%' % last if last else '%')]
+        if dob:
+            try:
+                domain.append(('date_of_birth', '=', fields.Date.to_date(dob)))
+            except ValueError:
+                result['error'] = _('Please enter a valid Date of Birth (YYYY-MM-DD).')
+                return result
+        Patient = request.env['sports.patient'].sudo().with_context(active_test=False)
+        for patient in Patient.search(domain, order='active desc, last_name, first_name', limit=20):
+            result['rows'].append({
+                'id': patient.id,
+                'label': patient._portal_list_name(),
+                'dob': format_date(request.env, patient.date_of_birth) if patient.date_of_birth else '',
+                'active': bool(patient.active),
+                'on_team': team in patient.team_ids,
+            })
+        return result
 
     def _sc_team_values(self, team, values):
         """Shell-only render values for ``sc_app_team`` — built from the
@@ -446,15 +481,22 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         stage_labels = dict(
             env['sports.patient']._fields['stage']._description_selection(env))
         show_position = team.show_position_on_dashboard
+        # « Recent changes » lists only players with something to show (the
+        # ⚡ presence rule). A recent activity stamp whose changes net to
+        # nothing (owner review 2026-10-11) is not a change: such a red or
+        # yellow player joins « Other players to watch » instead.
         changed = set(values.get('changed_player_ids') or ())
         dashboard_rows = []
-        for player in values['dashboard_players']:
+        for player in values['dashboard_players'].filtered(lambda p: p.id in changed):
             row = self._sc_player_row(player, team, stage_labels, show_position)
-            row['changed'] = player.id in changed
+            row['changed'] = True
             dashboard_rows.append(row)
+        quiet = values['dashboard_players'].filtered(
+            lambda p: p.id not in changed and p.stage in ('no_play', 'practice_ok'))
         watch_rows = [
             self._sc_player_row(player, team, stage_labels, show_position)
-            for player in team.dashboard_watchlist_patient_ids
+            for player in (team.dashboard_watchlist_patient_ids | quiet).sorted(
+                key=lambda p: (p.sort_order, p.last_name or '', p.first_name or ''))
         ]
         roster_rows = [
             self._sc_player_row(player, team, stage_labels)
@@ -470,18 +512,18 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'url': '/my/event/%s' % event.id,
         } for event in values['upcoming_events']]
         can_add_directly = self._is_tp_or_system()
+        add_search = self._sc_add_player_search(team) if can_add_directly else None
         org = team.sudo().parent_id.name or ''
-        history = team.note_history_ids
         return {
             'sc_team_org': org,
             'sc_dashboard_rows': dashboard_rows,
+            'sc_add_search': add_search,
             'sc_watch_rows': watch_rows,
             'sc_roster_rows': roster_rows,
             'sc_upcoming_rows': upcoming_rows,
             'sc_pending_count': sum(1 for row in roster_rows if row['pending_removal']),
             'sc_can_add_directly': can_add_directly,
             'sc_can_edit_announcement': team._user_can_edit_announcement(),
-            'sc_announcement_history': history,
             'sc_announcement_deadline': (
                 format_date(env, team.announcement_deadline)
                 if team.announcement_deadline else ''),
@@ -727,6 +769,47 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         except Exception as e:
             _logger.error("Error dismissing team announcement: %s", str(e), exc_info=True)
             return request.redirect(f"/my/team?team_id={team_id}")
+
+    # Task 1581: the announcement history action -> (chip tone, state); the
+    # labels are built in _sc_announcement_history_entries (babel extracts
+    # them from the _() calls there).
+    SC_ANNOUNCEMENT_ACTIONS = {
+        'set': ('green', None),
+        'edit': ('ghost', None),
+        'dismiss': ('ghost', 'archived'),
+    }
+
+    def _sc_announcement_history_entries(self, team):
+        env = request.env
+        labels = {
+            'set': env._("Posted"),
+            'edit': env._("Edited"),
+            'dismiss': env._("Archived"),
+        }
+        entries = []
+        for row in team.note_history_ids:
+            tone, state = self.SC_ANNOUNCEMENT_ACTIONS.get(row.action, ('ghost', None))
+            entries.append(self._sc_history_entry(
+                row.note_datetime, row.author_id.name, row.body,
+                action=labels.get(row.action, row.action), tone=tone,
+                state=state or ('' if (row.body or '').strip() else 'cleared')))
+        return entries
+
+    @http.route(['/my/team/<int:team_id>/announcement/history'],
+                type='http', auth='user', website=True, methods=['GET'])
+    def portal_team_announcement_history(self, team_id, **kw):
+        """Task 1581: the team announcement history sheet's body, fetched on
+        EVERY open (a change made on the page shows without a reload). Same
+        gate as the team page (its staff; clinic administrators)."""
+        try:
+            team = self._check_team_access(team_id)
+        except MissingError:
+            return request.not_found()
+        except AccessError as error:
+            return self._forbidden(error)
+        return request.render('bemade_sports_clinic.sc_announcement_history_fragment', {
+            'entries': self._sc_announcement_history_entries(team),
+        })
 
     def _find_existing_patient(self, first_name, last_name, email=None, phone=None):
         """Search for an existing patient by name and contact information.
@@ -997,7 +1080,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     vals['practice_status'] = post.get('practice_status')
 
             # Create through secured helper
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
 
             # Optionally create a primary emergency contact if provided (TP/admin only)
             if is_tp:
@@ -1099,7 +1184,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             try:
                 dob_date = fields.Date.to_date(dob)
             except Exception:
-                self._portal_flash(_('Please enter a valid Date of Birth (YYYY-MM-DD).'), post)
+                self._portal_flash(_('Please enter a valid Date of Birth (YYYY-MM-DD).'), post, ('team_add', team_id))
                 return request.redirect(f'/my/team/{team_id}/add_player')
 
             # Enforce DOB not in future and not older than 120 years
@@ -1107,7 +1192,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             min_dob = today - relativedelta(years=120)
             if dob_date > today or dob_date < min_dob:
                 self._portal_flash(
-                    _('Date of Birth must not be in the future and not be more than 120 years ago.'), post)
+                    _('Date of Birth must not be in the future and not be more than 120 years ago.'), post, ('team_add', team_id))
                 return request.redirect(f'/my/team/{team_id}/add_player')
             
             # Determine if current user is allowed to set medical/status fields
@@ -1170,7 +1255,10 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     patient_vals['practice_status'] = post.get('practice_status')
             
             # Create patient through the private _create_portal_patient method which has proper access controls
-            patient = request.env['sports.patient']._create_portal_patient(patient_vals)
+            # Task 1600: a refused create (e.g. the exact-duplicate check)
+            # leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(patient_vals)
             
             # Log the action
             _logger.debug(
@@ -1183,7 +1271,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect(edit_url)
             
         except UserError as e:
-            self._portal_flash(self._user_error_text(e, 'team'), post)
+            self._portal_flash(self._user_error_text(e, 'team'), post, ('team_add', team_id))
             return request.redirect(f'/my/team/{team_id}/add_player')
 
         except (AccessError, MissingError) as e:
@@ -1191,7 +1279,7 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
         except Exception as e:
             _logger.exception("Error in portal_add_player_submit")
-            self._portal_flash(_("An error occurred while adding the player. Please try again later."), post)
+            self._portal_flash(_("An error occurred while adding the player. Please try again later."), post, ('team_add', team_id))
             return request.redirect(f'/my/team/{team_id}/add_player')
 
     @http.route(['/my/team/<int:team_id>/player/search'], type='jsonrpc', auth="user", methods=['POST'])
@@ -1278,11 +1366,21 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             existing_id_str = post.get('existing_id')
             existing_id = int(existing_id_str) if (existing_id_str and str(existing_id_str).isdigit()) else False
 
+            # Owner review 2026-10-11: the app shell's inline « Add a player »
+            # links a chosen result (existing_id) or, with force_new, creates
+            # exactly the typed player (no fuzzy re-match), then lands on the
+            # Players tab / the new player's page.
+            sc_inline = bool(post.get('sc_inline')) and self._sc_app_shell_active()
+            force_new = sc_inline and bool(post.get('force_new'))
+            if force_new and not (first_name and last_name):
+                raise UserError(_('First name and last name are required'))
             # Only require basic identity fields when creating/searching, not when linking an explicit existing_id
             if not existing_id and not (first_name or last_name):
                 raise UserError(_('Provide at least a first or last name'))
             if existing_id:
                 existing = Patient.with_context(active_test=False).browse(existing_id).exists()
+            elif force_new:
+                existing = Patient.browse([])
             else:
                 # Try to find existing by name + optional dob (allow partials on whichever provided)
                 like_first = f"%{first_name}%" if first_name else "%"
@@ -1306,6 +1404,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     existing.write({'team_ids': [(4, team.id)]})
                     action_taken.append('added to team')
 
+                if sc_inline:
+                    success = 'player_reactivated' if 'reactivated' in action_taken else 'player_added_to_team'
+                    return request.redirect(f"/my/team?team_id={team.id}&tab=players&success={success}")
                 request.session['notification'] = {
                     'type': 'success',
                     'title': _('Player Linked'),
@@ -1328,7 +1429,12 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if post.get('practice_status'):
                 vals['practice_status'] = post.get('practice_status')
 
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
+            if sc_inline:
+                return request.redirect(
+                    f"/my/player?player_id={patient.id}&team_id={team.id}&tab=info")
 
             request.session['notification'] = {
                 'type': 'success',
@@ -1373,14 +1479,10 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
           per-record ir.rules until the team link exists; only then does
           _check_access_to_patient grant the user full record access.
         """
-        return_url = post.get('return_url') or '/my/players'
-        # Only ever redirect to a same-site, absolute path (reject scheme-relative
-        # '//host' and backslash tricks to avoid an open redirect).
-        if (not isinstance(return_url, str)
-                or not return_url.startswith('/')
-                or return_url.startswith('//')
-                or '\\' in return_url):
-            return_url = '/my/players'
+        # Only ever redirect to a same-site, absolute path (the shared
+        # validator, task 1579: no scheme, '//host', backslash or control
+        # character — no open redirect).
+        return_url = self._safe_return_url(post.get('return_url'), '/my/players')
 
         user = request.env.user
         is_tp_admin = self._is_tp_or_system()
@@ -1472,7 +1574,9 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if post.get('practice_status'):
                 vals['practice_status'] = post.get('practice_status')
 
-            patient = request.env['sports.patient']._create_portal_patient(vals)
+            # Task 1600: a refused create leaves no orphan contact behind.
+            with request.env.cr.savepoint():
+                patient = request.env['sports.patient']._create_portal_patient(vals)
 
             request.session['notification'] = {
                 'type': 'success',

@@ -260,6 +260,7 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'error': {
                 'missing_fields': env._("Please fill in all required fields."),
                 'invalid_user': env._("You cannot assign this activity to that user."),
+                'not_allowed': env._("You cannot change this activity."),
             }.get(params.get('error')),
         }
 
@@ -558,36 +559,11 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if not activity.exists():
             return request.redirect('/my/activities')
         
-        # Check access using team-based access control
+        # Task 1589: the one act rule (coaches: their own activities only).
         user = request.env.user
-        partner = user.partner_id
-        has_access = False
-        
-        # Allow access if user is assigned to the activity
-        if activity.user_id == user:
-            has_access = True
-        else:
-            # Check if user has access through team relationships
-            if activity.res_model == 'sports.patient':
-                patient = request.env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    user_teams = self._activity_scope_teams()
-                    patient_teams = patient.team_ids
-                    has_access = bool(user_teams & patient_teams)
-            elif activity.res_model == 'sports.team':
-                team = request.env['sports.team'].browse(activity.res_id)
-                if team.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & team)
-            elif activity.res_model == 'sports.event':
-                event = request.env['sports.event'].browse(activity.res_id)
-                if event.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & event.team_ids)
-        
-        if not has_access:
-            return request.redirect('/my/activities')
-        
+        if not self._activity_act_access(activity):
+            return self._sc_activity_refused(post)
+
         # Update activity fields
         update_vals = {}
         if 'summary' in post:
@@ -632,6 +608,13 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect('/my/activities')
         return request.redirect(_append_query(return_url, 'success=%s' % success))
 
+    def _sc_activity_refused(self, post):
+        """Task 1589: an act (complete / cancel / reschedule / reassign /
+        update) refused by ``_activity_act_access`` — back to the page it was
+        posted from (same-site paths only) or the list, with the error."""
+        return_url = self._safe_return_url(post.get('return_url'), None) or '/my/activities'
+        return request.redirect(_append_query(return_url, 'error=not_allowed'))
+
     @http.route(['/my/activity/complete'], type='http', auth='user', website=True, methods=['POST'])
     def complete_activity(self, **post):
         """Mark an activity as done"""
@@ -641,15 +624,16 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             
         activity = request.env['mail.activity'].browse(int(activity_id))
         
-        # Check if the activity exists and user has access (record rules will handle this)
         if not activity.exists():
             return request.redirect('/my/activities')
-            
-        # Add feedback if provided
+        # Task 1589: the one act rule, then sudo() — coaches hold a
+        # read-only mail.activity ACL (sudo keeps the uid: the done message
+        # is still authored by the user).
+        if not self._activity_act_access(activity):
+            return self._sc_activity_refused(post)
+
         feedback = post.get('feedback', '')
-        
-        # Mark the activity as done
-        activity.action_feedback(feedback=feedback)
+        activity.sudo().action_feedback(feedback=feedback)
         return self._sc_activity_done_redirect(post, 'activity_done')
 
     @http.route(['/my/activity/cancel'], type='http', auth='user', website=True, methods=['POST'])
@@ -663,34 +647,11 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if not activity.exists():
             return request.redirect('/my/activities')
 
-        user = request.env.user
-        partner = user.partner_id
+        # Task 1589: the one act rule, then sudo() (coaches: read-only ACL).
+        if not self._activity_act_access(activity):
+            return self._sc_activity_refused(post)
 
-        # Allow access if user is assigned to the activity
-        if activity.user_id == user:
-            has_access = True
-        else:
-            has_access = False
-            if activity.res_model == 'sports.patient':
-                patient = request.env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & patient.team_ids)
-            elif activity.res_model == 'sports.team':
-                team = request.env['sports.team'].browse(activity.res_id)
-                if team.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & team)
-            elif activity.res_model == 'sports.event':
-                event = request.env['sports.event'].browse(activity.res_id)
-                if event.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & event.team_ids)
-
-        if not has_access:
-            return request.redirect('/my/activities')
-
-        activity.unlink()
+        activity.sudo().unlink()
         return self._sc_activity_done_redirect(post, 'activity_cancelled')
     
     @http.route(['/my/activity/reschedule'], type='http', auth='user', website=True, methods=['POST'])
@@ -702,17 +663,18 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             
         activity = request.env['mail.activity'].browse(int(activity_id))
         
-        # Check if the activity exists and belongs to the current user
-        if not activity.exists() or activity.user_id != request.env.user:
+        if not activity.exists():
             return request.redirect('/my/activities')
-            
-        # Get new deadline
+        # Task 1589: whoever may act on the activity may reschedule it (was:
+        # the assignee only), then sudo() (coaches: read-only ACL).
+        if not self._activity_act_access(activity):
+            return self._sc_activity_refused(post)
+
         new_deadline = post.get('new_deadline')
         if not new_deadline:
             return request.redirect('/my/activities')
-            
-        # Update the deadline
-        activity.write({'date_deadline': new_deadline})
+
+        activity.sudo().write({'date_deadline': new_deadline})
         
         # Redirect to activities page
         return self._sc_activity_done_redirect(post, 'activity_updated')
@@ -743,39 +705,17 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 self._local_return_url(post.get('return_url'), '/my/activities'),
                 'error=invalid_user'))
             
-        # Check access permissions (user must have team access to the record)
-        user = request.env.user
-        partner = user.partner_id
-        has_access = False
-        
-        if activity.res_model == 'sports.patient':
-            patient = request.env['sports.patient'].browse(activity.res_id)
-            if patient.exists():
-                user_teams = self._activity_scope_teams()
-                patient_teams = patient.team_ids
-                has_access = bool(user_teams & patient_teams)
-        elif activity.res_model == 'sports.team':
-            team = request.env['sports.team'].browse(activity.res_id)
-            if team.exists():
-                user_teams = self._activity_scope_teams()
-                has_access = team in user_teams
+        # Task 1589: the one act rule (coaches: their own activities only).
+        if not self._activity_act_access(activity):
+            return self._sc_activity_refused(post)
 
-        elif activity.res_model == 'sports.event':
-            event = request.env['sports.event'].browse(activity.res_id)
-            if event.exists():
-                user_teams = self._activity_scope_teams()
-                has_access = bool(user_teams & event.team_ids)
-                
-        if not has_access:
-            return request.redirect('/my/activities')
-            
         # Reassign the activity
         # Perform the actual reassignment with sudo to bypass mail.activity ACL
         # constraints for portal coaches. This is safe because we've already
         # validated:
         # - the activity exists
         # - the new user is in the requester's assignable list (task 1500)
-        # - the current user has team-based access to the related record.
+        # - the current user may act on the activity (task 1589).
         activity.sudo().write({'user_id': new_user.id})
         
         # Determine return URL based on context
@@ -790,37 +730,16 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Check if the activity exists and user has access to it
         if not activity.exists():
             raise request.not_found()
+        # Owner review 2026-10-11: in the app shell the activity is edited
+        # in place (pencil card) on its page.
+        if self._sc_app_shell_active():
+            return request.redirect('/my/activity/%s' % activity.id)
             
-        # Check access permissions using the same logic as view_activity_detail
+        # Task 1589: editing is acting — the one act rule.
         user = request.env.user
-        partner = user.partner_id
-        
-        # Allow access if user is assigned to the activity
-        if activity.user_id == user:
-            has_access = True
-        else:
-            # Check if user has access through team relationships
-            has_access = False
-            if activity.res_model == 'sports.patient':
-                patient = request.env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    # Check if user is staff on any of the patient's teams
-                    user_teams = self._activity_scope_teams()
-                    patient_teams = patient.team_ids
-                    has_access = bool(user_teams & patient_teams)
-            elif activity.res_model == 'sports.team':
-                team = request.env['sports.team'].browse(activity.res_id)
-                if team.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & team)
-            elif activity.res_model == 'sports.event':
-                event = request.env['sports.event'].browse(activity.res_id)
-                if event.exists():
-                    user_teams = self._activity_scope_teams()
-                    has_access = bool(user_teams & event.team_ids)
-        if not has_access:
+        if not self._activity_act_access(activity):
             raise request.not_found()
-        
+
         # Get activity types for the form
         activity_types = request.env['mail.activity.type'].search([
             ('res_model', 'in', ['sports.patient', 'sports.team', 'sports.event', False])
@@ -855,6 +774,22 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return self._sc_render('bemade_sports_clinic.portal_edit_activity',
                                'bemade_sports_clinic.sc_app_activity_form', values)
 
+    @http.route(['/my/activity/<int:activity_id>/attachment/<int:attachment_id>'],
+                type='http', auth='user', methods=['GET'])
+    def download_activity_attachment(self, activity_id, attachment_id, **kw):
+        """Task 1586: download one attachment of an activity. Whoever may open
+        the activity (``_activity_view_access``) may download its attachments;
+        anyone else — and any attachment not of this activity — gets a 404.
+        No access token: the URL grants nothing on its own."""
+        activity = request.env['mail.activity'].browse(activity_id)
+        if not activity.exists() or not self._activity_view_access(activity):
+            raise request.not_found()
+        attachment = request.env['ir.attachment'].sudo().browse(attachment_id)
+        if not attachment.exists() or attachment not in self._activity_attachments(activity):
+            raise request.not_found()
+        stream = request.env['ir.binary']._get_stream_from(attachment)
+        return stream.get_response(as_attachment=True)
+
     @http.route(['/my/activity/<int:activity_id>'], type='http', auth='user', website=True)
     def view_activity_detail(self, activity_id, **kw):
         """Display detailed view of a specific activity"""
@@ -864,23 +799,8 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if not activity.exists():
             raise request.not_found()
             
-        # Check access permissions (user assigned to activity or related to patient through teams)
-        user = request.env.user
-        partner = user.partner_id
-        
-        # Allow access if user is assigned to the activity
-        if activity.user_id == user:
-            has_access = True
-        else:
-            # Check if user has access through team relationships
-            has_access = False
-            if activity.res_model == 'sports.patient':
-                patient = request.env['sports.patient'].browse(activity.res_id)
-                if patient.exists():
-                    # Check if user is staff on any of the patient's teams
-                    user_teams = self._activity_scope_teams()
-                    patient_teams = patient.team_ids
-                    has_access = bool(user_teams & patient_teams)
+        # Task 1586: one rule for the page and its attachment downloads.
+        has_access = self._activity_view_access(activity)
         
         if not has_access:
             raise request.not_found()
@@ -910,11 +830,10 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             except Exception:
                 pass
         
-        # Get attachments for this activity
-        attachments = request.env['ir.attachment'].search([
-            ('res_model', '=', 'mail.activity'),
-            ('res_id', '=', activity.id)
-        ])
+        # Get attachments for this activity (sudo inside: the access check
+        # above is the authorization — coaches have no ir.attachment read on
+        # mail.activity).
+        attachments = self._activity_attachments(activity)
         
         from datetime import date
         
@@ -939,10 +858,17 @@ class TaskManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 related_url = '/my/team?team_id=%s' % context_team.id
             elif context_event:
                 related_url = '/my/event/%s' % context_event.id
+            assignable = self._activity_assignable_users_for(request.env.user)
+            users = (assignable | activity.sudo().user_id).sorted('name')
             values.update({
                 'sc_related_url': related_url,
                 'today_date': fields.Date.context_today(request.env.user),
                 'sc_flash': self._sc_activity_flash(),
+                # Owner review 2026-10-11: the pencil card's assignee choices.
+                # Task 1589: pencil + Cancel / Reschedule / Done follow the
+                # one act rule.
+                'sc_activity_editable': self._activity_act_access(activity),
+                'sc_activity_user_options': [(u.id, u.name) for u in users],
             })
         return self._sc_render('bemade_sports_clinic.portal_activity_detail',
                                'bemade_sports_clinic.sc_app_activity_detail', values)

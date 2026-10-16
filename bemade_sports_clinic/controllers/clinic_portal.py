@@ -784,7 +784,14 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         else:
             return self._clinic_redirect(event, 'error=no_team',
                                          anchor='attendance-%s' % attendance.id)
-        row, patient = attendance.action_create_patient(team)
+        try:
+            # Task 1600: the exact-duplicate refusal (same name + date of
+            # birth as another file) — nothing is created.
+            with request.env.cr.savepoint():
+                row, patient = attendance.action_create_patient(team)
+        except ValidationError:
+            return self._clinic_redirect(event, 'error=duplicate_identity',
+                                         anchor='attendance-%s' % attendance.id)
         return self._clinic_redirect(event, 'success=signin_patient_created',
                                      patient_id=patient.id, anchor='clinic-dossier')
 
@@ -1001,6 +1008,7 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'unregistered_row': env._(
                 "This sign-in is not registered yet — link it to a file, create the player, or remove it."),
             'no_team': env._("Pick the team the new player belongs to."),
+            'duplicate_identity': env._("Another player already has this name and date of birth."),
             'invalid_status_combo': env._(
                 "Invalid status combination: a player who can play a match can also practice."),
             'not_author': env._("You can only edit your own treatment notes."),
@@ -1042,8 +1050,7 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         editable = values['editable_note_ids']
         for note in values['treatment_notes']:
             if note.id in editable:
-                note_props[note.id] = self._sc_field_props(
-                    note, 'note', env._("Note"), 'textarea')
+                note_props[note.id] = self._sc_note_edit_props(note)
         injury_rows = []
         stage_labels = values['injury_stage_labels']
         for injury in values['active_injuries']:

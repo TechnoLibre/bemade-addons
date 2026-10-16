@@ -20,7 +20,10 @@
 from odoo import http, _, fields
 from odoo.exceptions import UserError, AccessError, MissingError
 from odoo.http import request
+
+from ..models import sc_app_nav
 from datetime import datetime, time
+import time as systime
 import logging
 import pytz
 
@@ -206,6 +209,82 @@ class AccessControlMixin:
         ], order='name')
         return self._admin_or_staffed_teams(staffed)
 
+    # ------------------------------------------------------------------
+    # Activity permissions (task 1589, owner decision 2026-10-12) — ONE
+    # place for who may open / act on an activity in the portal:
+    #   * clinic / system administrator: everything;
+    #   * a coach (portal coach who is not a therapist): only the
+    #     activities assigned to them OR created by them, within their team
+    #     scope — they never see the others (matches the coach record rule
+    #     ``mail_activity_portal_team_coach_rule``);
+    #   * everyone else (therapists, …): the assignee, or staff of the
+    #     related patient / team / event's teams.
+    # « Act » = edit (pencil / edit page), complete, cancel, reschedule,
+    # reassign. Writes run with sudo() only AFTER this check.
+    # ------------------------------------------------------------------
+
+    def _activity_coach_only(self):
+        """A portal coach who is neither a therapist (portal or internal)
+        nor a clinic / system administrator (task 1589)."""
+        user = http.request.env.user
+        return (
+            user.has_group('bemade_sports_clinic.group_portal_team_coach')
+            and not self._is_tp_or_system()
+            and not self._is_clinic_admin())
+
+    def _activity_in_scope(self, activity):
+        """Is ``activity``'s related patient / team / event in the viewer's
+        team scope (``_activity_scope_teams``)? sudo(): only to read the
+        related record's teams for the comparison."""
+        activity = activity.sudo()
+        if activity.res_model not in ('sports.patient', 'sports.team', 'sports.event'):
+            return False
+        record = http.request.env[activity.res_model].sudo().browse(activity.res_id)
+        if not activity.res_id or not record.exists():
+            return False
+        teams = self._activity_scope_teams()
+        if activity.res_model == 'sports.team':
+            return bool(teams & record)
+        return bool(teams.ids and set(teams.ids) & set(record.team_ids.ids))
+
+    def _activity_act_access(self, activity):
+        """May the current user ACT on ``activity`` (edit, complete, cancel,
+        reschedule, reassign)? See the rules above (task 1589)."""
+        env = http.request.env
+        activity = activity.sudo()
+        if not activity.exists():
+            return False
+        if self._is_clinic_admin():
+            return True
+        user = env.user
+        if self._activity_coach_only():
+            return ((activity.user_id == user or activity.create_uid == user)
+                    and self._activity_in_scope(activity))
+        if activity.user_id == user:
+            return True
+        return self._activity_in_scope(activity)
+
+    def _activity_view_access(self, activity):
+        """May the current user OPEN ``activity`` — the detail page and its
+        attachment downloads (task 1586). Task 1589: whoever may act on it
+        may open it, and nobody else (a coach never opens another's
+        activity)."""
+        return self._activity_act_access(activity)
+
+    @staticmethod
+    def _activity_attachments(activity):
+        """The attachments of ``activity`` the portal lists and serves (task
+        1586): those attached to it (res_model/res_id) plus its
+        ``attachment_ids``. sudo(): the caller's _activity_view_access is the
+        authorization — coaches have no ir.attachment read on
+        mail.activity."""
+        Attachment = http.request.env['ir.attachment'].sudo()
+        attached = Attachment.search([
+            ('res_model', '=', 'mail.activity'),
+            ('res_id', '=', activity.id),
+        ])
+        return attached | activity.sudo().attachment_ids
+
     @classmethod
     def _activity_scope_teams(cls):
         """The teams whose activities the viewer lists / acts on (task 1577
@@ -311,20 +390,58 @@ class AccessControlMixin:
     # inline" pattern (which repeatedly 500'd on missing template context).
     # ------------------------------------------------------------------
 
-    def _portal_flash(self, error, form_data=None):
-        """Stash a validation error + submitted form data for a PRG redirect."""
-        request.session['portal_flash_error'] = error
-        request.session['portal_flash_data'] = dict(form_data or {})
+    # Task 1600: the flash is SCOPED to the form it belongs to and EXPIRES.
+    # A flash stashed by player A's failed save used to stay in the session
+    # until ANY form popped it — and the player edit form then filled player
+    # B's fields (and unticked B's teams) from A's posted data. Now a pop
+    # returns the data only for the same scope (e.g. ('player_edit', A.id))
+    # and within PORTAL_FLASH_TTL seconds; any other pop discards it.
+    PORTAL_FLASH_TTL = 600
 
-    def _portal_pop_flash(self):
-        """Return (error, form_data) stashed by _portal_flash, clearing them.
+    @staticmethod
+    def _portal_flash_scope(scope):
+        return [str(part) for part in (scope if isinstance(scope, (list, tuple)) else (scope,))]
 
-        form_data is a plain dict of the user's previous input, for re-prefill.
-        """
-        return (
-            request.session.pop('portal_flash_error', None),
-            request.session.pop('portal_flash_data', {}) or {},
-        )
+    def _portal_flash(self, error, form_data=None, scope=None):
+        """Stash a validation error + submitted form data for a PRG redirect
+        to the form identified by ``scope`` (a tuple such as
+        ``('player_edit', patient_id)``)."""
+        request.session.pop('portal_flash_error', None)
+        request.session.pop('portal_flash_data', None)
+        data = request.httprequest.form.to_dict(flat=False) if form_data is None else form_data
+        clean = {}
+        for key, value in dict(data or {}).items():
+            if key == 'csrf_token':
+                continue
+            if isinstance(value, (list, tuple)):
+                value = list(value) if len(value) > 1 else (value[0] if value else '')
+            clean[key] = value
+        request.session['portal_flash'] = {
+            'scope': self._portal_flash_scope(scope),
+            'ts': systime.time(),
+            'error': error,
+            'data': clean,
+        }
+
+    def _portal_pop_flash(self, scope=None):
+        """Return (error, form_data) stashed by _portal_flash for ``scope``,
+        clearing the flash in every case. A flash of another scope, or older
+        than PORTAL_FLASH_TTL, is discarded: (None, {})."""
+        # Pre-1600 sessions: the unscoped keys are dropped, never used.
+        request.session.pop('portal_flash_error', None)
+        request.session.pop('portal_flash_data', None)
+        flash = request.session.pop('portal_flash', None)
+        if not isinstance(flash, dict):
+            return None, {}
+        if flash.get('scope') != self._portal_flash_scope(scope):
+            return None, {}
+        try:
+            age = systime.time() - float(flash.get('ts') or 0)
+        except (TypeError, ValueError):
+            return None, {}
+        if age < 0 or age > self.PORTAL_FLASH_TTL:
+            return None, {}
+        return flash.get('error'), dict(flash.get('data') or {})
 
     def _activity_assignable_users(self):
         """Active users in either treatment-professional group OR the
@@ -536,22 +653,14 @@ class AccessControlMixin:
             return None
 
     @staticmethod
-    def _safe_return_url(value, fallback):
+    def _safe_return_url(value, fallback, prefixes=None):
         """``value`` if it is a same-site relative path, else ``fallback``
         (task 1544: no open redirect through a posted ``return_url``).
 
-        Accepted: ``/…`` only. Refused: empty / non-string, a scheme
-        (``https://…``, ``javascript:…``), protocol-relative ``//…``, any
-        backslash (browsers read ``/\\evil`` as ``//evil``), and any control
-        character (browsers drop tab/newline, so ``/<TAB>/evil`` would become
-        ``//evil``). A plain space is allowed (search-filter return URLs)."""
-        if not value or not isinstance(value, str):
-            return fallback
-        if (not value.startswith('/') or value.startswith('//')
-                or '\\' in value
-                or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in value)):
-            return fallback
-        return value
+        Task 1579: ONE validator for the whole addon —
+        ``models/sc_app_nav.safe_return_url`` (same rule as before, plus the
+        optional ``prefixes`` the events pages restrict themselves to)."""
+        return sc_app_nav.safe_return_url(value, fallback, prefixes=prefixes)
 
     @classmethod
     def _local_return_url(cls, value, default):

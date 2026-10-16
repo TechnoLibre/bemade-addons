@@ -9,8 +9,9 @@ Acceptance criteria covered here:
   « Clinique », a therapist gets « Clinique »; both get « Réservations » only
   when the bookings card is enabled; the website/portal header and footer are
   NOT rendered; a user without any clinic role keeps the stock portal.
-* UC-S3 (AC3) ``sc_nav_mode='crumbs'`` renders the crumb row on a sub-page,
-  ``back`` (default) renders the back chevron + context line instead.
+* UC-S3 (AC3) A sub-page renders the back chevron + context line AND the
+  crumb row (task 1579: the screen width decides which one shows — the
+  former ``sc_nav_mode`` setting is gone).
 * UC-S4 (AC2) The theme attribute follows ``sc_theme`` (dark by default).
 * UC-S5 The stock portal home stays reachable from the shell
   (``/my/home?classic=1``).
@@ -95,8 +96,10 @@ class TestAppShellSwitch1538(AppShellCommon):
         self._switch(True)
         self._login_tp()
         _text, tree = self._get('/my/home')
+        # Owner review 2026-10-10: « Clinic » left the phone tabs for
+        # « More »; the laptop rail keeps it.
         self.assertEqual(self._nav_keys(tree, 'o_sc_tabs'),
-                         ['teams', 'players', 'clinic', 'activities', 'more'])
+                         ['teams', 'players', 'notepad', 'activities', 'more'])
         self.assertIn('clinic', self._nav_keys(tree, 'o_sc_rail_nav'))
         # The therapist-only home section.
         self.assertTrue(tree.xpath('//*[@data-sc-section="home.clinic_teaser"]'))
@@ -150,26 +153,18 @@ class TestAppShellSwitch1538(AppShellCommon):
         self.assertTrue(tree.xpath('//*[contains(@class, "o_sc_sort")]'))
 
     # -- UC-S3 -----------------------------------------------------------
-    def test_nav_mode_back_is_default(self):
+    def test_sub_page_renders_back_and_crumbs(self):
+        # Task 1579 (deliberate update): both are rendered, CSS shows one per
+        # screen width; no per-user navigation mode any more.
         self._switch(True)
         self._login_coach()
-        self.assertEqual(self.coach.sc_nav_mode, 'back')
-        _text, tree = self._get('/my/teams')
+        _text, tree = self._get('/my/team?team_id=%s' % self.team_a.id)
         self.assertTrue(tree.xpath('//a[contains(@class, "o_sc_back")]'))
         self.assertTrue(tree.xpath('//*[contains(@class, "o_sc_appbar_context")]'))
-        self.assertFalse(tree.xpath('//nav[contains(@class, "o_sc_crumbs")]'))
-        self.assertEqual(self._shell(tree).get('data-sc-nav'), 'back')
-
-    def test_nav_mode_crumbs(self):
-        self._switch(True)
-        self.coach.sc_nav_mode = 'crumbs'
-        self._login_coach()
-        _text, tree = self._get('/my/teams')
         crumbs = tree.xpath('//nav[contains(@class, "o_sc_crumbs")]')
         self.assertTrue(crumbs)
-        self.assertTrue(crumbs[0].xpath('.//a[@href="/my/home"]'))
-        self.assertFalse(tree.xpath('//a[contains(@class, "o_sc_back")]'))
-        self.assertEqual(self._shell(tree).get('data-sc-nav'), 'crumbs')
+        self.assertTrue(crumbs[0].xpath('.//a[@href="/my/teams"]'))
+        self.assertIsNone(self._shell(tree).get('data-sc-nav'))
 
     def test_top_level_page_shows_logo_not_back(self):
         self._switch(True)

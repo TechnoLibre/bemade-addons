@@ -8,6 +8,7 @@ from . import injury_note_history
 from . import patient_contact
 from . import res_partner
 from . import sc_app_roles
+from . import sc_app_nav
 from . import res_users
 from . import sports_team
 from . import sports_organization_staff

@@ -89,10 +89,20 @@
             <field name="perm_unlink" eval="True"/>
         </record>
 
+        <!-- Task 1589 (owner decision 2026-10-12): a coach sees ONLY the
+             activities assigned to them or created by them — never another
+             staff member's (therapist / doctor) activities — and still only
+             within their team scope (an activity whose related record the
+             coach can no longer read stays hidden). Mirrored in
+             AccessControlMixin._activity_act_access and applied to existing
+             databases by migrations/19.0.1.59.0/post-migrate.py (keep the
+             two domains identical). -->
         <record id="mail_activity_portal_team_coach_rule" model="ir.rule">
             <field name="name">Portal Team Coach: Mail Activity Read Access</field>
             <field name="model_id" ref="mail.model_mail_activity"/>
             <field name="domain_force">[
+                '&amp;',
+                '|', ('user_id', '=', user.id), ('create_uid', '=', user.id),
                 '|', '|', '|',
                 '&amp;', '&amp;',
                 ('res_model', '=', 'sports.patient'),

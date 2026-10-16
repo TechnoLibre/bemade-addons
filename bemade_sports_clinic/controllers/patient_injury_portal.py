@@ -11,7 +11,7 @@ from odoo.tools import format_date
 from .access_control_mixin import AccessControlMixin
 from ..models import sc_app_roles
 from .app_shell import AppShellMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -201,6 +201,25 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             
         # Check if the current user is a treatment professional
         is_treatment_prof = self._is_treatment_professional()
+
+        # Owner decision 2026-10-11: the app shell's inline « Add Injury »
+        # card posts the coach visibility (therapists: required, no default)
+        # and the diagnosis only; today's date; it lands back on the
+        # player's Injuries tab with the new injury open for editing.
+        sc_inline = bool(post.get('sc_inline')) and self._sc_app_shell_active()
+        if sc_inline:
+            injuries_url = self._sc_inline_injuries_url(patient, post, clinic_event)
+            visibility = post.get('coach_visibility')
+            if is_treatment_prof and visibility not in ('visible', 'hidden'):
+                return request.redirect(self._url_with_query(injuries_url, 'error=injury_visibility'))
+            if not (post.get('diagnosis') or '').strip():
+                return request.redirect(self._url_with_query(injuries_url, 'error=injury_diagnosis'))
+            post = dict(
+                post,
+                diagnosis=post['diagnosis'].strip(),
+                injury_date=fields.Date.to_string(fields.Date.context_today(patient)),
+                hidden_from_coaches='1' if visibility == 'hidden' else '',
+            )
         
         # Prepare values for injury creation
         vals = {
@@ -282,6 +301,10 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # « Back to player » keeps the clinic context (task 1410).
         return_url = self._with_clinic(return_url, clinic_event)
 
+        if sc_inline:
+            return request.redirect(self._url_with_query(
+                injuries_url, 'created=%s' % injury.id) + '#injury-%s' % injury.id)
+
         # Task 1412: created FROM a clinic (the form's return_url is a clinic
         # page) ⇒ go straight back there, same patient, the new card in view.
         # Every other caller keeps the « created » page below.
@@ -290,20 +313,64 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             base = posted_return_url.partition('#')[0]
             return request.redirect(self._url_with_query(
                 base, 'success=injury_created') + '#clinic-injury-%s' % injury.id)
+        # Task 1579 (save-and-redirect hygiene): in the shell a create never
+        # lands on a POST result page — it redirects to the player's
+        # Injuries tab (same context) with the new injury open and its
+        # « Undo »; that page drops the device draft of the new injury
+        # (data-sc-draft-clear, task 1539) once it exists.
+        if self._sc_app_shell_active():
+            injuries_url = self._sc_inline_injuries_url(patient, post, clinic_event)
+            return request.redirect(self._url_with_query(
+                injuries_url, 'created=%s' % injury.id) + '#injury-%s' % injury.id)
         values = {
             'return_url': return_url,
         }
-        # Task 1539: the shell's landing page also drops the device draft of
-        # this new injury (data-sc-draft-clear) — only once it exists.
-        if self._sc_app_shell_active():
-            values.update({
-                'sc_created_injury': injury,
-                'sc_draft_prefix': self._sc_new_injury_prefix(patient),
-            })
-        return self._sc_render('bemade_sports_clinic.portal_injury_created',
-                               'bemade_sports_clinic.sc_app_injury_created', values)
+        return request.render('bemade_sports_clinic.portal_injury_created', values)
         
     # _check_access_to_injury method now inherited from AccessControlMixin
+
+    SC_UNDO_CREATE_MINUTES = 2
+
+    def _sc_inline_injuries_url(self, patient, post, clinic_event=None):
+        """The player page's Injuries tab, with the team / clinic context."""
+        url = '/my/player?player_id=%s' % patient.id
+        try:
+            team_id = int(post.get('team_context_id') or post.get('team_id') or 0)
+        except (TypeError, ValueError):
+            team_id = 0
+        if team_id and team_id in patient.sudo().team_ids.ids:
+            url += '&team_id=%s' % team_id
+        url = self._with_clinic(url, clinic_event)
+        return self._url_with_query(url, 'tab=injuries')
+
+    @http.route(['/my/injury/<int:injury_id>/undo-create'], type='http', auth='user',
+                website=True, methods=['POST'])
+    def undo_injury_create(self, injury_id, **post):
+        """« Undo » of the inline « Add Injury » (owner decision 2026-10-11):
+        the creator, within SC_UNDO_CREATE_MINUTES of creating it, deletes
+        an injury that carries no treatment note or document yet. Anything
+        else is refused (delete it from its page instead)."""
+        try:
+            injury = self._check_access_to_injury(injury_id)
+        except (UserError, AccessError, MissingError):
+            return request.redirect('/my/players')
+        patient = injury.patient_id
+        url = self._sc_inline_injuries_url(patient, post, self._clinic_context(post))
+        record = injury.sudo()
+        deadline = fields.Datetime.now() - timedelta(minutes=self.SC_UNDO_CREATE_MINUTES)
+        allowed = (
+            record.create_uid == request.env.user
+            and record.create_date and record.create_date >= deadline
+            and not record.treatment_note_ids
+            and not record.document_ids
+        )
+        if not allowed:
+            _logger.info("Undo of injury %s refused for user %s", injury.id, request.env.user.id)
+            return request.redirect(self._url_with_query(url, 'error=undo_expired'))
+        record.unlink()
+        patient._compute_is_injured()
+        patient._compute_stage()
+        return request.redirect(self._url_with_query(url, 'success=injury_undone'))
 
     def _sanitize_filename(self, name):
         """Return an ASCII-safe filename for HTTP headers/storage.
@@ -354,7 +421,6 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         roles = env.user._sc_app_roles()
         is_tp = values['is_treatment_prof']
         ctx_qs = values.get('ctx_qs') or ''
-        qs = ('?' + ctx_qs[1:]) if ctx_qs else ''
         consent_options = [('', '')] + list(
             Injury._fields['parental_consent']._description_selection(env))
         # Labels first, keys zipped in (babel's extractor, see app_shell).
@@ -366,7 +432,8 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
             'sc_is_tp_view': bool(is_tp and roles & sc_app_roles.TP),
             'sc_documents_url': '/my/injury/documents?injury_id=%s%s' % (injury.id, ctx_qs),
-            'sc_history_url': '/my/injury/%s/notes/history%s' % (injury.id, qs),
+            # Task 1581: the notes history sheet (fetched on every open).
+            'sc_note_history_url': '/my/injury/%s/notes/history/fragment' % injury.id,
             'sc_injury_flash': {
                 'success': env._("Injury successfully updated.")
                 if values.get('success') == 'injury_updated' else False,
@@ -709,7 +776,7 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         env = request.env
         user = env.user
         note_props = {
-            note.id: self._sc_field_props(note, 'note', env._("Note"), 'textarea')
+            note.id: self._sc_note_edit_props(note)
             for note in notes if note._can_portal_edit(user)
         }
         injuries = patient.injury_ids
@@ -891,25 +958,7 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
           _check_access_to_injury, like the neighboring injury routes.
         """
         injury = self._check_access_to_injury(injury_id)
-
-        is_treatment_prof = self._is_treatment_professional()
-
-        requested_scope = scope or 'all'
-        if requested_scope not in ('internal', 'external', 'all'):
-            requested_scope = 'all'
-        if not is_treatment_prof:
-            # Coaches only ever see external notes; ignore any tampered
-            # scope parameter outright.
-            requested_scope = 'external'
-
-        domain = [('injury_id', '=', injury.id)]
-        if requested_scope != 'all':
-            domain.append(('scope', '=', requested_scope))
-
-        # Deliberately NOT sudo: the sports.injury.note.history portal record
-        # rules re-enforce the team scoping and hide internal-scope rows from
-        # coaches even if this controller filter ever regresses.
-        histories = request.env['sports.injury.note.history'].search(domain)
+        histories, requested_scope, is_treatment_prof = self._injury_note_history(injury, scope)
 
         # Optional team navigation context for breadcrumbs (same pattern as
         # the injury-documents route; access is NOT derived from it).
@@ -933,6 +982,11 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if clinic_event:
             ctx_qs += f'&clinic_id={clinic_event.id}'
 
+        # Task 1581: the page is retired in the app shell — the history is
+        # the injury page's sheet now; an old link lands on that page (same
+        # team / clinic context). Switch off: today's page, unchanged.
+        if self._sc_app_shell_active():
+            return request.redirect('/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs))
         values = {
             'injury': injury,
             'patient': injury.patient_id,
@@ -945,9 +999,59 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'clinic_event': clinic_event,
             'ctx_qs': ctx_qs,
         }
-        # Task 1539: the app shell (switch on: a timeline) or today's template.
-        return self._sc_render('bemade_sports_clinic.portal_injury_note_history',
-                               'bemade_sports_clinic.sc_app_note_history', values)
+        return request.render('bemade_sports_clinic.portal_injury_note_history', values)
+
+    def _injury_note_history(self, injury, scope):
+        """(rows, scope, is_treatment_prof) of an injury's note history.
+
+        Treatment professionals see internal + external rows with an optional
+        scope filter (internal / external / all, default all); everyone else
+        (coaches) gets EXTERNAL rows only, whatever the query string says.
+        Deliberately NOT sudo: the sports.injury.note.history portal record
+        rules re-enforce the team scoping and hide internal-scope rows and
+        hidden injuries from coaches even if this filter ever regresses."""
+        is_treatment_prof = self._is_treatment_professional()
+        requested_scope = scope or 'all'
+        if requested_scope not in ('internal', 'external', 'all'):
+            requested_scope = 'all'
+        if not is_treatment_prof:
+            requested_scope = 'external'
+        domain = [('injury_id', '=', injury.id)]
+        if requested_scope != 'all':
+            domain.append(('scope', '=', requested_scope))
+        histories = request.env['sports.injury.note.history'].search(domain)
+        return histories, requested_scope, is_treatment_prof
+
+    @http.route(['/my/injury/<int:injury_id>/notes/history/fragment'], type='http',
+                auth='user', website=True, methods=['GET'])
+    def injury_note_history_fragment(self, injury_id, scope=None, **kw):
+        """Task 1581: the injury notes history sheet's body, fetched on EVERY
+        open; « All / Internal / External » chips (therapists only) re-fetch
+        it with ``?scope=``. Same access as the injury page and the retired
+        history page (coach: external rows only, never a hidden injury's)."""
+        try:
+            injury = self._check_access_to_injury(injury_id)
+        except MissingError:
+            return request.not_found()
+        except UserError as error:  # AccessError included
+            return self._forbidden(error)
+        env = request.env
+        histories, scope, is_treatment_prof = self._injury_note_history(injury, scope)
+        scope_labels = {'internal': env._("Internal"), 'external': env._("External")}
+        entries = [self._sc_history_entry(
+            row.note_datetime, row.author_id.name, row.content,
+            action=scope_labels.get(row.scope) if is_treatment_prof else None,
+            tone='mauve' if row.scope == 'internal' else 'ghost',
+            scope=row.scope,
+        ) for row in histories]
+        base = '/my/injury/%s/notes/history/fragment' % injury.id
+        return request.render('bemade_sports_clinic.sc_note_history_fragment', {
+            'entries': entries,
+            'scope': scope,
+            'is_treatment_prof': is_treatment_prof,
+            'sc_scope_urls': {key: '%s?scope=%s' % (base, key)
+                              for key in ('all', 'internal', 'external')},
+        })
 
     @http.route(['/my/injury/documents'], type='http', auth='user', website=True)
     def view_injury_documents(self, injury_id=None, team_id=None, **post):

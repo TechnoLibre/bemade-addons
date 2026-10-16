@@ -14,6 +14,9 @@ _logger = logging.getLogger(__name__)
 
 # Task 1540: the shell's events segments, in display order.
 SC_EVENT_SEGMENTS = ('upcoming', 'past', 'calendar')
+# Where an event page's back link may lead (owner review 2026-10-10: an event
+# opened from the app home goes back home).
+EVENT_RETURN_PREFIXES = ('/my/events', '/my/home')
 
 
 class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
@@ -563,9 +566,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if return_url and isinstance(return_url, str) and '&amp;' in return_url:
             return_url = return_url.replace('&amp;', '&')
         if return_url:
-            # Only allow returning to the portal events list (prevent open redirects)
-            if not return_url.startswith('/my/events'):
-                return_url = None
+            # Only allow returning to the portal events list or the app home
+            # (prevent open redirects)
+            return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
         else:
             # Fallback: infer from referrer (e.g. user navigated via /my/event/<id>)
             # Only accept referrers that point to /my/events to avoid open redirects.
@@ -576,8 +579,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     candidate = parsed.path
                     if parsed.query:
                         candidate = f"{candidate}?{parsed.query}"
-                    if candidate.startswith('/my/events'):
-                        return_url = candidate
+                    return_url = self._safe_return_url(
+                        candidate, None, prefixes=EVENT_RETURN_PREFIXES)
             except Exception:
                 return_url = None
 
@@ -596,9 +599,11 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Confidentiality (dev-review 2026-07-04): a TP only sees the tab when
         # assigned to this event, and then only their OWN rows; system admins
         # keep the full view. Membership is read via event_sudo (m2m to
-        # res.users is group-restricted).
+        # res.users is group-restricted). Task 1584 (owner decision
+        # 2026-10-12): clinic admins get the full view too, assigned or not
+        # (their record rules already read every timesheet).
         is_assigned = user.id in event_sudo.assigned_staff_ids.ids
-        show_all_timesheets = user.has_group('base.group_system')
+        show_all_timesheets = self._is_clinic_admin()
         can_view_timesheets = (is_therapist and is_assigned) or show_all_timesheets
         can_add_timesheet = is_therapist and is_assigned
 
@@ -669,8 +674,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         if return_url and isinstance(return_url, str) and '&amp;' in return_url:
             return_url = return_url.replace('&amp;', '&')
 
-        if return_url and not str(return_url).startswith('/my/events'):
-            return_url = None
+        return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
 
         return ('&return_url=%s' % urllib.parse.quote(return_url, safe='')) if return_url else ''
 
@@ -781,6 +785,10 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
     @http.route(['/my/event/<int:event_id>/edit'], type='http', auth='user', website=True)
     def edit_event_form(self, event_id, **kw):
         """Edit event form - only accessible to therapists"""
+        # Owner review 2026-10-11: in the app shell the event is edited in
+        # place (pencil card) on its page.
+        if self._sc_app_shell_active():
+            return http.request.redirect('/my/event/%s' % int(event_id))
         
         # Check access - only therapists can edit
         user = http.request.env.user
@@ -798,8 +806,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return_url = kw.get('return_url')
         if return_url and isinstance(return_url, str) and '&amp;' in return_url:
             return_url = return_url.replace('&amp;', '&')
-        if return_url and not return_url.startswith('/my/events'):
-            return_url = None
+        return_url = self._safe_return_url(return_url, None, prefixes=EVENT_RETURN_PREFIXES)
         if not return_url:
             try:
                 ref = http.request.httprequest.referrer
@@ -809,8 +816,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                     cand = (qs.get('return_url') or [None])[0]
                     if cand and isinstance(cand, str) and '&amp;' in cand:
                         cand = cand.replace('&amp;', '&')
-                    if cand and cand.startswith('/my/events'):
-                        return_url = cand
+                    return_url = self._safe_return_url(
+                        cand, None, prefixes=EVENT_RETURN_PREFIXES)
             except Exception:
                 return_url = None
         
@@ -1026,7 +1033,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         }
         # PRG: surface a stashed validation error + re-prefill from prior input,
         # mapping the raw submitted fields onto the template's prefill keys.
-        flash_error, flash_data = self._portal_pop_flash()
+        flash_error, flash_data = self._portal_pop_flash(('event', 'new'))
         if flash_error:
             def _ids(val):
                 return [int(x) for x in str(val or '').replace(',', ' ').split() if x.strip().isdigit()]
@@ -1147,15 +1154,19 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                         staff_ids = [int(staff_param)]
             create_vals['state'] = 'confirmed'
 
-            # Task creation is handled by the model's create() default logic
-            event = http.request.env['sports.event'].create(create_vals)
+            # Task 1600: the create and the staff assignment are one unit — a
+            # refused step leaves no half-created event behind.
+            with http.request.env.cr.savepoint():
+                # Task creation is handled by the model's create() default logic
+                event = http.request.env['sports.event'].create(create_vals)
 
-            # assigned_staff_ids is an m2m to res.users; portal users can't read
-            # other users, so writing it non-sudo raises AccessError when the
-            # selected staff isn't the current user. Assign under sudo — the
-            # controller already authorized this therapist to create the event.
-            if staff_ids:
-                event.sudo().write({'assigned_staff_ids': [(6, 0, staff_ids)]})
+                # assigned_staff_ids is an m2m to res.users; portal users can't read
+                # other users, so writing it non-sudo raises AccessError when the
+                # selected staff isn't the current user. Assign under sudo — the
+                # controller already authorized this therapist to create the event.
+                if staff_ids:
+                    event.sudo().write({'assigned_staff_ids': [(6, 0, staff_ids)]})
+                event.flush_recordset()
 
             return http.request.redirect(f'/my/event/{event.id}?created=1')
 
@@ -1163,7 +1174,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # PRG: stash the error + submitted fields and redirect (GET) back to
             # the create form, which re-renders them. (Avoids re-POST on refresh
             # and the fragile inline re-render that previously 500'd.)
-            self._portal_flash(str(e).replace('\n', ' ').replace('\r', ' '), post)
+            self._portal_flash(str(e).replace('\n', ' ').replace('\r', ' '), post, ('event', 'new'))
             return http.request.redirect('/my/event/create')
 
     @http.route(['/my/venue/create'], type='http', auth='user', website=True, methods=['POST'],
@@ -1278,15 +1289,18 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'past': _url(segment='past', no_default_dates='1', sortby='date_desc', date_to=yesterday),
             'calendar': '/my/events/calendar',
         }
+        back_url = self._sc_events_back_url()
+        if back_url:
+            urls['calendar'] += '?' + urllib.parse.urlencode({'return_url': back_url})
         segments = [(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS]
         chips = [('', env._("All"), _url(event_type=''), not event_type)]
         chips += [(key, label, _url(event_type=key), key == event_type)
                   for key, label in event_types.items()]
-        rows = []
-        for event in values['events']:
+
+        def _row(event):
             staff = values['assigned_staff_by_event'].get(event.id)
             sudo = event.sudo()
-            rows.append({
+            return {
                 'id': event.id,
                 'title': event.name,
                 'subtitle': ' · '.join(part for part in (
@@ -1298,23 +1312,71 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'kind': event_types.get(sudo.event_type, ''),
                 'cancelled': sudo.state == 'cancelled',
                 'url': '/my/event/%s' % event.id,
-            })
+            }
+
+        rows = [_row(event) for event in values['events']]
+        # Owner review 2026-10-11: the legacy portal's views and filters are
+        # back — « All / My events / Unassigned / Missing timesheets » and a
+        # filter panel (organization, team, professional, dates, cancelled,
+        # sort, group by), the legacy route doing the filtering.
+        user = env.user
+        view_type = values.get('view_type') or 'all'
+        view_labels = (env._("All"), env._("My events"), env._("Unassigned"), env._("Missing timesheets"))
+        view_keys = ['all', 'my', 'unassigned']
+        if (user.has_group('bemade_sports_clinic.group_portal_treatment_professional')
+                or user.has_group('bemade_sports_clinic.group_sports_clinic_treatment_professional')):
+            view_keys.append('missing_timesheets')
+        view_over = {
+            'all': {'view_type': 'all', 'assigned_user_id': ''},
+            'my': {'view_type': 'my', 'assigned_user_id': user.id},
+            'unassigned': {'view_type': 'unassigned', 'assigned_user_id': ''},
+            'missing_timesheets': {'view_type': 'missing_timesheets', 'assigned_user_id': user.id,
+                                   'no_default_dates': '1'},
+        }
+        views = [(key, dict(zip(('all', 'my', 'unassigned', 'missing_timesheets'), view_labels))[key],
+                  _url(**view_over[key]), key == view_type) for key in view_keys]
+        groups = []
+        if values.get('group_by') and values.get('grouped_events'):
+            groups = [{'key': str(group['key']), 'label': group['label'],
+                       'rows': [_row(event) for event in group['events']]}
+                      for group in values['grouped_events']]
+        filters_open = any(values.get(key) for key in (
+            'organization_id', 'team_id', 'assigned_user_id', 'date_from', 'show_cancelled', 'group_by',
+            'search')) or (values.get('sortby') not in (None, '', 'date', 'date_desc'))
         return {
+            'sc_event_views': views,
+            'sc_event_view': view_type,
+            'sc_event_groups': groups,
+            'sc_event_type': event_type or '',
+            'sc_event_filters_open': filters_open,
             'sc_event_segments': segments,
             'sc_event_segment': segment,
             'sc_event_chips': chips,
             'sc_event_rows': rows,
+            'sc_events_back_url': back_url,
         }
 
+    def _sc_events_back_url(self):
+        """The events list / calendar back link's target when the page was
+        opened from elsewhere than « Plus » (the home's « Calendar » link
+        passes ``return_url=/my/home``); False = the default (« Plus »)."""
+        return self._safe_return_url(http.request.httprequest.args.get('return_url'), False)
+
     def _sc_events_calendar_values(self, values):
-        params = {key: val for key, val in http.request.httprequest.args.items() if val}
+        params = {key: val for key, val in http.request.httprequest.args.items()
+                  if val and key != 'return_url'}
         labels = self._sc_event_segment_labels()
         urls = {
             'upcoming': '/my/events',
             'past': '/my/events?segment=past&no_default_dates=1&sortby=date_desc',
             'calendar': '/my/events/calendar',
         }
+        back_url = self._sc_events_back_url()
+        if back_url:
+            back_qs = urllib.parse.urlencode({'return_url': back_url})
+            urls = {key: url + ('&' if '?' in url else '?') + back_qs for key, url in urls.items()}
         return {
+            'sc_events_back_url': back_url,
             'sc_calendar_props': json.dumps({
                 'feedUrl': '/my/events/calendar/data',
                 'params': params,
@@ -1351,7 +1413,23 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             success = env._("Timesheet deleted.")
         error = params.get('ts_error') or params.get('error')
         is_tp = self._is_tp_or_system()
+        # Owner review 2026-10-11: the pencil card's choices (as the edit
+        # page offered them: the user's teams plus the event's current ones).
+        edit_options = {}
+        if values['can_edit']:
+            teams = (self._get_accessible_teams() | event_sudo.team_ids).sudo()
+            venues = env['res.partner'].search([('is_venue', '=', True)], order='name')
+            if event_sudo.venue_id and event_sudo.venue_id not in venues:
+                venues |= event_sudo.venue_id.sudo()
+            edit_options = {
+                'types': list(env['sports.event']._fields['event_type']._description_selection(env)),
+                'venues': [('', '—')] + [(v.id, v.name) for v in venues],
+                'teams': [(t.id, t.name) for t in teams.sorted('name')],
+                'staff': [(u.id, u.name) for u in (self._get_treatment_professionals()
+                                                   | event_sudo.assigned_staff_ids).sudo().sorted('name')],
+            }
         return {
+            'sc_event_edit_options': edit_options,
             'sc_event_kind': kinds.get(event_sudo.event_type, ''),
             'sc_event_state': states.get(event_sudo.state, ''),
             'sc_event_when': self._sc_event_when(event_sudo),

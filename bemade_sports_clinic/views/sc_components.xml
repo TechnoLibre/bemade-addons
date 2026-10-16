@@ -42,6 +42,7 @@
             <t t-elif="icon == 'close'"><path d="M18 6L6 18M6 6l12 12"/></t>
             <t t-elif="icon == 'share'"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></t>
             <t t-elif="icon == 'user'"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/></t>
+            <t t-elif="icon == 'archive'"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></t>
             <t t-elif="icon == 'edit'"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></t>
             <t t-elif="icon == 'trash'"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></t>
             <t t-elif="icon == 'download'"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></t>
@@ -63,7 +64,8 @@
     <!--
         List row. Variables: href, title, subtitle, dot (red|yellow|green|False),
         lead (short text badge instead of a dot, e.g. an icon key via lead_icon),
-        row_attrs (dict of extra attributes), chevron (default True).
+        row_attrs (dict of extra attributes), chevron (default True),
+        row_status / row_changed (player rows: sc_player_status_line).
         Body (0) = trailing chips.
     -->
     <template id="sc_entity_row" name="App shell: entity row">
@@ -74,12 +76,35 @@
             <span class="o_sc_row_text">
                 <span class="o_sc_row_title" t-out="title"/>
                 <span t-if="subtitle" class="o_sc_row_subtitle" t-out="subtitle"/>
+                <t t-if="row_status or row_changed" t-call="bemade_sports_clinic.sc_player_status_line"/>
             </span>
             <span class="o_sc_row_trailing">
                 <t t-out="0"/>
                 <t t-if="chevron is not False" t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'chevron'"/></t>
             </span>
         </a>
+    </template>
+
+    <!-- Player row status line, under the name so it never crowds the row on
+         a phone: the legacy card's Match / Practice badges, active-injury
+         count and ⚡ recent-changes flag. Variables: row_status (from
+         sports.patient._sc_row_status, optional), row_changed (bool). -->
+    <template id="sc_player_status_line" name="App shell: player status line">
+        <t t-set="sc_injuries_title">Active injuries</t>
+        <span class="o_sc_row_status">
+            <t t-if="row_status">
+                <t t-foreach="row_status['pills']" t-as="pill">
+                    <span t-attf-class="o_sc_status_pill o_sc_chip_#{pill['tone']}" t-att-title="pill['title']"><i t-if="pill['icon']" t-attf-class="fa #{pill['icon']}" aria-hidden="true"/> <t t-out="pill['label']"/></span>
+                </t>
+                <span t-if="row_status['injuries']" class="o_sc_injury_count" t-att-title="sc_injuries_title"><i class="fa fa-chain-broken" aria-hidden="true"/> <t t-out="row_status['injuries']"/></span>
+            </t>
+            <t t-if="row_changed" t-call="bemade_sports_clinic.sc_recent_pill"/>
+        </span>
+    </template>
+
+    <!-- The legacy card's ⚡ « Changements récents » flag. -->
+    <template id="sc_recent_pill" name="App shell: recent changes pill">
+        <span class="o_sc_recent_pill"><i class="fa fa-bolt" aria-hidden="true"/> Recent changes</span>
     </template>
 
     <!-- Status chip. Variables: tone (red|yellow|green|mauve|ghost), label. -->
@@ -110,9 +135,83 @@
         </h2>
     </template>
 
+    <!--
+        Owner review 2026-10-10 — an inline-editable card: read view by
+        default, ONE pencil (data-sc-edit-toggle) reveals the card's autosave
+        fields (data-sc-edit-view="edit"), « Done » (data-sc-edit-done) hides
+        them again (sc_app_ui.js). Read values carry data-sc-display hooks
+        that a save updates in place. This is the card head. Variables:
+        title, editable.
+    -->
+    <template id="sc_edit_card_head" name="App shell: edit card head">
+        <div class="o_sc_edit_card_head">
+            <h3 class="o_sc_edit_card_title" t-out="title"/>
+            <button t-if="editable" type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1"
+                    aria-expanded="false" aria-label="Edit" title="Edit">
+                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+            </button>
+        </div>
+    </template>
+
+    <!-- « Done » of an edit card's edit view. -->
+    <template id="sc_edit_card_done" name="App shell: edit card done">
+        <div class="o_sc_form_actions">
+            <button type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm" data-sc-edit-done="1">Done</button>
+        </div>
+    </template>
+
+    <!-- A read-view row. Variables: label, record, field; optional
+         href_kind ('tel' / 'mailto', task 1585): the value is a tap-to-call /
+         tap-to-email link (no href while empty — « — » is not a link);
+         data-sc-display-href lets a save move the href (sc_app_ui.js). -->
+    <template id="sc_display_row" name="App shell: display row">
+        <dt t-out="label"/>
+        <dd>
+            <t t-if="href_kind">
+                <t t-set="sc_shown" t-value="sc_display(record, field)"/>
+                <a class="o_sc_contact_link" t-att-href="sc_contact_href(href_kind, sc_shown)"
+                   t-att-data-sc-display-href="href_kind"
+                   t-att-data-sc-display="sc_display_key(record, field)" t-out="sc_shown or '—'"/>
+            </t>
+            <span t-else="" t-att-data-sc-display="sc_display_key(record, field)" t-out="sc_display(record, field) or '—'"/>
+        </dd>
+    </template>
+
     <!-- Empty state. Variable: message. -->
     <template id="sc_empty_state" name="App shell: empty state">
         <p class="o_sc_empty" t-out="message"/>
+    </template>
+
+    <!-- Task 1581: ONE history entry for every history of the shell (team
+         announcement, training recommendation, injury notes):
+         « <date> <time> · <Full Name> · <action chip> », then the body; an
+         empty body reads « Cleared ». Built by AppShellMixin._sc_history_entry
+         (same date-time format as the treatment notes, viewer's tz).
+         Variable: entry = {when, author, action, tone, body, state, scope?}. -->
+    <template id="sc_history_entry" name="App shell: history entry">
+        <li class="o_sc_history_entry" t-att-data-sc-history-state="entry['state'] or None"
+            t-att-data-sc-scope="entry.get('scope') or None">
+            <div class="o_sc_meta o_sc_history_meta">
+                <span class="o_sc_history_when" t-out="entry['when']"/>
+                <t t-if="entry['author']"> · <span class="o_sc_history_author" t-out="entry['author']"/></t>
+                <t t-if="entry['action']"> · <span t-attf-class="o_sc_chip o_sc_chip_#{entry['tone']}" t-out="entry['action']"/></t>
+            </div>
+            <p t-if="entry['body']" class="o_sc_pre o_sc_history_body" t-out="entry['body']"/>
+            <p t-else="" class="o_sc_muted o_sc_history_cleared">Cleared</p>
+        </li>
+    </template>
+
+    <!-- Task 1581: a history sheet's body (the lazy, fresh-on-every-open
+         fragment): optional filters (0), the entries, or the empty state.
+         Variables: entries, empty_message, section (data-sc-section). -->
+    <template id="sc_history_list" name="App shell: history list">
+        <div class="o_sc_history_fragment" t-att-data-sc-section="section or None">
+            <t t-out="0"/>
+            <ol t-if="entries" class="o_sc_history">
+                <t t-foreach="entries" t-as="entry" t-call="bemade_sports_clinic.sc_history_entry"/>
+            </ol>
+            <p t-else="" class="o_sc_empty" t-out="empty_message"/>
+        </div>
     </template>
 
     <!-- Banner. Variables: title, tone (info|warn). Body (0) = text. -->
@@ -128,19 +227,21 @@
         <dialog> opened by any [data-sc-sheet-open="<sheet_id>"] control
         (static/src/js/sc_app_ui.js). Variables: sheet_id, title,
         lazy_url (optional: body fetched once, on first open, through
-        sc_fetch). Body (0) = content (ignored when lazy_url is set; a
+        sc_fetch), lazy_fresh (optional: fetched again on every open, for a
+        history the page itself can change). Body (0) = content (ignored when lazy_url is set; a
         loading line is shown until the fetch answers).
     -->
     <template id="sc_sheet" name="App shell: sheet">
         <dialog t-att-id="sheet_id" class="o_sc_sheet" t-att-aria-labelledby="'%s_title' % sheet_id"
-                t-att-data-sc-lazy-url="lazy_url or None">
+                t-att-data-sc-lazy-url="lazy_url or None"
+                t-att-data-sc-lazy-fresh="'1' if lazy_url and lazy_fresh else None">
             <div class="o_sc_sheet_head">
                 <h2 class="o_sc_sheet_title" t-att-id="'%s_title' % sheet_id" t-out="title"/>
                 <button type="button" class="o_sc_icon_btn" data-sc-sheet-close="1" aria-label="Close" title="Close">
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'close'"/></t>
                 </button>
             </div>
-            <div class="o_sc_sheet_body">
+            <div t-attf-class="o_sc_sheet_body #{'o_sc_legacy' if lazy_url else ''}">
                 <p t-if="lazy_url" class="o_sc_empty o_sc_lazy_loading">Loading…</p>
                 <t t-else="" t-out="0"/>
             </div>
@@ -175,7 +276,10 @@
     -->
     <template id="sc_field_static" name="App shell: static field">
         <div class="o_sc_field o_sc_field_static">
-            <span class="o_sc_field_label" t-out="label"/>
+            <span class="o_sc_field_label"><span t-out="label"/>
+                <button t-if="history_sheet" type="button" class="o_sc_link_btn o_sc_field_history"
+                        t-att-data-sc-sheet-open="history_sheet" t-out="history_label"/>
+            </span>
             <p t-if="value" t-attf-class="o_sc_field_value #{'o_sc_pre' if pre else ''}" t-out="value"/>
             <p t-else="" class="o_sc_field_value o_sc_muted" t-out="empty or '—'"/>
         </div>
@@ -246,27 +350,47 @@
     <!--
         Task 1539 — treatment-note card: text, author initials + date, the
         « modifié » stamp, the linked injury. Variables: note, injury_url
-        (link of the linked injury or False), edit_props (JSON of the note's
-        server autosave field when the viewer may edit it, else False).
+        (link of the linked injury or False), edit_props (list of the JSON
+        props of the note's server autosave fields — note, date, injury (task
+        1587) — when the viewer may edit it, else False).
     -->
     <template id="sc_note_card" name="App shell: note card">
-        <article class="o_sc_card o_sc_note_card" t-att-data-sc-note-id="note.id">
+        <!-- Owner review 2026-10-11: an editable note is a pencil card. -->
+        <article t-attf-class="o_sc_card o_sc_note_card #{'o_sc_edit_card' if edit_props else ''}" t-att-data-sc-note-id="note.id"
+                 t-att-data-sc-edit-card="('note-%s' % note.id) if edit_props else None"
+                 t-att-data-sc-edit-reload="'1' if edit_props else None">
             <div class="o_sc_meta o_sc_note_meta">
-                <span t-field="note.date"/>
+                <span t-out="note.portal_when_label"/>
                 <span>·</span>
-                <span class="o_sc_note_author" t-att-title="note.sudo().user_id.name" t-out="note.author_initials"/>
+                <span class="o_sc_note_author" t-out="note.sudo().user_id.name"/>
                 <t t-if="note.injury_id">
                     <span>·</span>
                     <a t-if="injury_url" t-att-href="injury_url" t-out="note.injury_id.diagnosis or note.injury_id.display_name"/>
                     <span t-else="" t-out="note.injury_id.diagnosis"/>
                 </t>
                 <t t-else="">
-                    <span>·</span>
-                    <span>General</span>
+                    <span t-out="'·'"/>
+                    <span>General note</span>
                 </t>
             </div>
-            <t t-if="edit_props" t-call="bemade_sports_clinic.sc_field_autosave">
-                <t t-set="props" t-value="edit_props"/>
+            <t t-if="edit_props">
+                <t t-set="sc_edit_label">Edit</t>
+                <div class="o_sc_note_body">
+                    <p class="o_sc_pre o_sc_note_text" data-sc-edit-view="read"
+                       t-att-data-sc-display="sc_display_key(note, 'note')" t-out="note.note"/>
+                    <button type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1" aria-expanded="false"
+                            t-att-aria-label="sc_edit_label" t-att-title="sc_edit_label">
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                    </button>
+                </div>
+                <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                    <t t-foreach="edit_props" t-as="field_props">
+                        <t t-call="bemade_sports_clinic.sc_field_autosave">
+                            <t t-set="props" t-value="field_props"/>
+                        </t>
+                    </t>
+                    <t t-call="bemade_sports_clinic.sc_edit_card_done"/>
+                </div>
             </t>
             <p t-else="" class="o_sc_pre o_sc_note_text" t-out="note.note"/>
             <p t-if="note.modified_label" class="o_sc_meta o_sc_note_modified" t-att-title="note.modified_by_name"
@@ -282,7 +406,9 @@
     -->
     <template id="sc_activity_row" name="App shell: activity row">
         <t t-set="act_state" t-value="'overdue' if activity.date_deadline &lt; today_date else ('today' if activity.date_deadline == today_date else 'planned')"/>
-        <div class="o_sc_activity" t-att-data-sc-activity-row="activity.id" t-att-data-sc-activity-state="act_state">
+        <!-- ONE card, actions inside it (owner review 2026-10-10: same UX as
+             the other tabs' cards). -->
+        <div class="o_sc_card o_sc_activity" t-att-data-sc-activity-row="activity.id" t-att-data-sc-activity-state="act_state">
             <a t-attf-href="/my/activity/#{activity.id}" class="o_sc_entity_row">
                 <span t-att-class="'o_sc_dot o_sc_tone_%s' % ('red' if act_state == 'overdue' else ('yellow' if act_state == 'today' else 'green'))" aria-hidden="true"/>
                 <span class="o_sc_row_text">
@@ -300,7 +426,8 @@
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'chevron'"/></t>
                 </span>
             </a>
-            <div class="o_sc_activity_actions">
+            <!-- Task 1589: actions only for who may act on the activity. -->
+            <div t-if="sc_activity_can_act(activity)" class="o_sc_card_actions o_sc_activity_actions">
                 <button type="button" class="o_sc_btn o_sc_btn_ghost o_sc_btn_sm" data-sc-sheet-open="sc_activity_complete_sheet"
                         t-att-data-sc-activity-id="activity.id" data-sc-action="activity.complete">
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'check'"/></t>
