@@ -35,13 +35,13 @@
                             <field name="is_monthly" column_invisible="1"/>
                             <field name="indicator_id" column_invisible="1"/>
                             <field name="value_id" column_invisible="1"/>
-                            <field name="code" readonly="1"/>
+                            <field name="code" readonly="1" width="120px"/>
                             <field name="name" readonly="1"/>
                             <field name="marker" readonly="1"/>
-                            <field name="unit" readonly="1"/>
-                            <field name="last_value_label" readonly="1"/>
-                            <field name="threshold" readonly="1" optional="show" class="small text-muted"/>
-                            <field name="value" placeholder="blank = not measured"/>
+                            <field name="unit" readonly="1" width="90px"/>
+                            <field name="last_value_label" readonly="1" width="140px"/>
+                            <field name="threshold" readonly="1" optional="hide" class="small text-muted"/>
+                            <field name="value" placeholder="blank = not measured" width="110px"/>
                             <field name="note"/>
                         </list>
                     </field>

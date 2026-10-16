@@ -247,7 +247,7 @@ class CloseWeekWizard(models.TransientModel):
             "res_id": self.id,
             "view_mode": "form",
             "target": "new",
-            "context": dict(self.env.context),
+            "context": dict(self.env.context, dialog_size="extra-large"),
         }
 
     @api.model
