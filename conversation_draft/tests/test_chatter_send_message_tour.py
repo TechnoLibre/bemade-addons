@@ -21,7 +21,18 @@ class TestChatterSendMessageTour(HttpCase):
             .with_context(mail_create_nosubscribe=True, mail_create_nolog=True)
             .create({"name": "Chatter button topic"})
         )
-        cls.partner = cls.env["res.partner"].create({"name": "Other Model Co"})
+        # Soft-launch guard record: a core mail.thread model whose form no other
+        # addon extends. A res.partner form is fragile here: other addons add
+        # fields a plain internal user cannot read, and the form never renders.
+        cls.other_user = mail_new_test_user(
+            cls.env,
+            login="tour_nosend_sys",
+            name="Tour System User",
+            groups="base.group_user,base.group_system",
+        )
+        cls.other_record = cls.env["mail.blacklist"].create(
+            {"email": "other-model@example.com"}
+        )
 
     def test_conversation_has_no_send_message(self):
         self.start_tour(
@@ -32,9 +43,9 @@ class TestChatterSendMessageTour(HttpCase):
 
     def test_other_model_keeps_send_message(self):
         self.start_tour(
-            f"/odoo/res.partner/{self.partner.id}",
+            f"/odoo/mail.blacklist/{self.other_record.id}",
             "conversation_send_message_other_model",
-            login=self.user.login,
+            login=self.other_user.login,
         )
 
     def test_note_on_conversation_sends_no_email(self):

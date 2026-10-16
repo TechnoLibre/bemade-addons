@@ -36,11 +36,11 @@ registry.category("web_tour.tours").add("conversation_no_send_message", {
 registry.category("web_tour.tours").add("conversation_send_message_other_model", {
   steps: () => [
     {
-      content: "Log note is offered on a partner",
+      content: "Log note is offered on another model",
       trigger: ".o-mail-Chatter-topbar .o-mail-Chatter-logNote",
     },
     {
-      content: "Send message is still offered on a partner",
+      content: "Send message is still offered on another model",
       trigger: ".o-mail-Chatter-topbar .o-mail-Chatter-sendMessage",
     },
   ],
