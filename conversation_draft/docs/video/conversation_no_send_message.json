@@ -10,6 +10,6 @@
   "outroTitle": "À vous de jouer",
   "outroNarration": "Pour écrire aux participants, utilisez le bouton Répondre de la conversation. Le bouton de note interne reste disponible, et les autres documents gardent leur bouton « Envoyer un message ».",
   "stepOverrides": {
-    "log-note-present": {"containsText": "Enregistrer une note"}
+    "log-note-present": {"containsText": "Note"}
   }
 }
