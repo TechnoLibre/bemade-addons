@@ -190,7 +190,8 @@
                 </t>
             </div>
 
-            <section class="o_sc_section" id="sc_appearance">
+            <!-- Task 1602: hidden while the app is forced dark. -->
+            <section t-if="sc_theme_choice" class="o_sc_section" id="sc_appearance">
                 <t t-call="bemade_sports_clinic.sc_section_header">
                     <t t-set="title">Appearance</t>
                 </t>

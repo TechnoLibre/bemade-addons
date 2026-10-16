@@ -116,7 +116,7 @@
                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="sc_primary_action.get('icon') or 'plus'"/></t>
                             <span class="o_sc_appbar_action_label" t-out="sc_primary_action['label']"/>
                         </a>
-                        <form method="post" action="/my/app/pref" class="o_sc_theme_toggle" data-sc-pref="1">
+                        <form t-if="sc_theme_choice" method="post" action="/my/app/pref" class="o_sc_theme_toggle" data-sc-pref="1">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="redirect" t-att-value="sc_current_url"/>
                             <button type="submit" name="sc_theme" t-att-value="'light' if sc_theme != 'light' else 'dark'"
