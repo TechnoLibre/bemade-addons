@@ -247,7 +247,7 @@ if __name__ == "__main__":  # stand-alone demo mailbox
         (
             "Facture de septembre",
             "Comptabilité <compta@exemple.ca>",
-            "Ci-joint la facture, aucune réparation à signaler.",
+            "Ci-joint la facture, aucune autre demande.",
             "Wed, 14 Oct 2026 08:15:00 -0400",
         ),
     ]
