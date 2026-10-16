@@ -304,7 +304,7 @@
                 <form t-attf-action="/my/clinic/#{event.id}/attendance/add" method="post" class="o_sc_form" data-sc-form="clinic.add">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <div class="o_sc_field">
-                        <label class="o_sc_field_label" for="sc_clinic_add_patient">Patient</label>
+                        <label class="o_sc_field_label" for="sc_clinic_add_patient">Player</label>
                         <t t-set="combo_label_clinic">Clinic teams</t>
                         <t t-set="combo_label_other">Other teams</t>
                         <t t-set="combo_empty_label">Pick a patient…</t>

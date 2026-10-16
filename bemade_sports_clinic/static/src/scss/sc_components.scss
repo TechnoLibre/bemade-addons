@@ -1200,3 +1200,39 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         mask-image: $sc-icon-clock;
     }
 }
+
+// Owner review 2026-10-14 (#1590): the patient typeahead (portal_patient_combo,
+// Bootstrap list-group) rendered white-on-white in the dark app, and inside a
+// sheet its absolutely-positioned list was clipped by the sheet's scroll box.
+// Theme it with the app tokens and let the list flow inside sheets.
+.o_sc_app .o_sc_patient_combo {
+    .o_sc_combo_input,
+    .form-control {
+        background-color: var(--sc-surface-2);
+        color: var(--sc-fg);
+        border-color: var(--sc-line);
+        &::placeholder {
+            color: var(--sc-fg-3);
+        }
+    }
+    .o_sc_combo_list,
+    .list-group-item {
+        background-color: var(--sc-surface);
+        color: var(--sc-fg);
+        border-color: var(--sc-line);
+    }
+    .list-group-item:hover,
+    .list-group-item.active,
+    .o_sc_combo_item[aria-selected="true"] {
+        background-color: var(--sc-mauve);
+        color: #fff;
+    }
+    .o_sc_combo_group {
+        background-color: var(--sc-surface-2);
+        color: var(--sc-fg-2);
+    }
+}
+.o_sc_app .o_sc_sheet .o_sc_patient_combo .o_sc_combo_list {
+    position: static;
+    max-height: 40vh;
+}
