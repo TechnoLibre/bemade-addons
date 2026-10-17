@@ -157,7 +157,7 @@ class ConversationTransport(models.Model):
         A record that is already in that state is left alone, so an
         unrelated edit by a non-manager still works; switching write-back
         off is not restricted either. Setting an owner on a shared account
-        with write-back on is refused too (ownership takeover).
+        is refused too (ownership takeover), whatever its write-back state.
         """
         if self.env.su or self.env.user.has_group(
             "conversation_base.group_conversation_manager"
@@ -177,19 +177,15 @@ class ConversationTransport(models.Model):
                 was_shared_writable = (
                     transport.mailbox_writable and not transport.user_id
                 )
-            if (
-                owner
-                and not transport.user_id
-                and (transport.mailbox_writable or writable)
-            ):
-                # Taking ownership of a shared account whose write-back is
-                # on (or being switched on) would turn it into the taker's
-                # personal account, with the delete rights that implies.
+            if vals is not None and owner and not transport.user_id:
+                # Taking ownership of a shared account, whatever its
+                # write-back state, would turn it into the taker's personal
+                # account (and let them enable write-back and delete in the
+                # shared mailbox). Only a manager converts shared to personal.
                 raise AccessError(
                     self.env._(
                         "Only a Conversations manager can assign an owner "
-                        "to a shared mail account with mailbox actions "
-                        "enabled (%(transport)s).",
+                        "to a shared mail account (%(transport)s).",
                         transport=transport.display_name or transport.name or "",
                     )
                 )

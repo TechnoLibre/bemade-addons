@@ -254,10 +254,27 @@ class TestTransportPermissions(TransactionCase):
         self.assertFalse(shared.user_id)
         self.assertFalse(shared.mailbox_writable)
 
-    def test_non_manager_can_still_claim_a_non_writable_shared(self):
+    def test_non_manager_cannot_claim_a_non_writable_shared(self):
+        # Claiming any shared account is refused, whatever its write-back
+        # state: otherwise claim-then-enable would reach the same takeover.
         shared = self.env["conversation.transport"].create({"name": "Shared Off 3"})
-        shared.with_user(self.member).write({"user_id": self.member.id})
-        self.assertEqual(shared.user_id, self.member)
+        with self.assertRaises(AccessError):
+            shared.with_user(self.member).write({"user_id": self.member.id})
+        self.assertFalse(shared.user_id)
+
+    def test_shared_to_personal_needs_a_manager(self):
+        # Two-step path: the member cannot claim the account; once a manager
+        # has made it personal, the owner decides about write-back.
+        shared = self.env["conversation.transport"].create({"name": "Shared Off 4"})
+        with self.assertRaises(AccessError):
+            shared.with_user(self.member).write({"user_id": self.member.id})
+        with self.assertRaises(AccessError):
+            shared.with_user(self.member).write({"mailbox_writable": True})
+        self.assertFalse(shared.user_id)
+        self.assertFalse(shared.mailbox_writable)
+        shared.with_user(self.manager).write({"user_id": self.member.id})
+        shared.with_user(self.member).write({"mailbox_writable": True})
+        self.assertTrue(shared.mailbox_writable)
 
     def test_manager_can_assign_owner_to_writable_shared(self):
         shared = self.env["conversation.transport"].create(
