@@ -240,38 +240,10 @@
                         <span class="o_sc_chip o_sc_chip_ghost"><span>Practice:</span> <span t-field="player.practice_status"/></span>
                     </div>
                 </div>
-                <div class="o_sc_chips" t-att-data-sc-fragment="sc_fragment_key(player, 'hero-chips')">
-                    <span t-if="player.pending_removal" class="o_sc_chip o_sc_chip_ghost">Removal pending</span>
-                    <!-- Task 1603: « Retour prévu » moved to its own header field
-                         (below), editable by therapists. -->
-                    <!-- Task 1594: the actual return date, for everyone; kept
-                         (hidden) while empty so a save on the Medical card
-                         shows it in place. -->
-                    <t t-set="sc_return_shown" t-value="sc_display(player, 'return_date')"/>
-                    <span class="o_sc_chip o_sc_chip_ghost" data-sc-section="player.return_date"
-                          data-sc-display-hide-empty="1" t-att-hidden="None if sc_return_shown else 'hidden'">
-                        <span>Actual return:</span> <span t-att-data-sc-display="sc_display_key(player, 'return_date')" t-out="sc_return_shown"/>
-                    </span>
-                </div>
-                <!-- Task 1603: « Retour prévu » next to the training
-                     recommendation — therapists edit it (a change may propose
-                     aligning the active injuries' predicted resolution dates),
-                     coaches read it (a read fragment). -->
-                <div class="o_sc_fields o_sc_hero_return" data-sc-section="player.predicted_return">
-                    <t t-set="sc_return_label">Predicted return</t>
-                    <t t-if="is_treatment_prof and sc_can('patient.return.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
-                        <t t-set="props" t-value="sc_field_props(player, 'predicted_return_date', sc_return_label, 'date', clearable=True)"/>
-                    </t>
-                    <div t-else="" t-att-data-sc-fragment="sc_fragment_key(player, 'predicted-return')">
-                        <t t-call="bemade_sports_clinic.sc_field_static">
-                            <t t-set="label" t-value="sc_return_label"/>
-                            <t t-set="value" t-value="sc_display(player, 'predicted_return_date')"/>
-                        </t>
-                    </div>
-                </div>
                 <!-- Owner review 2026-10-14: the training recommendation (always
-                     live, with its stamp and history) in the header, right above
-                     the allergies; therapists edit it, coaches read it. -->
+                     live, with its stamp and history) in the header; therapists
+                     edit it, coaches read it. Task 1615: right under the play
+                     status (the selector, or the status label coaches see). -->
                 <div class="o_sc_fields o_sc_hero_training" data-sc-section="player.training">
                     <t t-set="sc_training_label">Training Recommendation</t>
                     <t t-set="sc_training_history_label">History</t>
@@ -293,6 +265,37 @@
                         <t t-set="lazy_url" t-value="'/my/player/%s/training-history' % player.id"/>
                         <t t-set="lazy_fresh" t-value="True"/>
                     </t>
+                </div>
+                <!-- Task 1603: « Retour prévu » right after the training
+                     recommendation (task 1615) — therapists edit it (a change may propose
+                     aligning the active injuries' predicted resolution dates),
+                     coaches read it (a read fragment). -->
+                <div class="o_sc_fields o_sc_hero_return" data-sc-section="player.predicted_return">
+                    <t t-set="sc_return_label">Predicted return</t>
+                    <t t-if="is_treatment_prof and sc_can('patient.return.edit')" t-call="bemade_sports_clinic.sc_field_autosave">
+                        <t t-set="props" t-value="sc_field_props(player, 'predicted_return_date', sc_return_label, 'date', clearable=True)"/>
+                    </t>
+                    <div t-else="" t-att-data-sc-fragment="sc_fragment_key(player, 'predicted-return')">
+                        <t t-call="bemade_sports_clinic.sc_field_static">
+                            <t t-set="label" t-value="sc_return_label"/>
+                            <t t-set="value" t-value="sc_display(player, 'predicted_return_date')"/>
+                        </t>
+                    </div>
+                </div>
+                <div class="o_sc_chips" t-att-data-sc-fragment="sc_fragment_key(player, 'hero-chips')">
+                    <span t-if="player.pending_removal" class="o_sc_chip o_sc_chip_ghost">Removal pending</span>
+                    <!-- Task 1603: « Retour prévu » moved to its own header field
+                         (above), editable by therapists. Task 1615: this row
+                         follows « Retour prévu », so the recommendation sits
+                         right under the play status. -->
+                    <!-- Task 1594: the actual return date, for everyone; kept
+                         (hidden) while empty so a save on the Medical card
+                         shows it in place. -->
+                    <t t-set="sc_return_shown" t-value="sc_display(player, 'return_date')"/>
+                    <span class="o_sc_chip o_sc_chip_ghost" data-sc-section="player.return_date"
+                          data-sc-display-hide-empty="1" t-att-hidden="None if sc_return_shown else 'hidden'">
+                        <span>Actual return:</span> <span t-att-data-sc-display="sc_display_key(player, 'return_date')" t-out="sc_return_shown"/>
+                    </span>
                 </div>
                 <!-- Task 1611: the holder is always there (a read fragment), so
                      filling the allergies shows the banner and clearing them

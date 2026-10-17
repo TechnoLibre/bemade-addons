@@ -17,7 +17,8 @@ Acceptance criteria covered here:
   user leaves it — not on each « change » while typing; two saves in a row
   are sent one after the other (no false « changed elsewhere »).
 * RF4 (see test_app_shell_player_layout) The training recommendation sits in
-  the player header, above the allergies.
+  the player header, above the allergies (since task 1615 right under the
+  play status — test_header_order_1615).
 * RF5 An activity row whose title shows its related record's name makes that
   name a link to the record (same access-gated URL as the links line), the
   title's main link carrying the whole title as its label — no nested

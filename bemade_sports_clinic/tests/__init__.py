@@ -199,3 +199,4 @@ from . import test_event_form_pickers_1608
 from . import test_calendar_staff_colours_1605
 from . import test_digest_history_inline_1614
 from . import test_digest_history_tours_1614
+from . import test_header_order_1615

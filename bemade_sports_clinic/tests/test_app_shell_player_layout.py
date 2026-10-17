@@ -11,8 +11,9 @@ Acceptance criteria:
 * UC-PL3 Date of birth and age sit in the « Player » card (read view, and
   the date in its edit view), no longer in « Medical Information ».
 * UC-PL4 The training recommendation (always live, with its history link)
-  sits in the page header, right above the allergies callout (owner review
-  2026-10-14 — no longer on the Info tab); a coach sees it read-only.
+  sits in the page header (owner review 2026-10-14 — no longer on the Info
+  tab), right under the play status (task 1615), « Retour prévu » next and
+  the allergies callout after; a coach sees it read-only.
 * UC-PL5 Emergency contacts are on the Info tab (cards and « Add Emergency
   Contact »); adding or editing one comes back to the Info tab.
 """
@@ -97,7 +98,8 @@ class TestAppShellPlayerLayout(PlayerInlineCommon):
         self.assertNotIn('Date of birth', medical.text_content())
         self.assertNotIn('date_of_birth', self._owl(medical))
         # Owner review 2026-10-14: the training recommendation left the Info
-        # tab for the header, right above the allergies callout.
+        # tab for the header; task 1615: right under the play status, then
+        # « Retour prévu » (the full order: test_header_order_1615).
         self.assertFalse(panel.xpath('.//*[@data-sc-section="player.training"]'))
         training = tree.xpath('//*[@data-sc-section="player.training"]')
         self.assertEqual(len(training), 1)
@@ -105,8 +107,9 @@ class TestAppShellPlayerLayout(PlayerInlineCommon):
         self.assertIs(training[0].getparent(), hero)
         # Task 1611: the banner sits in its always-rendered read-fragment
         # holder (filled / cleared in place).
-        allergies = training[0].getnext()
-        self.assertEqual(allergies.get('data-sc-section'), 'player.allergies')
+        self.assertEqual(training[0].getprevious().get('data-sc-section'), 'player.status')
+        self.assertEqual(training[0].getnext().get('data-sc-section'), 'player.predicted_return')
+        allergies = hero.xpath('./*[@data-sc-section="player.allergies"]')[0]
         self.assertTrue(allergies.xpath('./*[contains(@class, "o_sc_banner")]'))
         self.assertIn('Synthetic peanuts', allergies.text_content())
         self.assertIn('training_recommendation', self._owl(training[0]))
