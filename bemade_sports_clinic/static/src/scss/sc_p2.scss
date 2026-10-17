@@ -151,7 +151,7 @@ $sc-p2-laptop: 992px;
         padding: 0;
         list-style: none;
 
-        &:empty {
+        &:not(:has(button)) {
             display: none;
         }
     }
@@ -729,6 +729,25 @@ $sc-p2-laptop: 992px;
 
         .o_sc_btn {
             min-height: var(--sc-tap);
+        }
+    }
+
+    // Task 1604: the quick « Vérifier » / « Résoudre » of an injury — a
+    // compact button of its own in the card row (full tap height) and on
+    // the injury page.
+    .o_sc_quick_btn {
+        min-height: var(--sc-tap);
+        padding: 0 12px;
+        font-size: var(--sc-text-sm);
+    }
+
+    .o_sc_injury_quick {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: var(--sc-space-2);
+
+        &:not(:has(button)) {
+            display: none;
         }
     }
 }

@@ -187,3 +187,5 @@ from . import test_app_shell_fragments_tours_1611
 from . import test_retour_prevu_1603
 from . import test_retour_prevu_tours_1603
 from . import test_retour_prevu_i18n_1603
+from . import test_injury_quick_actions_1604
+from . import test_injury_quick_tours_1604

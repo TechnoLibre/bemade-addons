@@ -1115,6 +1115,9 @@ class AppShellMixin:
             # Task 1598: a system admin also sees the TP actions legacy
             # granted them (registry keys flagged ``system``).
             'sc_can': lambda key: sc_app_roles.can(key, roles, is_system=is_system),
+            # Task 1604: today in the user's timezone (the resolve sheet's
+            # default and latest resolution date).
+            'sc_today_iso': fields.Date.to_string(fields.Date.context_today(user)),
             'sc_tabs': tabs,
             'sc_rail': rail,
             'sc_plus': plus,
@@ -1939,6 +1942,77 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         except (UserError, ValidationError, ValueError) as exc:
             message = exc.args[0] if getattr(exc, 'args', None) else str(exc)
             return self._sc_save_json({'error': 'invalid', 'message': str(message)}, 400)
+
+    # ------------------------------------------------------------------
+    # Task 1604 — quick « Vérifier » / « Résoudre » (the injury card row and
+    # the injury page header; therapists only)
+    # ------------------------------------------------------------------
+    def _sc_injury_quick(self, injury_id, run, message):
+        """Run ``run(injury)`` for a therapist with access to the injury and
+        answer like a save of its ``stage`` (so the page's islands, read
+        views and #1611 fragments follow, and #1603's proposal opens):
+        ``{ok, write_date, value, display, also: {stage, resolution_date},
+        refresh, saved_at, message[, propose]}``; 403 (not a therapist, no
+        access), 400 ``{error, message}`` (wrong stage, invalid date —
+        nothing written)."""
+        if not (request.env.user._sc_app_roles() & _TP_ROLES):
+            return self._sc_save_json({'error': 'forbidden'}, 403)
+        try:
+            injury = self._check_access_to_injury(injury_id)
+        except (AccessError, MissingError, UserError):
+            return self._sc_save_json({'error': 'forbidden'}, 403)
+        try:
+            with request.env.cr.savepoint():
+                run(injury)
+                injury.flush_recordset()
+        except (AccessError, MissingError):
+            return self._sc_save_json({'error': 'forbidden'}, 403)
+        except (UserError, ValidationError, ValueError) as exc:
+            message = exc.args[0] if getattr(exc, 'args', None) else str(exc)
+            return self._sc_save_json({'error': 'invalid', 'message': str(message)}, 400)
+        injury.invalidate_recordset()
+        model = injury._name
+        payload = {
+            'ok': True,
+            'write_date': fields.Datetime.to_string(injury.write_date),
+            'value': self._sc_save_value(injury, 'stage'),
+            'display': self._sc_save_display(injury, 'stage'),
+            'also': {name: {
+                'value': self._sc_save_value(injury, name),
+                'display': self._sc_save_display(injury, name),
+            } for name in ('stage', 'resolution_date')},
+            'refresh': sc_refresh_patterns(model, injury, 'stage'),
+            'saved_at': sc_now_ms(),
+            'live_counts': True,
+            'message': message,
+        }
+        proposal = self._sc_save_proposal(SAVE_REGISTRY[model], injury, 'stage')
+        if proposal:
+            payload['propose'] = proposal
+        return self._sc_save_json(payload)
+
+    @http.route(['/my/injury/<int:injury_id>/verify'], type='http', auth='user',
+                methods=['POST'], csrf=True, multilang=False)
+    def sc_injury_quick_verify(self, injury_id, **kw):
+        """One tap « Vérifier »: an unverified injury becomes active (the
+        model's « Verify » action — logged, its verification To-Do closed)."""
+        return self._sc_injury_quick(
+            injury_id, lambda injury: injury.action_verify_injury(), _("Injury verified."))
+
+    @http.route(['/my/injury/<int:injury_id>/resolve'], type='http', auth='user',
+                methods=['POST'], csrf=True, multilang=False)
+    def sc_injury_quick_resolve(self, injury_id, resolution_date=None, **kw):
+        """« Résoudre » after the confirm sheet: an ACTIVE injury becomes
+        resolved on ``resolution_date`` (default today; a past date is
+        allowed, a future one refused)."""
+        def run(injury):
+            if injury.stage != 'active':
+                raise UserError(_("Only active injuries can be resolved."))
+            day = _date_value(resolution_date) or fields.Date.context_today(injury)
+            if day > fields.Date.context_today(injury):
+                raise ValidationError(_("The resolution date cannot be in the future."))
+            injury.action_resolve_injury(resolution_date=day)
+        return self._sc_injury_quick(injury_id, run, _("Injury resolved."))
 
     @http.route(['/my/app/save/<string:model>/<int:record_id>'], type='http', auth='user',
                 methods=['POST'], csrf=True, multilang=False)

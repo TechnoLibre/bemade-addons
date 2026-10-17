@@ -3747,6 +3747,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_confirm_sheet
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
@@ -9832,6 +9833,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient_injury__resolution_date
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Resolution Date"
 msgstr "Date de résolution"
@@ -9839,6 +9841,8 @@ msgstr "Date de résolution"
 #. module: bemade_sports_clinic
 #. odoo-javascript
 #: code:addons/bemade_sports_clinic/static/src/js/sc_clinic_worklist.xml:0
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_quick_button
 msgid "Resolve"
 msgstr "Résoudre"
 
@@ -15256,3 +15260,48 @@ msgstr ""
 #: code:addons/bemade_sports_clinic/models/sports_event.py:0
 msgid "Please select at least one team for the event."
 msgstr "Veuillez choisir au moins une équipe pour l'événement."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Injury resolved."
+msgstr "Blessure résolue."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Injury verified."
+msgstr "Blessure vérifiée."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Only active injuries can be resolved."
+msgstr "Seules les blessures actives peuvent être résolues."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "Resolve this injury?"
+msgstr "Résoudre cette blessure ?"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "The injury could not be resolved."
+msgstr "La blessure n'a pas pu être résolue."
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_injury_quick.js:0
+msgid "The injury could not be verified."
+msgstr "La blessure n'a pas pu être vérifiée."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "The resolution date cannot be in the future."
+msgstr "La date de résolution ne peut pas être dans le futur."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_quick_button
+msgid "Verify"
+msgstr "Vérifier"

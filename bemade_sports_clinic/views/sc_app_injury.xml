@@ -121,6 +121,11 @@
             <t t-set="sc_active_nav" t-value="'players'"/>
             <t t-set="sc_flash" t-value="sc_injury_flash"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
+            <!-- Task 1604: the quick « Verify » / « Resolve » (a read
+                 fragment: it follows the stage). -->
+            <div class="o_sc_injury_quick" t-att-data-sc-fragment="sc_fragment_key(injury, 'quick')">
+                <t t-call="bemade_sports_clinic.sc_injury_quick_button"/>
+            </div>
             <!-- Owner review 2026-10-11: the pencil edit paradigm — read views,
                  ONE pencil per card reveals its fields (saved as you leave
                  each one; status and visibility at once, with « Undo »). -->

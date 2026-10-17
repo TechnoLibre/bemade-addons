@@ -176,6 +176,33 @@
                          t-att-data-sc-notify="sc_notification and (sc_notification['message'] or sc_notification['title']) or None"
                          t-att-data-sc-notify-title="sc_notification and sc_notification['message'] and sc_notification['title'] or None"
                          t-att-data-sc-notify-tone="sc_notification and sc_notification['tone'] or None"/>
+                    <!-- Task 1604: « Resolve » confirms the resolution date
+                         (sc_injury_quick.js fills the injury and posts to
+                         /my/injury/<id>/resolve). Therapists only. -->
+                    <dialog t-if="sc_can('injury.stage.edit')" id="sc_injury_resolve_sheet" class="o_sc_sheet"
+                            aria-labelledby="sc_injury_resolve_sheet_title">
+                        <div class="o_sc_sheet_head">
+                            <h2 class="o_sc_sheet_title" id="sc_injury_resolve_sheet_title">Resolve this injury?</h2>
+                            <button type="button" class="o_sc_icon_btn" data-sc-sheet-close="1" aria-label="Close" title="Close">
+                                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'close'"/></t>
+                            </button>
+                        </div>
+                        <div class="o_sc_sheet_body">
+                            <form class="o_sc_form" data-sc-injury-resolve-form="1">
+                                <p class="o_sc_confirm_message" data-sc-injury-resolve-name="1"/>
+                                <div class="o_sc_field">
+                                    <label class="o_sc_field_label" for="sc_injury_resolve_date">Resolution Date</label>
+                                    <input type="date" id="sc_injury_resolve_date" name="resolution_date" class="o_sc_input" required="required"
+                                           t-att-value="sc_today_iso" t-att-max="sc_today_iso"/>
+                                </div>
+                                <p class="o_sc_field_message o_sc_field_error" role="alert" data-sc-injury-resolve-error="1" hidden="hidden">The injury could not be resolved.</p>
+                                <div class="o_sc_form_actions">
+                                    <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-close="1">Cancel</button>
+                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-injury-resolve-confirm="1">Resolve</button>
+                                </div>
+                            </form>
+                        </div>
+                    </dialog>
                     <!-- Task 1603: the follow-up proposal sheet (sc_proposal.js
                          fills it from a save's ``propose``, or from the
                          proposal a POST round-trip left: data-sc-proposal). -->

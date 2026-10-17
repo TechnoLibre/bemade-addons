@@ -763,6 +763,16 @@
         </details>
     </template>
 
+    <!-- Task 1604: the quick action of an injury for a therapist — « Verify »
+         (unverified, one tap) or « Resolve » (active, through the resolve
+         sheet sc_injury_resolve_sheet of the layout). Expects injury. -->
+    <template id="sc_injury_quick_button" name="App shell: injury quick action">
+        <t t-set="sc_quick" t-value="sc_can('injury.stage.edit') and {'unverified': 'verify', 'active': 'resolve'}.get(injury.stage)"/>
+        <button t-if="sc_quick" type="button" t-attf-class="o_sc_btn o_sc_quick_btn #{'o_sc_btn_primary' if sc_quick == 'verify' else 'o_sc_btn_ghost'}"
+                t-att-data-sc-injury-quick="sc_quick" t-att-data-sc-injury-id="injury.id"
+                t-att-data-sc-action="'injury.%s' % sc_quick"><t t-if="sc_quick == 'verify'">Verify</t><t t-else="">Resolve</t></button>
+    </template>
+
     <!-- Task 1590: one inline injury card (read view + ONE pencil revealing
          its autosave fields, the « Undo » of a just-created one), shared by
          the player page and the clinic dossier. Expects row (see
@@ -788,6 +798,10 @@
                     </span>
                 </span>
                 <span class="o_sc_row_trailing">
+                    <!-- Task 1604: the quick « Verify » / « Resolve » (a
+                         button of its own: it acts, it does not toggle the
+                         card; sc_injury_quick.js). -->
+                    <t t-call="bemade_sports_clinic.sc_injury_quick_button"/>
                     <!-- Task 1592: the activity clock (a link: activating it
                          follows the link, it does not toggle the card). -->
                     <t t-call="bemade_sports_clinic.sc_activity_clock">
