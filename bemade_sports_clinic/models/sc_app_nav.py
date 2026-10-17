@@ -323,6 +323,11 @@ PAGES = {page.key: page for page in (
             parent=lambda v: ('sc_app_more', {})),
     _static('sc_app_install', '/my/app/install', nav_label('install'),
             parent=lambda v: ('sc_app_more', {})),
+    # Task 1606: « Paramètres », opened from the user menu (not a page of
+    # « Plus »): a sub-page of the home — back = where the user came from
+    # (sc_app_nav.js), else the home.
+    _static('sc_app_settings', '/my/app/settings', _lt('Settings'),
+            parent=lambda v: ('sc_app_home', {})),
     # -- teams ---------------------------------------------------------
     Page('sc_app_team', path=r'/my/team', from_url=_team_from,
          url=lambda v: '/my/team?team_id=%s%s' % (

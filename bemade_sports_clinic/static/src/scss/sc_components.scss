@@ -401,16 +401,49 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         }
     }
 
-    .o_sc_rail_me {
+    // Task 1606: the user menu. The rail footer (laptop) and the app-bar
+    // avatar (phone) each anchor their own popup.
+    .o_sc_user_menu {
+        position: relative;
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_rail {
         margin-top: auto;
+        border-top: 1px solid var(--sc-line);
+        padding-top: 6px;
+    }
+
+    .o_sc_rail_me {
+        appearance: none;
+        width: 100%;
+        border: 0;
+        background: transparent;
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 10px 12px;
-        border-top: 1px solid var(--sc-line);
+        min-height: var(--sc-tap);
+        border-radius: var(--sc-radius-sm);
+        font: inherit;
         font-size: var(--sc-text-sm);
         color: var(--sc-bar-fg-2);
+        text-align: left;
+        cursor: pointer;
         min-width: 0;
+
+        > .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            margin-left: auto;
+            flex: none;
+        }
+
+        &:hover,
+        &[aria-expanded="true"] {
+            background: var(--sc-hover);
+            color: var(--sc-bar-fg);
+        }
     }
 
     .o_sc_rail_me_name {
@@ -418,6 +451,147 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .o_sc_user_menu_bar {
+        flex: none;
+    }
+
+    .o_sc_appbar_me .o_sc_avatar {
+        width: 30px;
+        height: 30px;
+        font-size: var(--sc-text-xs);
+    }
+
+    .o_sc_appbar_me[aria-expanded="true"] .o_sc_avatar {
+        box-shadow: 0 0 0 2px var(--sc-bar-active);
+    }
+
+    .o_sc_user_menu_popup {
+        position: absolute;
+        z-index: 40;
+        min-width: 220px;
+        max-width: calc(100vw - 24px);
+        padding: 6px;
+        background: var(--sc-surface);
+        color: var(--sc-fg);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-md);
+        box-shadow: var(--sc-shadow);
+        text-transform: none;
+        letter-spacing: normal;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    // Laptop: opens upwards over the rail, as wide as the footer.
+    .o_sc_user_menu_rail .o_sc_user_menu_popup {
+        bottom: calc(100% + 6px);
+        left: 0;
+        right: 0;
+    }
+
+    // Phone: drops down from the avatar, right-aligned with the bar.
+    .o_sc_user_menu_bar .o_sc_user_menu_popup {
+        top: calc(100% + 6px);
+        right: 0;
+    }
+
+    .o_sc_user_menu_head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid var(--sc-line);
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_who {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_name,
+    .o_sc_user_menu_role {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_user_menu_name {
+        font-weight: 600;
+        font-size: var(--sc-text-sm);
+    }
+
+    .o_sc_user_menu_role {
+        font-size: var(--sc-text-xs);
+        color: var(--sc-fg-2);
+    }
+
+    .o_sc_user_menu_items {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .o_sc_user_menu_item {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-3);
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border-radius: var(--sc-radius-sm);
+        color: var(--sc-fg);
+        font-weight: 500;
+        text-decoration: none;
+
+        .o_sc_icon {
+            width: 18px;
+            height: 18px;
+            flex: none;
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: var(--sc-hover);
+            color: var(--sc-fg);
+        }
+
+        &[aria-current="page"] {
+            color: var(--sc-accent);
+        }
+    }
+
+    // Laptop: the rail footer holds the menu; no avatar in the app bar.
+    @media (min-width: $sc-laptop) {
+        .o_sc_user_menu_bar {
+            display: none;
+        }
+    }
+
+    // Narrow phones (360 px): logo + title + clock + search + avatar (+ the
+    // page action until #1607) — slimmer icon buttons and gaps keep the
+    // title readable. The buttons stay 44 px tall.
+    @media (max-width: 399.98px) {
+        .o_sc_appbar {
+            gap: 4px;
+            padding-left: calc(var(--sc-space-2) + env(safe-area-inset-left, 0px));
+            padding-right: calc(var(--sc-space-2) + env(safe-area-inset-right, 0px));
+
+            .o_sc_icon_btn,
+            .o_sc_logo {
+                width: 40px;
+            }
+
+            .o_sc_appbar_action {
+                min-width: 40px;
+                padding: 0 8px;
+            }
+        }
     }
 
     .o_sc_avatar {

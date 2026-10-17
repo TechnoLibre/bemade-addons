@@ -83,9 +83,17 @@
                             </a>
                         </t>
                     </nav>
-                    <div class="o_sc_rail_me">
-                        <span class="o_sc_avatar" t-out="sc_user_initials"/>
-                        <span class="o_sc_rail_me_name" t-out="user_id.name"/>
+                    <!-- Task 1606: the user menu (Paramètres, Se déconnecter). -->
+                    <div class="o_sc_user_menu o_sc_user_menu_rail" data-sc-user-menu="rail">
+                        <button type="button" class="o_sc_rail_me" data-sc-user-menu-toggle="1"
+                                aria-haspopup="menu" aria-expanded="false" aria-controls="sc_user_menu_rail">
+                            <span class="o_sc_avatar" aria-hidden="true" t-out="sc_user_initials"/>
+                            <span class="o_sc_rail_me_name" t-out="sc_user_name"/>
+                            <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'up'"/></t>
+                        </button>
+                        <t t-call="bemade_sports_clinic.sc_user_menu_popup">
+                            <t t-set="sc_menu_id" t-value="'sc_user_menu_rail'"/>
+                        </t>
                     </div>
                 </aside>
 
@@ -153,6 +161,19 @@
                            aria-label="Search for a player" title="Search for a player">
                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'search'"/></t>
                         </a>
+                        <!-- Task 1606: phone only (the rail footer holds it on a
+                             laptop) — the initials open the user menu. -->
+                        <div class="o_sc_user_menu o_sc_user_menu_bar" data-sc-user-menu="bar">
+                            <t t-set="sc_user_menu_label">User menu</t>
+                            <button type="button" class="o_sc_icon_btn o_sc_appbar_me" data-sc-user-menu-toggle="1"
+                                    aria-haspopup="menu" aria-expanded="false" aria-controls="sc_user_menu_bar"
+                                    t-att-aria-label="sc_user_menu_label" t-att-title="sc_user_menu_label">
+                                <span class="o_sc_avatar" aria-hidden="true" t-out="sc_user_initials"/>
+                            </button>
+                            <t t-call="bemade_sports_clinic.sc_user_menu_popup">
+                                <t t-set="sc_menu_id" t-value="'sc_user_menu_bar'"/>
+                            </t>
+                        </div>
                     </header>
 
                     <!-- Breadcrumb trail (laptop width; task 1579) -->
@@ -239,6 +260,33 @@
                 </nav>
             </div>
         </t>
+    </template>
+
+    <!-- Task 1606: the user menu's popup (one per trigger: rail footer on a
+         laptop, app-bar avatar on a phone). sc_app_ui.js opens / closes it
+         (tap, Enter / Space, the arrow keys, Escape, an outside tap).
+         ``sc_menu_id``: the id the trigger's aria-controls names. -->
+    <template id="sc_user_menu_popup" name="App shell: user menu popup">
+        <div t-att-id="sc_menu_id" class="o_sc_user_menu_popup" hidden="hidden" data-sc-user-menu-popup="1">
+            <div class="o_sc_user_menu_head" data-sc-user-menu-head="1">
+                <span class="o_sc_avatar" aria-hidden="true" t-out="sc_user_initials"/>
+                <span class="o_sc_user_menu_who">
+                    <strong class="o_sc_user_menu_name" t-out="sc_user_name"/>
+                    <small t-if="sc_user_role" class="o_sc_user_menu_role" t-out="sc_user_role"/>
+                </span>
+            </div>
+            <div role="menu" class="o_sc_user_menu_items" t-att-aria-label="sc_user_name">
+                <a role="menuitem" href="/my/app/settings" class="o_sc_user_menu_item" tabindex="-1"
+                   t-att-aria-current="'page' if page_name == 'sc_app_settings' else None">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'settings'"/></t>
+                    <span>Settings</span>
+                </a>
+                <a role="menuitem" href="/web/session/logout?redirect=/" class="o_sc_user_menu_item" tabindex="-1">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'logout'"/></t>
+                    <span>Sign out</span>
+                </a>
+            </div>
+        </div>
     </template>
 
 </odoo>

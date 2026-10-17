@@ -1189,6 +1189,9 @@ class AppShellMixin:
             # fetched by sc_live_count.js, not computed here).
             'sc_activity_clock': sc_app_roles.can('app.activity_clock', roles, is_system=is_system),
             'sc_user_initials': initials or '?',
+            # Task 1606: the head of the user menu (name + role).
+            'sc_user_name': user.name or '',
+            'sc_user_role': sc_app_roles.role_label(roles),
             # Task 1542: the device draft store is namespaced by db + uid.
             'sc_db': request.db or '',
             'sc_uid': user.id,
@@ -1843,6 +1846,20 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                                        self._sc_app_values(values, 'sc_app_more'))
 
     # ------------------------------------------------------------------
+    # /my/app/settings — « Paramètres » (task 1606: language, appearance,
+    # account, security, classic portal — out of « Plus »; reached from the
+    # user menu)
+    # ------------------------------------------------------------------
+    @http.route(['/my/app/settings'], type='http', auth='user', website=True)
+    def sc_app_settings(self, **kw):
+        if not self._sc_app_shell_active():
+            return request.redirect('/my/home')
+        values = self._prepare_portal_layout_values()
+        values['page_name'] = 'sc_app_settings'
+        return self._sc_shell_response('bemade_sports_clinic.sc_app_settings',
+                                       self._sc_app_values(values, 'sc_app_settings'))
+
+    # ------------------------------------------------------------------
     # /my/app/pref — the two self-service preferences, nothing else
     # ------------------------------------------------------------------
     @http.route(['/my/app/pref'], type='http', auth='user', website=True,
@@ -1882,7 +1899,7 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             response = request.make_json_response(
                 {'sc_theme': self._sc_effective_theme(user), 'lang': user.lang})
         else:
-            url = self._safe_return_url(redirect, '/my/app/more')
+            url = self._safe_return_url(redirect, '/my/app/settings')
             if lang:
                 url = self._sc_lang_url(url, lang)
             response = request.redirect(url)

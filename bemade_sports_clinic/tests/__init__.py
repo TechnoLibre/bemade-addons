@@ -191,3 +191,5 @@ from . import test_injury_quick_actions_1604
 from . import test_injury_quick_tours_1604
 from . import test_injury_card_sections_1616
 from . import test_injury_card_tours_1616
+from . import test_app_shell_user_menu_1606
+from . import test_app_shell_user_menu_tours_1606

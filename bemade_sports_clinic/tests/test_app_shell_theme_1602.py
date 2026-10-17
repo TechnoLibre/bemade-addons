@@ -45,7 +45,7 @@ class TestAppShellTheme1602(AppShellCommon):
 
     # -- UC-T1 -----------------------------------------------------------
     def test_forced_dark_without_parameter(self):
-        for url in ('/my/home', '/my/app/more'):
+        for url in ('/my/home', '/my/app/more', '/my/app/settings'):
             _text, tree = self._get(url)
             self._assert_theme(tree, 'dark')
             self.assertFalse(self._toggles(tree), url)
@@ -55,7 +55,7 @@ class TestAppShellTheme1602(AppShellCommon):
     def test_forced_dark_parameter_falsy(self):
         self.env['ir.config_parameter'].sudo().set_param(
             'bemade_sports_clinic.sc_theme_choice_enabled', '0')
-        _text, tree = self._get('/my/app/more')
+        _text, tree = self._get('/my/app/settings')
         self._assert_theme(tree, 'dark')
         self.assertFalse(self._toggles(tree))
 
@@ -66,7 +66,7 @@ class TestAppShellTheme1602(AppShellCommon):
         self._assert_theme(tree, 'light')
         self.assertTrue(tree.xpath('//form[contains(@class, "o_sc_theme_toggle")]'
                                    '//button[@name="sc_theme"]'))
-        _text, tree = self._get('/my/app/more')
+        _text, tree = self._get('/my/app/settings')  # task 1606: out of « Plus »
         self._assert_theme(tree, 'light')
         self.assertTrue(tree.xpath('//*[@id="sc_appearance"]//button[@name="sc_theme"]'))
 

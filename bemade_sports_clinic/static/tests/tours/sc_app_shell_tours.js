@@ -99,10 +99,10 @@ tours.add("sc_1542_prefs", {
             },
         },
         {
-            content: "Go to « Plus »",
+            content: "Go to « Paramètres » (task 1606: out of « Plus »)",
             trigger: '.o_sc_app[data-sc-theme="light"]',
             run() {
-                window.location.assign("/my/app/more");
+                window.location.assign("/my/app/settings");
             },
             expectUnloadPage: true,
         },
@@ -262,13 +262,18 @@ tours.add("sc_1542_logout_clears_drafts", {
             trigger: '.o_sc_autosave[data-sc-state="draft"]',
             run() {
                 assert(draftKeys().length === 1, "expected one device draft");
-                window.location.assign("/my/app/more");
+                window.location.assign("/my/teams");
             },
             expectUnloadPage: true,
         },
         {
-            content: "Log out from « Plus »",
-            trigger: '#sc_account a[href^="/web/session/logout"]',
+            content: "Open the user menu (task 1606: logout left « Plus »)",
+            trigger: "button[data-sc-user-menu-toggle]",
+            run: "click",
+        },
+        {
+            content: "« Se déconnecter »",
+            trigger: '[data-sc-user-menu-popup]:not([hidden]) a[role="menuitem"][href^="/web/session/logout"]',
             run: "click",
             expectUnloadPage: true,
         },
