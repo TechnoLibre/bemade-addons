@@ -33,7 +33,7 @@ tours.add("sc_1539_players_to_player", {
         },
         {
             content: "Open the first player",
-            trigger: '[data-sc-section="players.list"] a.o_sc_entity_row[data-sc-player-id]',
+            trigger: '[data-sc-section="players.list"] [data-sc-player-id] a.o_sc_link_row_main',
             run: "click",
             expectUnloadPage: true,
         },
@@ -350,7 +350,7 @@ tours.add("sc_event_pencil", {
             content: "Leave the field so it saves",
             trigger: '[data-sc-edit-card="event"] .o_sc_autosave[data-sc-field="name"] input',
             run() {
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {
@@ -399,7 +399,7 @@ tours.add("sc_training_history_refresh", {
             content: "Leave the field so it saves",
             trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] textarea',
             run() {
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {

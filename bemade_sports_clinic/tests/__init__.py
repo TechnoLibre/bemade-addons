@@ -167,3 +167,12 @@ from . import test_app_shell_admin_coach_1598
 from . import test_training_history_1601
 from . import test_note_replace_editor_1582
 from . import test_note_replace_tours_1582
+from . import test_clinic_dossier_inline_1590
+from . import test_clinic_dossier_tours_1590
+from . import test_app_shell_player_country_1594
+from . import test_event_org_team_filter_1597
+from . import test_app_shell_calendar_filters_1591
+from . import test_app_shell_activity_rows_1595
+from . import test_app_shell_roster_rows_1593
+from . import test_app_shell_activity_clock_1592
+from . import test_review_fixes_1014

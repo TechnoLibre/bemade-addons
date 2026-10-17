@@ -42,6 +42,22 @@
  * Input types: textarea | text | email | tel | date | select | segmented |
  * date_na (a date + « N/A » box, value "na" or YYYY-MM-DD) | tags (CSV of the
  * chosen option keys: removable chips + a search box suggesting a few options).
+ *
+ * Task 1594: a sibling save may answer THIS field's fresh choices
+ * (``also[field].options``, e.g. a country change → the new country's
+ * provinces); ``hideEmpty`` hides a select left with no real choice.
+ *
+ * Owner review 2026-10-14:
+ * - a date / date-time / time input saves only once its value is COMPLETE:
+ *   when the user leaves it (blur), presses Enter, or picks a value in the
+ *   picker — never on each « change » while typing (typing the day « 15 »
+ *   used to save « 01 » then « 15 »); a half-typed value is never sent;
+ * - saves are SERIALIZED: while one is in flight, the latest value waits and
+ *   is sent once the first answers, with the fresh write_date / old_value
+ *   (two racing saves made the second one a false 409 and a Postgres
+ *   « could not serialize access » error);
+ * - a 409 whose current value is a value THIS field itself sent is not a
+ *   conflict (no banner): the field adopts it and sends its latest value.
  */
 import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -50,6 +66,11 @@ import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
 import { readDraft, removeDraft, writeDraft } from "@bemade_sports_clinic/js/sc_draft_store";
 
 const DRAFT_DEBOUNCE = 300;
+// Owner review 2026-10-14: inputs whose value is only complete once the
+// user leaves them (or picks in the picker).
+const DATE_LIKE_TYPES = ["date", "datetime-local", "time", "month", "week", "date_na"];
+// The values this field sent lately (a 409 answering one of them is ours).
+const SENT_MEMORY = 5;
 // tags: suggestions shown at once (owner review 2026-10-10: never a long list).
 const TAGS_MAX_MATCHES = 8;
 
@@ -81,6 +102,7 @@ export class ScAutosaveField extends Component {
         placeholder: { type: String, optional: true },
         value: { optional: true },
         options: { type: Array, optional: true }, // [[value, label], ...]
+        hideEmpty: { type: Boolean, optional: true }, // task 1594
         required: { type: Boolean, optional: true },
         disabled: { type: Boolean, optional: true },
         instant: { type: Boolean, optional: true },
@@ -118,6 +140,8 @@ export class ScAutosaveField extends Component {
             // Task 1601: the « updated on … by … » stamp under the field; a
             // save answers the fresh one (``hint``).
             hint: this.props.hint || "",
+            // Task 1594: choices answered by a sibling save (null = props').
+            options: null,
         });
         this.writeDate = this.props.writeDate || "";
         // The field value the server last held (sent as old_value: a record
@@ -125,6 +149,13 @@ export class ScAutosaveField extends Component {
         // while THIS field is unchanged there).
         this.lastSaved = asText(this.props.value);
         this.timer = null;
+        // Owner review 2026-10-14: one save at a time (see the header).
+        this.inFlight = null;
+        this.pendingSave = null;
+        this.sentValues = [];
+        // A date-like input being typed into (keyboard): its « change »
+        // events are not a commit — blur / Enter / a picker pick are.
+        this.typing = false;
         this.onOnline = () => {
             if (this.state.status === "queued") {
                 this.save();
@@ -139,9 +170,14 @@ export class ScAutosaveField extends Component {
                 !also ||
                 !(this.props.field in also) ||
                 detail.model !== this.props.model ||
-                detail.recordId !== this.props.recordId ||
-                ["dirty", "saving"].includes(this.state.status)
+                detail.recordId !== this.props.recordId
             ) {
+                return;
+            }
+            if (Array.isArray(also[this.props.field].options)) {
+                this.state.options = also[this.props.field].options;
+            }
+            if (["dirty", "saving"].includes(this.state.status)) {
                 return;
             }
             const value = asText(also[this.props.field].value);
@@ -167,6 +203,20 @@ export class ScAutosaveField extends Component {
         }
     }
 
+    /** The choices: the latest a sibling save answered, else the props'. */
+    get options() {
+        return this.state.options || this.props.options || [];
+    }
+
+    /** Task 1594: a ``hideEmpty`` select with nothing but the blank choice. */
+    get isHidden() {
+        return (
+            Boolean(this.props.hideEmpty) &&
+            this.type === "select" &&
+            !this.options.some((opt) => norm(opt[0]) !== "")
+        );
+    }
+
     get isServer() {
         return this.props.mode === "server";
     }
@@ -186,6 +236,19 @@ export class ScAutosaveField extends Component {
 
     get type() {
         return this.props.inputType || "text";
+    }
+
+    /** A date / date-time / time input: saved only once complete. */
+    get isDateLike() {
+        return DATE_LIKE_TYPES.includes(this.type);
+    }
+
+    /** The browser holds a half-typed (invalid) date / time. */
+    get isIncomplete() {
+        const el = this.inputRef.el;
+        return Boolean(
+            this.isDateLike && el && el.validity && el.validity.badInput
+        );
     }
 
     get isNa() {
@@ -301,7 +364,12 @@ export class ScAutosaveField extends Component {
 
     /** blur / change: the user left the field (or picked a value). */
     commit() {
+        this.typing = false;
         if (this.state.status !== "dirty") {
+            return;
+        }
+        if (this.isIncomplete) {
+            // A half-typed date is never sent (it would read as a clear).
             return;
         }
         clearTimeout(this.timer);
@@ -345,7 +413,30 @@ export class ScAutosaveField extends Component {
 
     onChange() {
         this.state.status = "dirty";
+        if (this.isDateLike && this.typing) {
+            // Typed, not picked: the value may not be the final one yet
+            // (« 01 » on the way to « 15 ») — saved on blur / Enter.
+            return;
+        }
         this.commit();
+    }
+
+    /** Date-like inputs: Enter commits, any other key means « typing ». */
+    onDateKeydown(ev) {
+        if (!this.isDateLike) {
+            return;
+        }
+        if (ev.key === "Enter") {
+            ev.preventDefault();
+            this.commit();
+        } else if (ev.key !== "Tab" && ev.key !== "Shift") {
+            this.typing = true;
+        }
+    }
+
+    /** A pointer on the input (opening the picker): the next change is a pick. */
+    onDatePointer() {
+        this.typing = false;
     }
 
     onNaToggle(ev) {
@@ -372,7 +463,7 @@ export class ScAutosaveField extends Component {
 
     get chosenOptions() {
         const keys = this.checkedKeys;
-        return (this.props.options || []).filter((opt) => keys.includes(String(opt[0])));
+        return this.options.filter((opt) => keys.includes(String(opt[0])));
     }
 
     get tagMatches() {
@@ -381,7 +472,7 @@ export class ScAutosaveField extends Component {
             return [];
         }
         const words = query.split(/\s+/);
-        return (this.props.options || [])
+        return this.options
             .filter((opt) => !this.isChecked(opt[0]))
             .filter((opt) => words.every((word) => fold(opt[1]).includes(word)))
             .slice(0, TAGS_MAX_MATCHES);
@@ -469,9 +560,65 @@ export class ScAutosaveField extends Component {
         this.state.status = "queued";
     }
 
-    /** @returns {Promise<boolean>} saved */
-    async save({ confirm = false } = {}) {
+    /**
+     * Owner review 2026-10-14: ONE save at a time. A save asked while
+     * another is in flight waits for it, then sends the value the field
+     * holds THEN (the latest), over the fresh write_date / old_value.
+     *
+     * @returns {Promise<boolean>} saved
+     */
+    save(options = {}) {
         clearTimeout(this.timer);
+        if (this.inFlight) {
+            // Sent once the current save answers (the latest asked wins).
+            this.pendingSave = { options };
+            return this.inFlight;
+        }
+        this.inFlight = this.runSaves(options).finally(() => {
+            this.inFlight = null;
+        });
+        return this.inFlight;
+    }
+
+    /** The save loop: one request at a time, then the waiting one, if any. */
+    async runSaves(options) {
+        let ok = false;
+        let next = options;
+        // A guard: a save never loops on 409s answered by our own values.
+        for (let round = 0; next && round < SENT_MEMORY; round++) {
+            this.pendingSave = null;
+            const sent = this.state.value;
+            ok = await this.sendSave(next);
+            const pending = this.pendingSave;
+            next = null;
+            if (!pending) {
+                break;
+            }
+            this.pendingSave = null;
+            if (["conflict", "confirm", "queued"].includes(this.state.status)) {
+                // The user decides first (banner) / offline: nothing more now.
+                break;
+            }
+            if (!pending.options.confirm && this.state.value === this.lastSaved && !this.isReplace) {
+                // The server already holds the latest value.
+                this.state.status = "saved";
+                ok = true;
+                break;
+            }
+            if (this.state.status === "error" && this.state.value === sent) {
+                break;
+            }
+            next = pending.options;
+        }
+        return ok;
+    }
+
+    rememberSent(value) {
+        this.sentValues = [...this.sentValues.filter((v) => v !== value), value].slice(-SENT_MEMORY);
+    }
+
+    /** @returns {Promise<boolean>} saved */
+    async sendSave({ confirm = false } = {}) {
         this.state.identity = null;
         if (navigator.onLine === false) {
             this.queue();
@@ -479,13 +626,15 @@ export class ScAutosaveField extends Component {
         }
         this.state.status = "saving";
         this.state.error = "";
+        const sent = this.state.value;
+        this.rememberSent(norm(sent));
         try {
             const result = await scFetch(this.saveUrl, {
                 method: "POST",
                 data: Object.assign(
                     {
                         field: this.props.field,
-                        value: this.state.value,
+                        value: sent,
                         write_date: this.writeDate,
                         old_value: this.lastSaved,
                     },
@@ -494,15 +643,22 @@ export class ScAutosaveField extends Component {
                 toast: false,
             });
             this.writeDate = result.write_date;
-            if (result.value !== undefined && this.type !== "textarea") {
+            // The value typed meanwhile (a save waiting) is never overwritten.
+            const changedSince = this.state.value !== sent;
+            if (result.value !== undefined && this.type !== "textarea" && !changedSince) {
                 this.state.value = asText(result.value);
             }
-            this.lastSaved = result.value !== undefined ? asText(result.value) : this.state.value;
+            this.lastSaved = result.value !== undefined ? asText(result.value) : sent;
+            if (result.value !== undefined) {
+                this.rememberSent(norm(result.value));
+            }
             if (this.isReplace) {
                 // Task 1582: the saved text becomes the current one; the
                 // editor is empty again for the next replacement.
                 this.state.current = this.lastSaved;
-                this.state.value = "";
+                if (!changedSince) {
+                    this.state.value = "";
+                }
             }
             this.state.message = result.message || "";
             if (result.hint !== undefined) {
@@ -511,7 +667,7 @@ export class ScAutosaveField extends Component {
             removeDraft(this.key);
             const now = new Date();
             this.state.savedAt = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-            this.state.status = "saved";
+            this.state.status = this.pendingSave ? "saving" : changedSince ? "dirty" : "saved";
             this.state.conflict = null;
             // Lets the page reflect a save elsewhere (e.g. the player's
             // status pill, owner review 2026-10-10).
@@ -532,6 +688,19 @@ export class ScAutosaveField extends Component {
                 // birth is an explicit step — nothing was saved yet.
                 this.state.identity = error.payload;
                 this.state.status = "confirm";
+            } else if (error.status === 409 && error.payload && this.isOwnConflict(error.payload)) {
+                // Owner review 2026-10-14: the newer value is one THIS field
+                // sent (an earlier save of ours) — not someone else's change.
+                this.writeDate = error.payload.current_write_date;
+                this.lastSaved = asText(error.payload.current_value);
+                if (norm(this.state.value) === norm(this.lastSaved)) {
+                    this.state.status = this.pendingSave ? "saving" : "saved";
+                    return true;
+                }
+                // Send the latest value over the fresh write_date (runSaves).
+                this.pendingSave = this.pendingSave || { options: {} };
+                this.state.status = "saving";
+                return false;
             } else if (error.status === 409 && error.payload) {
                 this.state.conflict = error.payload;
                 this.state.status = "conflict";
@@ -543,6 +712,11 @@ export class ScAutosaveField extends Component {
             }
             return false;
         }
+    }
+
+    /** A 409 answering a value this field itself sent lately. */
+    isOwnConflict(payload) {
+        return this.sentValues.includes(norm(payload.current_value));
     }
 
     /** Task 1600: « Confirm » on the identity banner — the same save, confirmed. */

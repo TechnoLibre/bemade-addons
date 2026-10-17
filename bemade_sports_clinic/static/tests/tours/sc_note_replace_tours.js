@@ -49,7 +49,7 @@ tours.add("sc_1582_note_replace", {
             run() {
                 this.anchor.value = "";
                 this.anchor.dispatchEvent(new Event("input", { bubbles: true }));
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {
@@ -80,7 +80,7 @@ tours.add("sc_1582_note_replace", {
             content: "Leave the field so it saves",
             trigger: `${FIELD} textarea[data-sc-replace="new"]`,
             run() {
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {

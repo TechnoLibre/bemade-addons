@@ -3,6 +3,9 @@
 // rail). Everything is scoped under .o_sc_app — see sc_tokens.scss.
 
 $sc-laptop: 992px;
+// Picker icons (owner review 2026-10-14), used as CSS masks: a calendar and a clock.
+$sc-icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2zm12 8H5v9h14v-9zM5 6v2h14V6H5zm2 6h4v4H7v-4z'/%3E%3C/svg%3E");
+$sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm1 3v4.6l3.2 3.2-1.4 1.4L11 12.4V7h2z'/%3E%3C/svg%3E");
 
 .o_sc_app {
     min-height: 100vh;
@@ -548,6 +551,96 @@ $sc-laptop: 992px;
         }
     }
 
+    // Task 1595 — link row (sc_link_row): the title is the main link, its
+    // ::after stretched over the row so a tap anywhere opens it; every
+    // other interactive element is layered above it (own tap target).
+    .o_sc_link_row {
+        position: relative;
+
+        .o_sc_link_row_main {
+            color: inherit;
+
+            &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+                border-radius: inherit;
+                cursor: pointer;
+            }
+
+            // The focus ring outlines the whole row, not the title text.
+            &:focus-visible {
+                outline: none;
+
+                &::after {
+                    outline: 2px solid var(--sc-focus);
+                    outline-offset: -2px;
+                }
+            }
+        }
+
+        a:not(.o_sc_link_row_main),
+        button,
+        summary,
+        input,
+        select,
+        textarea,
+        label {
+            position: relative;
+            z-index: 1;
+        }
+    }
+
+    // Secondary links line (sc_row_links): related records, team links…
+    .o_sc_row_links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 12px;
+        margin-top: 4px;
+        font-size: var(--sc-text-sm);
+    }
+
+    .o_sc_row_link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 24px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: var(--sc-fg);
+        font-weight: 600;
+
+        .o_sc_icon {
+            flex: none;
+            width: 14px;
+            height: 14px;
+            color: var(--sc-fg-3);
+        }
+    }
+
+    a.o_sc_row_link {
+        text-decoration: underline;
+        text-decoration-color: var(--sc-line);
+        text-underline-offset: 3px;
+
+        &:hover {
+            text-decoration-color: currentColor;
+        }
+    }
+
+    .o_sc_row_link_plain {
+        color: var(--sc-fg-2);
+        font-weight: 400;
+    }
+
+    // The activity detail's « Related Record » value (no row above it).
+    .o_sc_kv dd.o_sc_row_links {
+        margin-top: 0;
+        font-size: inherit;
+    }
+
     .o_sc_row_text {
         display: flex;
         flex-direction: column;
@@ -570,6 +663,19 @@ $sc-laptop: 992px;
         font-weight: 600;
         line-height: 1.25;
         overflow-wrap: anywhere;
+    }
+
+    // Owner review 2026-10-14: the related record's name inside an activity
+    // title is its own link (above the row's stretched main link).
+    .o_sc_row_title_link {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: var(--sc-secondary);
+        text-underline-offset: 3px;
+
+        &:hover {
+            color: var(--sc-secondary);
+        }
     }
 
     .o_sc_row_subtitle {
@@ -606,6 +712,83 @@ $sc-laptop: 992px;
     .o_sc_injury_count {
         border-color: var(--sc-line);
         color: var(--sc-fg-2);
+    }
+
+    // Task 1593 — player row (sc_player_row): the legacy card's lines and
+    // the « Details » control under the status line; the expanded detail
+    // spans the whole row group, under the row.
+    .o_sc_row_line {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        min-width: 0;
+        margin-top: 4px;
+        font-size: var(--sc-text-sm);
+        color: var(--sc-fg-2);
+
+        > .fa {
+            flex: none;
+            width: 14px;
+            text-align: center;
+            color: var(--sc-fg-3);
+        }
+    }
+
+    // One line on every width: the full text is in the expanded detail.
+    .o_sc_row_training .o_sc_row_line_text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_row_line_value {
+        color: var(--sc-fg);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .o_sc_row_expand {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        margin-top: 2px;
+        padding: 0 4px 0 0;
+        border: 0;
+        background: none;
+        color: var(--sc-fg);
+        font-size: var(--sc-text-sm);
+        font-weight: 600;
+        cursor: pointer;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            color: var(--sc-fg-3);
+            transition: transform .15s ease;
+        }
+
+        &[aria-expanded="true"] .o_sc_icon {
+            transform: rotate(180deg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--sc-focus);
+            outline-offset: 2px;
+            border-radius: var(--sc-radius-sm, 4px);
+        }
+    }
+
+    .o_sc_row_detail {
+        border-top: 1px solid var(--sc-line);
+        padding: var(--sc-space-2) var(--sc-space-3) var(--sc-space-3);
+        min-width: 0;
+
+        &[hidden] {
+            display: none;
+        }
     }
 
     // Expanded recent-changes detail: « Active injuries » / « Resolved
@@ -979,4 +1162,77 @@ $sc-laptop: 992px;
             transition: none !important;
         }
     }
+
+    // Owner review 2026-10-14: the date / date-time / time picker icon is
+    // visible in dark mode — the brand purple (--sc-secondary: light mauve on
+    // dark, mauve on light) drawn through a mask, app-wide. Firefox paints
+    // its own icon from the colour scheme (dark = light icon).
+    color-scheme: dark;
+
+    &[data-sc-theme="light"] {
+        color-scheme: light;
+    }
+
+    input[type="date"],
+    input[type="datetime-local"],
+    input[type="month"],
+    input[type="week"],
+    input[type="time"] {
+        &::-webkit-calendar-picker-indicator {
+            width: 18px;
+            height: 18px;
+            padding: 2px;
+            cursor: pointer;
+            opacity: 1;
+            background: var(--sc-secondary);
+            -webkit-mask: $sc-icon-calendar center / 18px 18px no-repeat;
+            mask: $sc-icon-calendar center / 18px 18px no-repeat;
+        }
+
+        &:hover::-webkit-calendar-picker-indicator,
+        &:focus::-webkit-calendar-picker-indicator {
+            background: var(--sc-accent);
+        }
+    }
+
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        -webkit-mask-image: $sc-icon-clock;
+        mask-image: $sc-icon-clock;
+    }
+}
+
+// Owner review 2026-10-14 (#1590): the patient typeahead (portal_patient_combo,
+// Bootstrap list-group) rendered white-on-white in the dark app, and inside a
+// sheet its absolutely-positioned list was clipped by the sheet's scroll box.
+// Theme it with the app tokens and let the list flow inside sheets.
+.o_sc_app .o_sc_patient_combo {
+    .o_sc_combo_input,
+    .form-control {
+        background-color: var(--sc-surface-2);
+        color: var(--sc-fg);
+        border-color: var(--sc-line);
+        &::placeholder {
+            color: var(--sc-fg-3);
+        }
+    }
+    .o_sc_combo_list,
+    .list-group-item {
+        background-color: var(--sc-surface);
+        color: var(--sc-fg);
+        border-color: var(--sc-line);
+    }
+    .list-group-item:hover,
+    .list-group-item.active,
+    .o_sc_combo_item[aria-selected="true"] {
+        background-color: var(--sc-mauve);
+        color: #fff;
+    }
+    .o_sc_combo_group {
+        background-color: var(--sc-surface-2);
+        color: var(--sc-fg-2);
+    }
+}
+.o_sc_app .o_sc_sheet .o_sc_patient_combo .o_sc_combo_list {
+    position: static;
+    max-height: 40vh;
 }

@@ -119,6 +119,25 @@ SC_STATUS_KEYS = ('yes:yes', 'no:yes', 'no:no_contact', 'no:no')
 SC_STAGE_TONES = {'no_play': 'red', 'practice_ok': 'yellow', 'healthy': 'green'}
 
 
+def sc_state_options(env, country):
+    """Task 1594: the province choices of ``country`` — Canada's while the
+    player has no country (the clinic's players) — as [('', ''), (id, name)…].
+    A country without provinces offers the blank choice only."""
+    if not country:
+        country = env['res.country'].search([('code', '=', 'CA')], limit=1)
+    states = env['res.country.state'].search(
+        [('country_id', '=', country.id)], order='name') if country else env['res.country.state']
+    return [('', '')] + [(state.id, state.name) for state in states]
+
+
+def sc_country_options(env):
+    """Task 1594: the country choices — blank, Canada, then every other
+    country by name."""
+    countries = env['res.country'].search([], order='name')
+    canada = countries.filtered(lambda country: country.code == 'CA')
+    return [('', '')] + [(country.id, country.name) for country in canada + (countries - canada)]
+
+
 def sc_contact_href(kind, value):
     """Task 1585: the tap-to-call / tap-to-email href of a shown phone or
     email (``kind`` = ``'tel'`` / ``'mailto'``), or None when there is
@@ -166,6 +185,20 @@ def _selection_value(record, field, value):
     if value not in keys:
         raise ValidationError(_("Invalid value."))
     return value
+
+
+def _record_value(model, value):
+    """The record of ``model`` a select posted (empty = an empty recordset);
+    an unknown or malformed id is refused as an invalid value."""
+    if value in ('', None, False):
+        return model
+    try:
+        record = model.browse(int(value)).exists()
+    except (TypeError, ValueError):
+        record = None
+    if not record:
+        raise ValidationError(_("Invalid value."))
+    return record
 
 
 def _date_value(value):
@@ -485,14 +518,31 @@ def _patient_write_field(ctrl, patient, field, value):
                     'Date of Birth must not be in the future and not be more than 120 years ago.'))
         patient.write({field: dob})
         return extra
-    if field == 'last_consultation_date':
+    if field in ('last_consultation_date', 'return_date'):
         patient.write({field: _date_value(value)})
         return extra
+    if field == 'country_id':
+        # Task 1594: a province of another country goes with the change; the
+        # open card gets the new country's province choices in place.
+        country = _record_value(patient.env['res.country'], value)
+        vals = {'country_id': country.id or False}
+        if patient.state_id and patient.state_id.country_id != country:
+            vals['state_id'] = False
+        patient.write(vals)
+        extra['also_fields'] = ['state_id']
+        extra['also_options'] = {'state_id': sc_state_options(patient.env, country)}
+        return extra
     if field == 'state_id':
-        try:
-            patient.write({field: int(value) if value else False})
-        except (TypeError, ValueError):
-            raise ValidationError(_("Invalid value.")) from None
+        # Task 1594: the province must belong to the player's country; picked
+        # while no country is set, it sets its country too.
+        state = _record_value(patient.env['res.country.state'], value)
+        vals = {'state_id': state.id or False}
+        if state and patient.country_id and state.country_id != patient.country_id:
+            raise ValidationError(_("This province does not belong to the player's country."))
+        if state and not patient.country_id:
+            vals['country_id'] = state.country_id.id
+            extra['also_fields'] = ['country_id']
+        patient.write(vals)
         return extra
     patient.write({field: _clean_text(value)})
     return extra
@@ -585,7 +635,8 @@ def _injury_write(ctrl, injury, field, value):
         injury.write({field: _date_value(value)})
         return {}
     # Note fields: raw text; an essentially-empty value is a genuine clear
-    # (the note-history hook logs nothing for it, task 1404).
+    # (the note-history hook logs it as an empty « Cleared » row, owner
+    # review 2026-10-14).
     injury.write({field: value if (value or '').strip() else False})
     return {}
 
@@ -680,10 +731,15 @@ SAVE_REGISTRY = {
             'email': _STAFF_ROLES, 'phone': _STAFF_ROLES,
             'street': _STAFF_ROLES, 'street2': _STAFF_ROLES,
             'city': _STAFF_ROLES, 'zip': _STAFF_ROLES, 'state_id': _STAFF_ROLES,
+            # Task 1594: the legacy form took the country from any staff.
+            'country_id': _STAFF_ROLES,
             # Therapists only (a coach posting them gets 403).
             'date_of_birth': _TP_ROLES, 'allergies': _TP_ROLES,
             'team_info_notes': _TP_ROLES, 'training_recommendation': _TP_ROLES,
             'last_consultation_date': _TP_ROLES,
+            # Task 1594: the actual return date — never a coach's (the legacy
+            # portal had no coach path to it; the backend form is clinic staff).
+            'return_date': _TP_ROLES,
             # Virtual: « match:practice », saved as a pair.
             'sc_status': _TP_ROLES,
             # Virtual: CSV of the assignable teams ticked (owner review
@@ -894,6 +950,9 @@ class AppShellMixin:
             'sc_langs': self._sc_lang_options(),
             'sc_current_url': path + ('?' + query if query else ''),
             'sc_search_url': '/my/players' if any(t['key'] == 'players' for t in rail) else False,
+            # Task 1592: the app bar's activity clock (its overdue badge is
+            # fetched by sc_live_count.js, not computed here).
+            'sc_activity_clock': sc_app_roles.can('app.activity_clock', roles, is_system=is_system),
             'sc_user_initials': initials or '?',
             # Task 1542: the device draft store is namespaced by db + uid.
             'sc_db': request.db or '',
@@ -915,6 +974,12 @@ class AppShellMixin:
             # Task 1589: an activity row's Done / Reschedule / Reassign /
             # Cancel buttons follow the one act rule (the routes re-check).
             'sc_activity_can_act': self._activity_act_access,
+            # Task 1595: an activity row's related-record links (player /
+            # team / event, the injury it is about), access-gated.
+            'sc_activity_related': self._sc_activity_related,
+            # Owner review 2026-10-14: the related record's name in an
+            # activity title is a link too.
+            'sc_activity_title_parts': self._sc_activity_title_parts,
             'sc_draft_props': self._sc_draft_props,
             # Task 1583: the pending session notification (set by a POST
             # round-trip, e.g. « Add to Team ») pops on whichever shell page
@@ -1098,6 +1163,57 @@ class AppShellMixin:
             self._sc_field_props(note, 'injury_id', env._("Injury"), 'select', options=options),
         ]
 
+    # ------------------------------------------------------------------
+    # Task 1590 — the inline injury cards, shared by the player page's
+    # Injuries tab and the clinic dossier (template sc_injury_card).
+    # ------------------------------------------------------------------
+    SC_INJURY_TONES = {'unverified': 'yellow', 'active': 'red', 'resolved': 'green'}
+
+    @staticmethod
+    def _sc_injury_tp_view(is_tp):
+        """A therapist who holds a therapist app role sees the TP fields."""
+        return bool(is_tp and request.env.user._sc_app_roles() & sc_app_roles.TP)
+
+    @staticmethod
+    def _sc_injury_card_options():
+        """The option lists an injury card's autosave fields need."""
+        env = request.env
+        Injury = env['sports.patient.injury']
+        # Labels first, keys zipped in (babel's extractor, see above).
+        visibility_labels = (env._("Coaches"), env._("Hidden"))
+        return {
+            'sc_injury_stage_options': list(Injury._fields['stage']._description_selection(env)),
+            'sc_visibility_options': list(zip(('0', '1'), visibility_labels)),
+            'sc_consent_options': [('', '')] + list(
+                Injury._fields['parental_consent']._description_selection(env)),
+        }
+
+    def _sc_injury_card_row(self, injury, ctx_qs, is_tp, tp_view, opened_id=0, created_id=0,
+                            clocks=None):
+        """One row of an injury card list: ?injury=<id> opens it read-only,
+        ?created=<id> (its creator only) opens it in edit mode with the
+        « Undo ». Task 1592: ``clocks`` (``_sc_activity_clocks`` of the
+        whole card list, ONE query) gives the card its activity clock."""
+        env = request.env
+        stages = dict(injury._fields['stage']._description_selection(env))
+        when = (format_date(env, injury.injury_date) if injury.injury_date
+                else env._("Date unknown"))
+        return {
+            'id': injury.id,
+            'title': injury.diagnosis or env._("Injury"),
+            'subtitle': ' · '.join(part for part in (when, stages.get(injury.stage, '')) if part),
+            'dot': self.SC_INJURY_TONES.get(injury.stage, 'green'),
+            'chip': stages.get(injury.stage, ''),
+            'hidden': bool(injury.hidden_from_coaches),
+            'url': '/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs),
+            'injury': injury,
+            'open': injury.id in (opened_id, created_id),
+            'created': injury.id == created_id and injury.create_uid == env.user,
+            'consent_todo': tp_view and not injury.parental_consent,
+            'diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
+            'clock': (clocks or {}).get(injury.id),
+        }
+
     @staticmethod
     def _sc_draft_props(draft_key, name, label, input_type='text', value='', **extra):
         """JSON props of a DRAFT-mode sc_autosave_field: a real form field
@@ -1201,7 +1317,9 @@ class AppShellMixin:
         return count == 1 or (count == 0 and lang.startswith('fr'))
 
     @staticmethod
-    def _sc_team_row(team, with_org=False):
+    def _sc_team_row(team, with_org=False, clocks=None):
+        """Task 1592: ``clocks`` (``_sc_activity_clocks`` of the whole
+        list, ONE query) gives the row its activity clock chip."""
         no_play = team.stage_no_play_count or 0
         practice_ok = team.stage_practice_ok_count or 0
         if no_play:
@@ -1225,7 +1343,14 @@ class AppShellMixin:
             'subtitle': ' · '.join(part for part in (org, counts) if part),
             'status': status,
             'url': '/my/team?team_id=%s' % team.id,
+            'clock': (clocks or {}).get(team.id),
         }
+
+    def _sc_team_clocks(self, teams):
+        """Task 1592: the activity clocks of a team list (one query), each
+        opening the team page's Activities tab."""
+        return self._sc_activity_clocks(
+            teams, lambda t: '/my/team?team_id=%s&tab=activities' % t.id)
 
 
 class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
@@ -1263,9 +1388,11 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 teams = teams.search(
                     [('staff_ids.user_ids', '=', user.id)], order=order)
             players = teams.patient_ids
+            clocks = self._sc_team_clocks(teams[:HOME_TEAMS_LIMIT])
             values.update({
                 'sc_teams_count': len(teams),
-                'sc_team_rows': [self._sc_team_row(team) for team in teams[:HOME_TEAMS_LIMIT]],
+                'sc_team_rows': [self._sc_team_row(team, clocks=clocks)
+                                 for team in teams[:HOME_TEAMS_LIMIT]],
                 'sc_stat_injured': len(players.filtered(lambda p: p.stage == 'no_play')),
                 'sc_stat_returning': len(players.filtered(lambda p: p.stage == 'practice_ok')),
                 'sc_stat_available': len(players.filtered(lambda p: p.stage == 'healthy')),
@@ -1525,10 +1652,15 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if spec.get('sudo_write') and not spec['permission'](self, record):
                 raise AccessError(_("You cannot edit this record."))
             current = fields.Datetime.to_string(record.write_date)
-            if current != write_date and not self._sc_field_unchanged(record, field, old_value):
+            # Owner review 2026-10-14: the stale-check and the 409 payload read
+            # the field through sudo — the caller's role allowlist and the
+            # spec's check passed above, and a group-restricted field (the
+            # injury's internal notes) is not readable by a portal therapist
+            # through the ORM after a sibling save changed the write_date.
+            if current != write_date and not self._sc_field_unchanged(record.sudo(), field, old_value):
                 return self._sc_save_json({
                     'conflict': True,
-                    'current_value': self._sc_save_value(record, field),
+                    'current_value': self._sc_save_value(record.sudo(), field),
                     'current_write_date': current,
                     'by': record.sudo().write_uid.name or '',
                 }, 409)
@@ -1564,11 +1696,17 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # resolution date with « Resolved »), so the page updates them
             # in place: {field: {value, display}}.
             also = extra.pop('also_fields', None) or ()
+            # Task 1594: and their fresh choices when they changed (a country
+            # save answers the province choices of the new country).
+            also_options = extra.pop('also_options', None) or {}
             if also:
                 payload['also'] = {name: {
                     'value': self._sc_save_value(record, name),
                     'display': self._sc_save_display(record, name),
                 } for name in also}
+                for name, options in also_options.items():
+                    if name in payload['also']:
+                        payload['also'][name]['options'] = AppShellMixin._sc_options(options)
             hint = spec['hint'](record, field) if spec.get('hint') else None
             if hint is not None:
                 payload['hint'] = hint

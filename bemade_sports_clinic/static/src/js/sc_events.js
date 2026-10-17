@@ -8,7 +8,11 @@
  *   only one value per repeated name to Odoo;
  * - « Nouveau lieu »: the venue sheet's form posts through scFetch to the
  *   CSRF-checked /my/venue/create (JSON answer); the created venue is added
- *   to the venue select and selected, the sheet closes.
+ *   to the venue select and selected, the sheet closes;
+ * - task 1597: the Organization select narrows the team checkboxes to that
+ *   organization's teams (``data-sc-org-id``) and unticks the ones it hides
+ *   — the model refuses the teams of two organizations; « All
+ *   organizations » shows every team again (ticks kept).
  */
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
@@ -23,6 +27,32 @@ function syncCsv(form) {
         hidden.value = [...form.querySelectorAll(`input[name="${name}"]:checked`)]
             .map((box) => box.value)
             .join(",");
+    }
+}
+
+function filterTeams(form) {
+    const select = form.querySelector("select[data-sc-org-select]");
+    if (!select) {
+        return;
+    }
+    const orgId = select.value;
+    for (const box of form.querySelectorAll('input[name="sc_team"]')) {
+        const label = box.closest("label");
+        const visible = !orgId || (label && label.dataset.scOrgId === orgId);
+        if (label) {
+            label.hidden = !visible;
+        }
+        if (!visible) {
+            box.checked = false;
+        }
+    }
+}
+
+function initEventForms() {
+    for (const form of document.querySelectorAll("form[data-sc-event-form]")) {
+        if (inShell(form)) {
+            filterTeams(form);
+        }
     }
 }
 
@@ -85,3 +115,20 @@ document.addEventListener("submit", (ev) => {
         createVenue(form);
     }
 });
+
+document.addEventListener("change", (ev) => {
+    const select = ev.target;
+    if (!(select instanceof HTMLSelectElement) || !select.matches("[data-sc-org-select]")) {
+        return;
+    }
+    const form = select.closest("form[data-sc-event-form]");
+    if (form && inShell(form)) {
+        filterTeams(form);
+    }
+});
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEventForms);
+} else {
+    initEventForms();
+}

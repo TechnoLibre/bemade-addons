@@ -153,7 +153,9 @@ class TestAppShellSwitch1538(AppShellCommon):
         text, tree = self._get('/my/teams')
         self.assertIsNotNone(self._shell(tree))
         self.assertIn('PC Team A', text)
-        rows = tree.xpath('//a[contains(@class, "o_sc_entity_row")][@data-sc-team-id]')
+        # Task 1592 (deliberate update): a team row is a link row now (its
+        # activity clock is its own link); the team id is on the main link.
+        rows = tree.xpath('//*[contains(@class, "o_sc_entity_row")]//a[@data-sc-team-id]')
         self.assertTrue(rows)
         # Sticky sort (task 1401) survives in the shell.
         self.assertTrue(tree.xpath('//*[contains(@class, "o_sc_sort")]'))
