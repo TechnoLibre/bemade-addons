@@ -1,5 +1,5 @@
-// A team member opens a mail account form: write-back is locked on the
-// shared account (only a Conversations manager can change it) but editable
+// A team member opens a mail account form: write-back and the owner are
+// locked on the shared account (only a Conversations manager can change them) but editable
 // on their own personal account.
 export default [
   {
@@ -32,6 +32,15 @@ export default [
       "L'option d'écriture dans la vraie boîte est verrouillée : seul un gestionnaire Conversations peut l'activer sur un compte partagé.",
     selector:
       ".o_form_view .o_field_widget[name='mailbox_writable'].o_readonly_modifier",
+    action: "assert",
+  },
+  {
+    id: "owner_locked",
+    title: "Le propriétaire du compte est verrouillé",
+    narration:
+      "Le propriétaire du compte est lui aussi verrouillé : seul un gestionnaire Conversations peut attribuer un compte partagé à quelqu'un, sans quoi un membre pourrait s'en emparer et supprimer des courriels.",
+    selector:
+      ".o_form_view .o_field_widget[name='user_id'].o_readonly_modifier",
     action: "assert",
   },
   {
