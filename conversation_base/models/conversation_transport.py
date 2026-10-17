@@ -156,7 +156,8 @@ class ConversationTransport(models.Model):
 
         A record that is already in that state is left alone, so an
         unrelated edit by a non-manager still works; switching write-back
-        off is not restricted either.
+        off is not restricted either. Setting an owner on a shared account
+        with write-back on is refused too (ownership takeover).
         """
         if self.env.su or self.env.user.has_group(
             "conversation_base.group_conversation_manager"
@@ -175,6 +176,22 @@ class ConversationTransport(models.Model):
                 writable = vals.get("mailbox_writable", transport.mailbox_writable)
                 was_shared_writable = (
                     transport.mailbox_writable and not transport.user_id
+                )
+            if (
+                owner
+                and not transport.user_id
+                and (transport.mailbox_writable or writable)
+            ):
+                # Taking ownership of a shared account whose write-back is
+                # on (or being switched on) would turn it into the taker's
+                # personal account, with the delete rights that implies.
+                raise AccessError(
+                    self.env._(
+                        "Only a Conversations manager can assign an owner "
+                        "to a shared mail account with mailbox actions "
+                        "enabled (%(transport)s).",
+                        transport=transport.display_name or transport.name or "",
+                    )
                 )
             if writable and not owner and not was_shared_writable:
                 raise AccessError(
@@ -452,7 +469,7 @@ class ConversationTransport(models.Model):
             raise AccessError(
                 self.env._(
                     "You are not allowed to delete mail in the shared mail "
-                    "account %(transport)s. Ask a Conversations manager for "
+                    "account %(transport)s. Ask an administrator for "
                     "the 'Delete shared mail' permission.",
                     transport=self.display_name,
                 )

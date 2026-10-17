@@ -233,3 +233,41 @@ class TestTransportPermissions(TransactionCase):
         shared.write({"login": "desk@example.com", "mailbox_writable": True})
         shared.write({"mailbox_writable": False})
         self.assertFalse(self.shared.mailbox_writable)
+
+    def test_non_manager_cannot_take_ownership_of_writable_shared(self):
+        # Ownership takeover: becoming the owner would make the shared
+        # account personal and hand the member delete rights.
+        with self.assertRaises(AccessError):
+            self.shared.with_user(self.member).write({"user_id": self.member.id})
+        self.assertFalse(self.shared.user_id)
+        self.assertTrue(self.shared.mailbox_writable)
+        with self.assertRaises(AccessError):
+            self._rpc(self.member, "trash_item", self.shared)
+        self.assertFalse(self.calls)
+
+    def test_non_manager_cannot_take_ownership_and_enable_in_one_write(self):
+        shared = self.env["conversation.transport"].create({"name": "Shared Off 2"})
+        with self.assertRaises(AccessError):
+            shared.with_user(self.member).write(
+                {"user_id": self.member.id, "mailbox_writable": True}
+            )
+        self.assertFalse(shared.user_id)
+        self.assertFalse(shared.mailbox_writable)
+
+    def test_non_manager_can_still_claim_a_non_writable_shared(self):
+        shared = self.env["conversation.transport"].create({"name": "Shared Off 3"})
+        shared.with_user(self.member).write({"user_id": self.member.id})
+        self.assertEqual(shared.user_id, self.member)
+
+    def test_manager_can_assign_owner_to_writable_shared(self):
+        shared = self.env["conversation.transport"].create(
+            {"name": "Shared On", "mailbox_writable": True}
+        )
+        shared.with_user(self.manager).write({"user_id": self.member.id})
+        self.assertEqual(shared.user_id, self.member)
+
+    def test_non_manager_can_reassign_a_personal_transport(self):
+        # Only SHARED accounts are protected from takeover; personal
+        # accounts keep their owner-decides behaviour.
+        self.personal.with_user(self.member).write({"user_id": self.deleter.id})
+        self.assertEqual(self.personal.user_id, self.deleter)

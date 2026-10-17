@@ -23,7 +23,18 @@
                         <group name="identity">
                             <field name="provider" />
                             <field name="login" />
-                            <field name="user_id" />
+                            <!-- Server-side check is authoritative: only a
+                                 Conversations manager can set or change the
+                                 owner of an account with write-back on. -->
+                            <field
+                name="user_id"
+                groups="conversation_base.group_conversation_manager"
+              />
+                            <field
+                name="user_id"
+                readonly="id and mailbox_writable"
+                groups="!conversation_base.group_conversation_manager"
+              />
                             <field name="active" />
                         </group>
                         <group name="capabilities" string="Capabilities">

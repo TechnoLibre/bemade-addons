@@ -76,7 +76,9 @@ model. Those are delivered by later epics.
   stay open to every user who can see the account; `trash_item` needs the
   "Delete shared mail" group, and only a Conversations manager can switch
   `mailbox_writable` on (create, write, or clearing the owner of a writable
-  personal account). Settings administrators hold both groups by implication.
+  personal account). Likewise only a manager can set or change the owner of
+  a shared account whose write-back is on (a member could otherwise take it
+  over as a personal account and gain delete rights). Settings administrators hold both groups by implication.
   Personal accounts stay under their owner's control. Delete always moves to
   the mailbox Trash.
 
