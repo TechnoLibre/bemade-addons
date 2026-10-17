@@ -79,7 +79,7 @@ tours.add("sc_1590_clinic_injury_edit", {
             content: "Leave the field so it saves",
             trigger: `${NEW_CARD} ${NOTE} textarea[data-sc-replace="new"]`,
             run() {
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {

@@ -130,7 +130,7 @@ tours.add("sc_1581_notes_fresh", {
             content: "Leave the field so it saves",
             trigger: '.o_sc_autosave[data-sc-field="external_notes"] textarea',
             run() {
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {

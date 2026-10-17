@@ -71,7 +71,7 @@ tours.add("sc_1014_date_complete", {
                 typeDate(input, "1", "2026-11-01");
                 typeDate(input, "5", "2026-11-15");
                 assert(window.__scSaves === 0, `saves while typing: ${window.__scSaves}`);
-                input.blur();
+                input.blur(); input.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {
@@ -98,11 +98,11 @@ tours.add("sc_1014_serialized_saves", {
                 area.focus();
                 area.value = "Synthetic first";
                 area.dispatchEvent(new Event("input", { bubbles: true }));
-                area.blur();
+                area.blur(); area.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
                 area.focus();
                 area.value = "Synthetic second";
                 area.dispatchEvent(new Event("input", { bubbles: true }));
-                area.blur();
+                area.blur(); area.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
         },
         {
@@ -151,7 +151,7 @@ tours.add("sc_1014_filters_autosubmit", {
             run() {
                 assert(window.__sc1014NoReload, "the page reloaded while typing");
                 assert(!new URLSearchParams(window.location.search).has("date_from"), "applied too early");
-                this.anchor.blur();
+                this.anchor.blur(); this.anchor.dispatchEvent(new FocusEvent("blur")); // headless CI: blur() fires no event without window focus
             },
             expectUnloadPage: true,
         },
