@@ -199,6 +199,8 @@ VISIBILITY_REGISTRY = {
     'players.add_to_team': {'include': TP},
     'patient.status.edit': {'include': TP},
     'patient.training.edit': {'include': TP},
+    # Task 1603: « Retour prévu » in the player header.
+    'patient.return.edit': {'include': TP},
     'patient.edit.tp_fields': {'include': TP},
     # Owner decision 2026-10-10: coaches see and edit emergency contacts too
     # (their ACL / record rules already allowed it; deleting stays TP).

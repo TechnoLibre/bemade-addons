@@ -45,7 +45,8 @@ from odoo.tools.misc import mute_logger
 
 from odoo.addons.bemade_sports_clinic.tests.test_app_shell_switch_1538 import AppShellCommon
 
-ALWAYS_LIVE = {'sc_status', 'training_recommendation'}
+# Task 1603: « Retour prévu » is a live header field too (next to the training rec).
+ALWAYS_LIVE = {'sc_status', 'training_recommendation', 'predicted_return_date'}
 
 
 @tagged('post_install', '-at_install')

@@ -28,6 +28,7 @@ A session in a non-default website language is served under ``/<lang>/my/``
 routes themselves stay ``multilang=False`` (stable, unprefixed URLs).
 """
 import json
+import logging
 import re
 import time
 from datetime import timedelta
@@ -50,6 +51,8 @@ from odoo.addons.portal.controllers.portal import CustomerPortal
 from ..models import sc_app_nav, sc_app_roles
 from ..models.patient import IDENTITY_CONFIRM_KEY, IDENTITY_FIELDS
 from .access_control_mixin import AccessControlMixin
+
+_logger = logging.getLogger(__name__)
 
 APP_SHELL_PARAM = 'bemade_sports_clinic.app_shell_enabled'
 # Task 1602: the dark / light choice. Absent or falsy = forced dark for
@@ -110,6 +113,13 @@ PREF_LANG = 'lang'
 #                                                    # or callable(record) -> [patterns]
 #                                                    # (another record's keys).
 #                                                    # Answered as ``refresh``.
+#           'propose': callable(record, field) -> dict | None
+#                                                    # task 1603: a FOLLOW-UP
+#                                                    # PROPOSAL after the save
+#                                                    # (therapists only), answered
+#                                                    # as ``propose`` — see
+#                                                    # models/patient_return_proposal.py
+#                                                    # and /my/app/apply-proposal.
 #           'live_counts': True,                     # task 1611: the save also
 #                                                    # refreshes the app bar's
 #                                                    # live counters (overdue
@@ -131,6 +141,14 @@ PREF_LANG = 'lang'
 # write ACL on injuries, yet may not change their stage).
 # ---------------------------------------------------------------------------
 _TP_ROLES = sc_app_roles.TP
+# Task 1603: what an applied follow-up proposal may write (on top of the
+# SAVE_REGISTRY role allowlist and check), and how many changes at once.
+PROPOSAL_FIELDS = {
+    'sports.patient': ('predicted_return_date', 'return_date'),
+    'sports.patient.injury': ('predicted_resolution_date',),
+}
+PROPOSAL_MAX_CHANGES = 50
+SC_PROPOSAL_SESSION_KEY = 'sc_pending_proposal'
 _STAFF_ROLES = sc_app_roles.STAFF
 _TEXT_TYPES = ('char', 'text', 'html')
 _VALID_STATUS_PAIRS = {('yes', 'yes'), ('no', 'yes'), ('no', 'no_contact'), ('no', 'no')}
@@ -512,7 +530,8 @@ def _patient_write(ctrl, patient, field, value):
                     'Date of Birth must not be in the future and not be more than 120 years ago.'))
         patient.write({field: dob})
         return extra
-    if field in ('last_consultation_date', 'return_date'):
+    if field in ('last_consultation_date', 'return_date', 'predicted_return_date'):
+        # Task 1603: « Retour prévu » too (empty = cleared).
         patient.write({field: _date_value(value)})
         return extra
     if field == 'country_id':
@@ -540,6 +559,14 @@ def _patient_write(ctrl, patient, field, value):
         return extra
     patient.write({field: _clean_text(value)})
     return extra
+
+
+def _patient_propose(patient, field):
+    """Task 1603: Retour prévu changed by hand -> align the active injuries'
+    predicted resolution dates (a follow-up proposal)."""
+    if field == 'predicted_return_date':
+        return patient._injuries_alignment_for(patient.predicted_return_date)
+    return None
 
 
 def _patient_hint(patient, field):
@@ -638,6 +665,20 @@ def _injury_write(ctrl, injury, field, value):
     # review 2026-10-14).
     injury.write({field: value if (value or '').strip() else False})
     return {}
+
+
+def _injury_propose(injury, field):
+    """Task 1603: an injury's predicted resolution date or stage changed ->
+    keep the player's Retour prévu coherent (follow-up proposals): the last
+    active injury resolved proposes the actual return; an active injury's
+    date (or a verification) proposes the new latest predicted date."""
+    patient = injury.patient_id
+    if not patient or field not in ('predicted_resolution_date', 'stage'):
+        return None
+    patient = patient.with_env(injury.env)
+    if field == 'stage' and injury.stage == 'resolved':
+        return patient._after_last_active_resolved(injury)
+    return patient._retour_prevu_after_injury_change(injury)
 
 
 # -- sports.treatment.note ---------------------------------------------------
@@ -752,6 +793,8 @@ SAVE_REGISTRY = {
             # Task 1594: the actual return date — never a coach's (the legacy
             # portal had no coach path to it; the backend form is clinic staff).
             'return_date': _TP_ROLES,
+            # Task 1603: « Retour prévu », in the header (therapists only).
+            'predicted_return_date': _TP_ROLES,
             # Virtual: « match:practice », saved as a pair.
             'sc_status': _TP_ROLES,
             # Virtual: CSV of the assignable teams ticked (owner review
@@ -763,6 +806,7 @@ SAVE_REGISTRY = {
         'read': _patient_read,
         'display': _patient_display,
         'hint': _patient_hint,
+        'propose': _patient_propose,
         # The player page / dossier: title, hero (initials, teams, allergies
         # banner), identity read view (age), memberships, removal actions.
         'refresh': {'*': ['*']},
@@ -784,6 +828,7 @@ SAVE_REGISTRY = {
         'read': _injury_read,
         'display': _injury_display,
         'hint': _injury_hint,
+        'propose': _injury_propose,
         # The card (summary, read view), the injury page's title / details,
         # the player's fragments (card order, active list, choices) and the
         # linked-injury name in the treatment notes' meta lines.
@@ -866,6 +911,8 @@ def _validate_save_registry(registry):
                 "%s: a sudo_write spec requires a 'permission' callable" % model)
             assert callable(spec.get('write')), (
                 "%s: a sudo_write spec requires its 'write' hook" % model)
+        assert spec.get('propose') is None or callable(spec['propose']), (
+            "%s: 'propose' must be callable(record, field)" % model)
         for field, entries in (spec.get('refresh') or {}).items():
             assert field == '*' or field in (spec.get('fields') or ()), (
                 "%s: 'refresh' names an unknown field %r" % (model, field))
@@ -1025,6 +1072,23 @@ class AppShellMixin:
             'tone': 'error' if notif.get('type') in ('danger', 'warning', 'error') else 'success',
         }
 
+    @staticmethod
+    def _sc_stash_proposal(proposal):
+        """Task 1603: a follow-up proposal made by a POST round-trip (an
+        injury created with a predicted resolution date) — shown by the
+        next shell page (``data-sc-proposal`` on the proposal sheet)."""
+        if proposal:
+            request.session[SC_PROPOSAL_SESSION_KEY] = proposal
+
+    @staticmethod
+    def _sc_pop_proposal():
+        """Task 1603: the pending proposal as JSON (popped: shown once), or
+        False. A fragment request (task 1611) leaves it for the next page."""
+        if AppShellMixin._sc_fragment_keys() is not None:
+            return False
+        proposal = request.session.pop(SC_PROPOSAL_SESSION_KEY, None)
+        return json.dumps(proposal) if isinstance(proposal, dict) else False
+
     def _sc_app_values(self, values, page=None):
         """``values`` + everything ``sc_app_layout`` needs. ``page`` is the
         app template (``module.template``): its navigation — back target,
@@ -1100,6 +1164,8 @@ class AppShellMixin:
             # round-trip, e.g. « Add to Team ») pops on whichever shell page
             # comes next, as the status toast.
             'sc_notification': self._sc_pop_notification(),
+            # Task 1603: a follow-up proposal left by a POST round-trip.
+            'sc_proposal_json': self._sc_pop_proposal(),
         }
         shell.update(values)
         nav = sc_app_nav.resolve(
@@ -1766,6 +1832,114 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'new': new_text,
         }
 
+    @staticmethod
+    def _sc_save_proposal(spec, record, field):
+        """Task 1603: the spec's follow-up proposal for this save (therapists
+        only), or None. A builder failure never fails the save it follows."""
+        if not spec.get('propose') or not (request.env.user._sc_app_roles() & _TP_ROLES):
+            return None
+        try:
+            return spec['propose'](record, field) or None
+        except Exception:  # noqa: BLE001 — a proposal is a convenience only
+            _logger.exception("Follow-up proposal failed for %s.%s", record._name, field)
+            return None
+
+    def _sc_apply_changes(self, patient, changes):
+        """Task 1603: write the changes of an applied proposal — each one
+        re-validated (the proposal allowlist, the SAVE_REGISTRY role
+        allowlist and check, the record belongs to ``patient``) and written
+        by the spec's write hook (the normal save path: validation,
+        tracking, history). Raises AccessError / ValidationError; the
+        caller runs it in one savepoint (all or nothing). Returns the
+        written (record, field) pairs."""
+        done = []
+        for change in changes:
+            if not isinstance(change, dict):
+                raise ValidationError(_("Invalid value."))
+            model, field = change.get('model'), change.get('field')
+            if field not in PROPOSAL_FIELDS.get(model, ()):
+                raise AccessError(_("This change cannot be applied here."))
+            spec = SAVE_REGISTRY.get(model)
+            if not spec or not self._sc_save_allowed(spec, field):
+                raise AccessError(_("This change cannot be applied here."))
+            try:
+                record = request.env[model].browse(int(change.get('id'))).exists()
+            except (TypeError, ValueError):
+                record = None
+            if not record:
+                raise MissingError(_("Record not found."))
+            owner = record if model == 'sports.patient' else record.sudo().patient_id
+            if owner.id != patient.id:
+                raise AccessError(_("This change cannot be applied here."))
+            spec['check'](self, record)
+            if spec.get('sudo_write') and not spec['permission'](self, record):
+                raise AccessError(_("You cannot edit this record."))
+            value = change.get('value')
+            spec['write'](self, record, field, '' if value in (None, False) else str(value))
+            done.append((record, field))
+        return done
+
+    @http.route(['/my/app/apply-proposal'], type='http', auth='user',
+                methods=['POST'], csrf=True, multilang=False)
+    def sc_app_apply_proposal(self, patient_id=None, changes=None, **kw):
+        """Task 1603: apply a follow-up proposal (the ticked rows of the
+        sheet a save answered with ``propose``).
+
+        Body (form-encoded, CSRF enforced): ``patient_id`` (the proposal's
+        player) and ``changes`` — JSON ``[{model, id, field, value}, ...]``.
+        Every change is re-validated and written through the normal save
+        path, all or nothing. Answers JSON:
+
+        * 200 ``{ok, saved: [{model, id, field, value, display,
+          write_date}], refresh, saved_at, message}``;
+        * 403 ``{error}`` — not a therapist, no access to the player, a
+          change outside the proposal allowlist / the caller's roles, or a
+          record of another player;
+        * 400 ``{error[, message]}`` — malformed body or an invalid value
+          (nothing written).
+        """
+        if not (request.env.user._sc_app_roles() & _TP_ROLES):
+            return self._sc_save_json({'error': 'forbidden'}, 403)
+        try:
+            parsed = json.loads(changes or '')
+            patient_id = int(patient_id)
+        except (TypeError, ValueError):
+            return self._sc_save_json({'error': 'bad_request'}, 400)
+        if not isinstance(parsed, list) or not parsed or len(parsed) > PROPOSAL_MAX_CHANGES:
+            return self._sc_save_json({'error': 'bad_request'}, 400)
+        try:
+            patient = self._check_access_to_patient(patient_id)
+            with request.env.cr.savepoint():
+                done = self._sc_apply_changes(patient, parsed)
+                for record, _field in done:
+                    record.flush_recordset()
+            saved, refresh = [], []
+            for record, field in done:
+                record.invalidate_recordset()
+                saved.append({
+                    'model': record._name,
+                    'id': record.id,
+                    'field': field,
+                    'value': self._sc_save_value(record, field),
+                    'display': self._sc_save_display(record, field),
+                    'write_date': fields.Datetime.to_string(record.write_date),
+                })
+                for pattern in sc_refresh_patterns(record._name, record, field):
+                    if pattern not in refresh:
+                        refresh.append(pattern)
+            return self._sc_save_json({
+                'ok': True,
+                'saved': saved,
+                'refresh': refresh,
+                'saved_at': sc_now_ms(),
+                'message': _("Changes applied."),
+            })
+        except (AccessError, MissingError):
+            return self._sc_save_json({'error': 'forbidden'}, 403)
+        except (UserError, ValidationError, ValueError) as exc:
+            message = exc.args[0] if getattr(exc, 'args', None) else str(exc)
+            return self._sc_save_json({'error': 'invalid', 'message': str(message)}, 400)
+
     @http.route(['/my/app/save/<string:model>/<int:record_id>'], type='http', auth='user',
                 methods=['POST'], csrf=True, multilang=False)
     def sc_app_save(self, model, record_id, field=None, value=None, write_date=None,
@@ -1871,6 +2045,11 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             payload['saved_at'] = sc_now_ms()
             if spec.get('live_counts'):
                 payload['live_counts'] = True
+            # Task 1603: a follow-up proposal — never blocking (the field is
+            # saved); the page shows it as a sheet (sc_proposal.js).
+            proposal = self._sc_save_proposal(spec, record, field)
+            if proposal:
+                payload['propose'] = proposal
             payload.update(extra)
             return self._sc_save_json(payload)
         except (AccessError, MissingError):

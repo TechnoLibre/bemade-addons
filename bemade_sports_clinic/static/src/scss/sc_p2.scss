@@ -661,3 +661,74 @@ $sc-p2-laptop: 992px;
         }
     }
 }
+
+// Task 1603: the player header's « Retour prévu » and the follow-up
+// proposal sheet (sc_proposal.js).
+.o_sc_app {
+    .o_sc_hero_return .o_sc_input[type="date"] {
+        max-width: 16rem;
+    }
+
+    .o_sc_proposal_message {
+        margin: 0;
+        color: var(--sc-fg-2);
+    }
+
+    .o_sc_proposal_items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-2);
+    }
+
+    .o_sc_proposal_item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: var(--sc-space-2) 0;
+        border-bottom: 1px solid var(--sc-line);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .o_sc_proposal_label {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .o_sc_proposal_change {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--sc-space-2);
+        color: var(--sc-fg-2);
+
+        .o_sc_input {
+            flex: 0 1 12rem;
+            min-height: var(--sc-tap);
+        }
+    }
+
+    .o_sc_proposal_current {
+        text-decoration: line-through;
+        color: var(--sc-fg-3);
+    }
+
+    .o_sc_proposal_proposed {
+        color: var(--sc-fg);
+    }
+
+    .o_sc_proposal_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sc-space-2);
+
+        .o_sc_btn {
+            min-height: var(--sc-tap);
+        }
+    }
+}

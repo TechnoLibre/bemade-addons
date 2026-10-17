@@ -2358,7 +2358,6 @@ msgid "<span>Player</span>"
 msgstr "<span>Joueur</span>"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.team_digest_render
 msgid "<span>Predicted return:</span>"
 msgstr "<span>Retour prévu :</span>"
@@ -2917,6 +2916,8 @@ msgid "Activity created successfully."
 msgstr "Activité créée avec succès."
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Actual return date"
 msgstr "Date de retour réelle"
@@ -3129,6 +3130,12 @@ msgstr ""
 #: code:addons/bemade_sports_clinic/models/patient.py:0
 msgid "Age updated"
 msgstr "Âge mis à jour"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid "Align the injuries' predicted resolution dates?"
+msgstr "Aligner les dates prévues de résolution des blessures ?"
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -3375,6 +3382,7 @@ msgstr ""
 "Piste d'audit en ajout seul des modifications de notes internes/externes."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_org_staff_promote_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
 msgid "Apply"
@@ -3829,6 +3837,12 @@ msgstr "Changements"
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Changes applied."
+msgstr "Modifications appliquées."
+
+#. module: bemade_sports_clinic
+#. odoo-python
 #: code:addons/bemade_sports_clinic/models/res_users.py:0
 msgid ""
 "Changes over the last %(hours)s h / Changements des dernières %(hours)s h."
@@ -4017,6 +4031,7 @@ msgstr "Les cliniques sont réservées aux thérapeutes."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_sheet
 msgid "Close"
 msgstr "Fermer"
@@ -4435,6 +4450,11 @@ msgstr "Facturation client complétée"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_invoicing_wizard__customer_sale_order_id
 msgid "Customer Quotation"
 msgstr "Soumission client"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "Dismiss"
+msgstr "Ignorer"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_create_player
@@ -6362,6 +6382,7 @@ msgstr "Blessures (audit)"
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
 #: code:addons/bemade_sports_clinic/models/sc_app_nav.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_document__injury_id
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__injury_id
@@ -7391,8 +7412,20 @@ msgstr "Non"
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid "No active injury left"
+msgstr "Plus aucune blessure active"
+
+#. module: bemade_sports_clinic
+#. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 msgid "No Date"
+msgstr "Aucune date"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid "No date"
 msgstr "Aucune date"
 
 #. module: bemade_sports_clinic
@@ -9114,6 +9147,13 @@ msgid "Predicted Resolution Date"
 msgstr "Date prévue de résolution"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Predicted return"
+msgstr "Retour prévu"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__predicted_return_date
 msgid "Predicted Return Date"
 msgstr "Date prévue de retour"
@@ -10776,6 +10816,46 @@ msgid "Synopsis"
 msgstr ""
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
+msgid "The changes could not be applied."
+msgstr "Les modifications n'ont pas pu être appliquées."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid ""
+"The latest predicted resolution date of the player's active injuries is %s."
+msgstr ""
+"La date prévue de résolution la plus tardive des blessures actives du joueur"
+" est le %s."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid ""
+"The predicted return differs from the predicted resolution dates of the "
+"player's active injuries. Untick the injuries to leave as they are."
+msgstr ""
+"Le retour prévu diffère des dates prévues de résolution des blessures "
+"actives du joueur. Décochez les blessures à laisser telles quelles."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "This change cannot be applied here."
+msgstr "Cette modification ne peut pas être appliquée ici."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid ""
+"This was the player's last active injury. Clear the predicted return and set"
+" the actual return date?"
+msgstr ""
+"C'était la dernière blessure active du joueur. Effacer le retour prévu et "
+"inscrire la date de retour réelle ?"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__dashboard_score_tp
 msgid "TP Dashboard Score"
 msgstr "Score du tableau de bord (prof. de la santé)"
@@ -12378,6 +12458,12 @@ msgstr "(%(days)s prochains jours)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_edit_activity
 msgid "Update Activity"
 msgstr "Mettre à jour l'activité"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
+msgid "Update the player's predicted return?"
+msgstr "Mettre à jour le retour prévu du joueur ?"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_document__create_date

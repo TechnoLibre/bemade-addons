@@ -176,6 +176,28 @@
                          t-att-data-sc-notify="sc_notification and (sc_notification['message'] or sc_notification['title']) or None"
                          t-att-data-sc-notify-title="sc_notification and sc_notification['message'] and sc_notification['title'] or None"
                          t-att-data-sc-notify-tone="sc_notification and sc_notification['tone'] or None"/>
+                    <!-- Task 1603: the follow-up proposal sheet (sc_proposal.js
+                         fills it from a save's ``propose``, or from the
+                         proposal a POST round-trip left: data-sc-proposal). -->
+                    <dialog id="sc_proposal_sheet" class="o_sc_sheet o_sc_proposal_sheet"
+                            aria-labelledby="sc_proposal_sheet_title"
+                            t-att-data-sc-proposal="sc_proposal_json or None">
+                        <div class="o_sc_sheet_head">
+                            <h2 class="o_sc_sheet_title" id="sc_proposal_sheet_title" data-sc-proposal-title="1"/>
+                            <button type="button" class="o_sc_icon_btn" data-sc-sheet-close="1" aria-label="Close" title="Close">
+                                <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'close'"/></t>
+                            </button>
+                        </div>
+                        <div class="o_sc_sheet_body">
+                            <p class="o_sc_proposal_message" data-sc-proposal-message="1"/>
+                            <ul class="o_sc_proposal_items" data-sc-proposal-items="1"/>
+                            <p class="o_sc_field_message o_sc_field_error" role="alert" data-sc-proposal-error="1" hidden="hidden">The changes could not be applied.</p>
+                            <div class="o_sc_banner_actions o_sc_proposal_actions">
+                                <button type="button" class="o_sc_btn o_sc_btn_primary" data-sc-proposal-apply="1">Apply</button>
+                                <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-proposal-dismiss="1">Dismiss</button>
+                            </div>
+                        </div>
+                    </dialog>
                 </div>
 
                 <!-- Phone: bottom tabs -->

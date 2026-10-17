@@ -286,6 +286,11 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Trigger recomputation of patient status based on the injury
         patient._compute_is_injured()
         patient._compute_stage()
+
+        # Task 1603: created with a predicted resolution date by a therapist
+        # in the app -> the landing page proposes the player's Retour prévu.
+        if is_treatment_prof and vals.get('predicted_resolution_date') and self._sc_app_shell_active():
+            self._sc_stash_proposal(patient._retour_prevu_after_injury_change(injury))
         
         # Use explicit navigation context (team_context_id) for redirect, not inferred team assignment
         team_context_id = post.get('team_context_id')
