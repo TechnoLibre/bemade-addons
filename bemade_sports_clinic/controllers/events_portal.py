@@ -1236,10 +1236,49 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 except Exception:
                     pass
 
-            venue = http.request.env['res.partner'].sudo().create(vals)
-            return {'success': True, 'id': venue.id, 'name': venue.name}
+            if not post.get('event_id'):
+                venue = http.request.env['res.partner'].sudo().create(vals)
+                return {'success': True, 'id': venue.id, 'name': venue.name}
+            return self._create_venue_on_event(vals, post)
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    def _create_venue_on_event(self, vals, post):
+        """Task 1612: the event page's « New venue » sheet — create the venue
+        AND set it on the event in one savepoint, so a refused assignment
+        never leaves an orphan venue behind.
+
+        ``write_date`` / ``old_value`` (the event's write date and venue id
+        the page last saw) follow the save route's stale rule: refused only
+        when the event changed since AND its venue is no longer
+        ``old_value`` (a sibling field saved meanwhile is not a conflict).
+        """
+        env = http.request.env
+        try:
+            event = env['sports.event'].browse(int(post.get('event_id')))
+        except (TypeError, ValueError):
+            return {'success': False, 'error': _('Event not found.')}
+        if not event.exists():
+            return {'success': False, 'error': _('Event not found.')}
+        current = fields.Datetime.to_string(event.sudo().write_date)
+        seen = str(post.get('old_value') or '').strip()
+        if post.get('write_date') and current != post.get('write_date') \
+                and str(event.sudo().venue_id.id or '') != seen:
+            return {'success': False, 'error': _(
+                "This event was changed by someone else meanwhile. "
+                "Reload the page and try again.")}
+        try:
+            with env.cr.savepoint():
+                venue = env['res.partner'].sudo().create(vals)
+                # As the user: the event's access rules apply to the write.
+                event.write({'venue_id': venue.id})
+                event.flush_recordset()
+        except Exception as e:  # noqa: BLE001 — answered, the savepoint rolled back
+            return {'success': False, 'error': str(e.args[0] if e.args else e)}
+        return {
+            'success': True, 'id': venue.id, 'name': venue.name,
+            'event_write_date': fields.Datetime.to_string(event.sudo().write_date),
+        }
 
     # ------------------------------------------------------------------
     # Task 1540 — the app shell (switch on): values of the events pages

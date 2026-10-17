@@ -17,6 +17,36 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "%s arrived"
+msgstr "%s arrivés"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "%s expected"
+msgstr "%s attendus"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "%s no-shows"
+msgstr "%s absents"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "%s seen"
+msgstr "%s vus"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "%s unregistered"
+msgstr "%s non inscrits"
+
+#. module: bemade_sports_clinic
+#. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "%s B"
 msgstr "%s o"
@@ -44,6 +74,60 @@ msgstr "%(count)s sur la liste"
 #: code:addons/bemade_sports_clinic/static/src/js/sc_clinic_worklist.js:0
 msgid "%s waiting"
 msgstr "%s en attente"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "0 arrived"
+msgstr "0 arrivé"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "0 expected"
+msgstr "0 attendu"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "0 no-shows"
+msgstr "0 absent"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "0 seen"
+msgstr "0 vu"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "1 arrived"
+msgstr "1 arrivé"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "1 expected"
+msgstr "1 attendu"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "1 no-show"
+msgstr "1 absent"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "1 seen"
+msgstr "1 vu"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
+msgid "1 unregistered"
+msgstr "1 non inscrit"
 
 #. module: bemade_sports_clinic
 #. odoo-javascript
@@ -154,16 +238,6 @@ msgstr "%(count)s joueurs ont été retirés de l'équipe %(team)s."
 
 #. module: bemade_sports_clinic
 #. odoo-python
-#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
-msgid ""
-"%(expected)s expected · %(arrived)s arrived · %(seen)s seen · %(no_show)s "
-"no-show"
-msgstr ""
-"%(expected)s attendus · %(arrived)s arrivés · %(seen)s vus · %(no_show)s "
-"absents"
-
-#. module: bemade_sports_clinic
-#. odoo-python
 #: code:addons/bemade_sports_clinic/models/res_users.py:0
 msgid "%(name)s %(when)s"
 msgstr ""
@@ -216,12 +290,6 @@ msgstr ""
 #: code:addons/bemade_sports_clinic/models/res_users.py:0
 msgid "%(red)s no-play%(red_delta)s · %(yellow)s limited%(yellow_delta)s"
 msgstr ""
-
-#. module: bemade_sports_clinic
-#. odoo-python
-#: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
-msgid "%(unregistered)s unregistered"
-msgstr "%(unregistered)s non inscrit(s)"
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -5481,6 +5549,7 @@ msgstr ""
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/access_control_mixin.py:0
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 #: code:addons/bemade_sports_clinic/models/event_cancel_wizard.py:0
 msgid "Event not found."
 msgstr "Événement introuvable."
@@ -11600,6 +11669,16 @@ msgstr "Cette borne n'est pas jumelée à cette clinique."
 #: code:addons/bemade_sports_clinic/models/event_cancel_wizard.py:0
 msgid "This event cannot be cancelled."
 msgstr "Cet événement ne peut pas être annulé."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+msgid ""
+"This event was changed by someone else meanwhile. Reload the page and try "
+"again."
+msgstr ""
+"Cet événement a été modifié par quelqu'un d'autre entre-temps. Rechargez la "
+"page et réessayez."
 
 #. module: bemade_sports_clinic
 #. odoo-python

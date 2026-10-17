@@ -312,16 +312,32 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
     @staticmethod
     def _attendance_counts_line(counts):
-        """One translatable sentence for the counts (python-side on purpose:
-        a QWeb text node mixed with four t-esc's would extract as four
-        fragments no translator can act on)."""
-        line = _(
-            "%(expected)s expected · %(arrived)s arrived · %(seen)s seen · %(no_show)s no-show",
-            **counts)
+        """The counts, one translatable fragment per count (python-side on
+        purpose: QWeb text mixed with t-esc's extracts as fragments no
+        translator can act on). Task 1612: each count agrees in number —
+        Odoo has no plural forms, so 0, 1 and N are three msgids each
+        (fr_CA: « 0 vu », « 1 arrivé », « 2 arrivés »)."""
+        def part(count, zero, one, many):
+            if count == 0:
+                return zero
+            if count == 1:
+                return one
+            return many % count
+
+        parts = [
+            part(counts.get('expected', 0), _("0 expected"), _("1 expected"),
+                 _("%s expected")),
+            part(counts.get('arrived', 0), _("0 arrived"), _("1 arrived"),
+                 _("%s arrived")),
+            part(counts.get('seen', 0), _("0 seen"), _("1 seen"), _("%s seen")),
+            part(counts.get('no_show', 0), _("0 no-shows"), _("1 no-show"),
+                 _("%s no-shows")),
+        ]
         if counts.get('unregistered'):
             # #1418: appended only when there is something to say.
-            line += ' · ' + _("%(unregistered)s unregistered", **counts)
-        return line
+            parts.append(part(counts['unregistered'], '', _("1 unregistered"),
+                              _("%s unregistered")))
+        return ' · '.join(parts)
 
     # ------------------------------------------------------------------
     # portal home counter

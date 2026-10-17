@@ -8,7 +8,8 @@
  *   only one value per repeated name to Odoo;
  * - « Nouveau lieu »: the venue sheet's form posts through scFetch to the
  *   CSRF-checked /my/venue/create (JSON answer); the created venue is added
- *   to the venue select and selected, the sheet closes;
+ *   to the venue select and selected, the sheet closes; on the event page
+ *   (task 1612) the same request also sets it on the event, then reloads;
  * - task 1597: the Organization select narrows the team checkboxes to that
  *   organization's teams (``data-sc-org-id``) and unticks the ones it hides
  *   — the model refuses the teams of two organizations; « All
@@ -59,6 +60,17 @@ function initEventForms() {
 async function createVenue(form) {
     const error = form.querySelector("[data-sc-venue-error]");
     const data = Object.fromEntries(new FormData(form).entries());
+    if (form.dataset.scVenueEvent) {
+        // The event page's pencil card (owner review 2026-10-11): the venue
+        // is created AND set on the event by the same request (task 1612 —
+        // a refused assignment leaves no orphan venue), over the event's
+        // write date and venue this page last saw.
+        Object.assign(data, {
+            event_id: form.dataset.scVenueEvent,
+            write_date: form.dataset.scVenueEventWriteDate || "",
+            old_value: form.dataset.scVenueEventVenue || "",
+        });
+    }
     if (error) {
         error.hidden = true;
     }
@@ -67,18 +79,8 @@ async function createVenue(form) {
         if (!result || !result.success) {
             throw new Error((result && result.error) || "");
         }
-        // The event page's pencil card (owner review 2026-10-11): save the
-        // new venue on the event, then reload so the card shows it.
         if (form.dataset.scVenueEvent) {
-            await scFetch(`/my/app/save/sports.event/${form.dataset.scVenueEvent}`, {
-                method: "POST",
-                data: {
-                    field: "venue_id",
-                    value: String(result.id),
-                    old_value: form.dataset.scVenueEventVenue || "",
-                },
-                toast: false,
-            });
+            // Reload so the card (and its venue choices) show the new venue.
             window.location.reload();
             return;
         }
@@ -113,6 +115,27 @@ document.addEventListener("submit", (ev) => {
     } else if (form.dataset.scVenueForm) {
         ev.preventDefault();
         createVenue(form);
+    }
+});
+
+// Task 1612: keep the event page's venue sheet in step with the card's
+// autosaves (a sibling field moves the write date; a venue pick changes the
+// venue the sheet will be compared against).
+document.addEventListener("sc:saved", (ev) => {
+    const detail = ev.detail || {};
+    if (detail.model !== "sports.event" || !detail.result) {
+        return;
+    }
+    for (const form of document.querySelectorAll("form[data-sc-venue-event]")) {
+        if (String(form.dataset.scVenueEvent) !== String(detail.recordId)) {
+            continue;
+        }
+        if (detail.result.write_date) {
+            form.dataset.scVenueEventWriteDate = detail.result.write_date;
+        }
+        if (detail.field === "venue_id" && detail.result.value !== undefined) {
+            form.dataset.scVenueEventVenue = String(detail.result.value || "");
+        }
     }
 });
 

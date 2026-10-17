@@ -176,3 +176,6 @@ from . import test_app_shell_activity_rows_1595
 from . import test_app_shell_roster_rows_1593
 from . import test_app_shell_activity_clock_1592
 from . import test_review_fixes_1014
+from . import test_app_shell_event_venue_1612
+from . import test_app_shell_injury_verify_1612
+from . import test_clinic_counts_plural_1612

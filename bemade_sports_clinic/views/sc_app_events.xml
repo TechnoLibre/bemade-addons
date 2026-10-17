@@ -321,7 +321,8 @@
 
     <!-- « New venue » sheet (event form, and the event page's pencil card —
          venue_event set: the new venue is saved on that event, owner review
-         2026-10-11). -->
+         2026-10-11; task 1612: in the same request as the venue, over the
+         event's write date and venue the page last saw). -->
     <template id="sc_venue_sheet" name="App shell: new venue sheet">
         <t t-call="bemade_sports_clinic.sc_sheet">
             <t t-set="sheet_id" t-value="'sc_venue_sheet'"/>
@@ -329,7 +330,8 @@
             <t t-set="lazy_url" t-value="False"/>
             <form action="/my/venue/create" method="post" class="o_sc_form" data-sc-venue-form="1"
               t-att-data-sc-venue-event="venue_event.id if venue_event else None"
-              t-att-data-sc-venue-event-venue="(venue_event.sudo().venue_id.id or '') if venue_event else None">
+              t-att-data-sc-venue-event-venue="(venue_event.sudo().venue_id.id or '') if venue_event else None"
+              t-att-data-sc-venue-event-write-date="venue_event.sudo().write_date.strftime('%Y-%m-%d %H:%M:%S') if venue_event and venue_event.sudo().write_date else None">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <div class="o_sc_field">
                     <label class="o_sc_field_label" for="sc_venue_name">Venue Name</label>

@@ -622,7 +622,12 @@ def _injury_write(ctrl, injury, field, value):
         # « Résoudre »: the stage and the resolution date travel together.
         if stage == 'resolved' and not injury.resolution_date:
             vals['resolution_date'] = fields.Date.context_today(injury)
+        verifying = injury.stage == 'unverified' and stage == 'active'
         injury.write(vals)
+        if verifying:
+            # Task 1612: verifying from the app does what the « Verify »
+            # button does — log it and close the « Verify injury » To-Do.
+            injury._after_verify()
         # Owner review 2026-10-11: the page shows the date at once.
         return {'also_fields': ['resolution_date']} if 'resolution_date' in vals else {}
     if field == 'hidden_from_coaches':

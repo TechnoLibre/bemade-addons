@@ -297,17 +297,23 @@ class PatientInjury(models.Model):
             raise AccessError(_("Only treatment professionals can verify injuries."))
             
         self.write({'stage': 'active'})
-        message = _("Injury verified by %s") % self.env.user.name
-        self.message_post(body=message)
-        # Close any open verification activities for this injury. Task 1409:
-        # they live on the patient and are keyed by the technical injury_id
-        # link (whatever their res_model).
+        self._after_verify()
+        return True
+
+    def _after_verify(self):
+        """What verifying an injury does besides the stage (task 1612: the
+        « Verify » button AND the app's status selector call it): log
+        « Injury verified by … » and close the open verification To-Dos."""
+        for injury in self:
+            injury.message_post(body=_("Injury verified by %s") % self.env.user.name)
+        # Close any open verification activities for these injuries. Task
+        # 1409: they live on the patient and are keyed by the technical
+        # injury_id link (whatever their res_model).
         verif_acts = self.env['mail.activity'].sudo().search(
             self._verify_activity_domain() + [('active', '=', True)]
         )
         if verif_acts:
             verif_acts.action_done()
-        return True
 
     def _activity_summary_prefix(self):
         """User-visible context prefix for an activity about this injury
