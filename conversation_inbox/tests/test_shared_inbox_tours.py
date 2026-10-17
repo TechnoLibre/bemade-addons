@@ -137,3 +137,4 @@ class TestSharedInboxTours(HttpCase):
         self.assertTrue(self.shared.mailbox_writable)
         self.assertFalse(self.shared.user_id)
         self.assertTrue(self.personal.mailbox_writable)
+        self.assertEqual(self.personal.user_id, self.member)

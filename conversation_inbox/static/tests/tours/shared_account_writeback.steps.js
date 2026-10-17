@@ -35,15 +35,6 @@ export default [
     action: "assert",
   },
   {
-    id: "owner_locked",
-    title: "Le propriétaire du compte est verrouillé",
-    narration:
-      "Le propriétaire du compte est lui aussi verrouillé : seul un gestionnaire Conversations peut attribuer un compte partagé à quelqu'un, sans quoi un membre pourrait s'en emparer et supprimer des courriels.",
-    selector:
-      ".o_form_view .o_field_widget[name='user_id'].o_readonly_modifier",
-    action: "assert",
-  },
-  {
     id: "back_to_list",
     title: "Revenir à la liste des comptes",
     narration: "Vous revenez à la liste des comptes.",
@@ -66,6 +57,15 @@ export default [
       "Sur votre compte personnel, c'est vous qui décidez : l'option reste modifiable.",
     selector:
       ".o_form_view .o_field_widget[name='mailbox_writable']:not(.o_readonly_modifier)",
+    action: "assert",
+  },
+  {
+    id: "owner_locked",
+    title: "Le propriétaire du compte est verrouillé",
+    narration:
+      "Le propriétaire reste verrouillé tant que l'écriture est activée : seul un gestionnaire Conversations peut attribuer ou retirer le propriétaire, sans quoi un membre pourrait s'emparer d'un compte partagé et supprimer des courriels.",
+    selector:
+      ".o_form_view .o_field_widget[name='user_id'].o_readonly_modifier",
     action: "assert",
   },
 ];
