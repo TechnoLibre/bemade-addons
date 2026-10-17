@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import {Component, onWillStart, useState} from "@odoo/owl";
+import {Component, markup, onWillStart, useState} from "@odoo/owl";
 import {ConfirmationDialog} from "@web/core/confirmation_dialog/confirmation_dialog";
 import {_t} from "@web/core/l10n/translation";
 import {registry} from "@web/core/registry";
@@ -31,6 +31,10 @@ export class ConversationInboxAction extends Component {
       page: 1,
       hasMore: false,
       loading: false,
+      // What is typed in the search box, vs. the term the list was last
+      // loaded with ("" = the normal inbox). Paging follows the latter.
+      searchTerm: "",
+      activeQuery: "",
       expandedId: null,
       expandedBody: null,
       expandedAttachments: [],
@@ -71,7 +75,7 @@ export class ConversationInboxAction extends Component {
     const transports = await this.orm.searchRead(
       "conversation.transport",
       [["browsable", "=", true]],
-      ["id", "name", "sendable", "mailbox_writable"]
+      ["id", "name", "sendable", "mailbox_writable", "searchable"]
     );
     this.state.transports = transports;
     this.state.transportId = transports.length ? transports[0].id : null;
@@ -81,35 +85,81 @@ export class ConversationInboxAction extends Component {
     this.state.transportId = ev.target.value ? parseInt(ev.target.value, 10) : null;
     this.state.expandedId = null;
     this.state.expandedBody = null;
+    this.state.searchTerm = "";
+    this.state.activeQuery = "";
     if (this.state.transportId) {
-      await this.loadPage(1);
+      await this.loadPage(1, "");
     } else {
       this.state.items = [];
     }
   }
 
-  async loadPage(page) {
+  /**
+   * Load one page of the normal inbox (`query` empty) or of the search
+   * results for `query`. The query is the plain text the user typed:
+   * the server turns it into a safe mailbox search, so nothing here
+   * builds search syntax. `activeQuery` only moves once the call
+   * succeeded, so a failed search leaves the previous list and its
+   * paging intact.
+   */
+  async loadPage(page, query = this.state.activeQuery) {
     if (!this.state.transportId) {
       return;
     }
+    const requestId = (this._requestId = (this._requestId || 0) + 1);
     this.state.loading = true;
     try {
       const result = await this.orm.call("conversation.transport", "browse_page", [
         this.state.transportId,
-        false,
+        query || false,
         page,
       ]);
+      if (requestId !== this._requestId) {
+        // A newer request superseded this one.
+        return;
+      }
       this.state.items = result.items || [];
       this.state.page = result.page || page;
       this.state.hasMore = Boolean(result.has_more);
+      this.state.activeQuery = query || "";
       this.state.expandedId = null;
       this.state.expandedBody = null;
       this.state.expandedAttachments = [];
     } catch (error) {
-      this.notification.add(this._errorMessage(error), {type: "danger"});
+      if (requestId === this._requestId) {
+        this.notification.add(this._errorMessage(error), {type: "danger"});
+      }
     } finally {
-      this.state.loading = false;
+      if (requestId === this._requestId) {
+        this.state.loading = false;
+      }
     }
+  }
+
+  get canSearch() {
+    const transport = this.currentTransport;
+    return Boolean(transport && transport.searchable);
+  }
+
+  /** Enter / the magnifier: search the mailbox for the trimmed term. */
+  async onSearchSubmit(ev) {
+    if (ev) {
+      ev.preventDefault();
+    }
+    const term = (this.state.searchTerm || "").trim();
+    if (!term) {
+      await this.onSearchClear();
+      return;
+    }
+    this.state.searchTerm = term;
+    await this.loadPage(1, term);
+  }
+
+  /** Back to page 1 of the normal inbox list. */
+  async onSearchClear() {
+    this.state.searchTerm = "";
+    this.state.activeQuery = "";
+    await this.loadPage(1, "");
   }
 
   async onNextPage() {
@@ -139,7 +189,11 @@ export class ConversationInboxAction extends Component {
         this.state.transportId,
         item.external_id,
       ]);
-      this.state.expandedBody = envelope.body || "";
+      // The body is the only envelope field rendered as HTML, and only
+      // because fetch_envelope returns it through conversation_base's
+      // strict display sanitizer (tools/display.py). Subject, sender,
+      // date and attachment names stay plain text that t-esc escapes.
+      this.state.expandedBody = markup(envelope.body || "");
       this.state.expandedAttachments = envelope.attachments || [];
     } catch (error) {
       this.notification.add(this._errorMessage(error), {type: "danger"});
@@ -157,13 +211,16 @@ export class ConversationInboxAction extends Component {
   }
 
   async onCapture(item, mode) {
-    await this.action.doAction({
-      type: "ir.actions.act_window",
-      res_model: "conversation.inbox.capture.wizard",
-      views: [[false, "form"]],
-      target: "new",
-      context: this._wizardContext(item, {default_mode: mode}),
-    });
+    try {
+      const result = await this.orm.call(
+        "conversation.inbox.capture.wizard",
+        "action_open_for_item",
+        [this.state.transportId, item.external_id, item.subject, mode]
+      );
+      await this.action.doAction(result);
+    } catch (error) {
+      this.notification.add(this._errorMessage(error), {type: "danger"});
+    }
   }
 
   async onReassign(item) {

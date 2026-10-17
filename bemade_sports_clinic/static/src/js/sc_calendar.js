@@ -10,13 +10,15 @@
  * visible range (start / end ISO) plus props.params (the page's filters);
  * the feed's JSON shape is unchanged. An event with a ``url`` navigates;
  * otherwise (bookings) a click shows its details under the calendar, from
- * props.detailKeys [[key, label], …] read in extendedProps.
+ * props.detailKeys [[key, label], …] read in extendedProps (an optional
+ * third item "tel" / "mailto" renders the value as a tap link, task 1585).
  */
 import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { loadBundle } from "@web/core/assets";
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
+import { scContactHref } from "@bemade_sports_clinic/js/sc_contact_href";
 
 const PHONE = 700;
 
@@ -101,10 +103,13 @@ export class ScCalendar extends Component {
             .map((date) => date.toLocaleString(lang, fmt))
             .join(" – ");
         const lines = [];
-        for (const [key, label] of this.props.detailKeys || []) {
+        for (const [key, label, kind] of this.props.detailKeys || []) {
             const value = props[key];
             if (value) {
-                lines.push({ key, label, value: Array.isArray(value) ? value.join(", ") : String(value) });
+                const shown = Array.isArray(value) ? value.join(", ") : String(value);
+                // Task 1585: a [key, label, "tel" | "mailto"] entry is a
+                // tap-to-call / tap-to-email link.
+                lines.push({ key, label, value: shown, href: kind ? scContactHref(kind, shown) : null });
             }
         }
         this.state.selected = { title: event.title, when, lines, cancelled: Boolean(props.cancelled) };

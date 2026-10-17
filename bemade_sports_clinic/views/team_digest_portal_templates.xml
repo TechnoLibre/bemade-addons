@@ -69,19 +69,17 @@
                                 <span class="o_sc_summary_more">Show details</span>
                                 <span class="o_sc_summary_less">Hide details</span>
                             </summary>
+                            <!-- Owner layout 2026-10-11, same as the app shell's
+                                 live detail: last consultation, the player's
+                                 non-injury changes, then the injuries, each with
+                                 its own changes inside its card (grouped by
+                                 _render_for_role). -->
                             <div class="pt-2">
-                                <t t-if="player.get('active_injuries')">
-                                    <t t-foreach="player['active_injuries']" t-as="inj">
-                                        <t t-call="bemade_sports_clinic.portal_card_injury_detail">
-                                            <t t-set="changed" t-value="inj.get('changed')"/>
-                                        </t>
-                                    </t>
-                                </t>
                                 <div t-if="player.get('last_consultation_date')" class="text-muted small d-flex align-items-center mb-2">
                                     <i class="fa fa-stethoscope" title="Last Consultation Date"></i>
                                     <span class="ms-1"><span>Last consultation:</span> <t t-esc="player['last_consultation_date']"/></span>
                                 </div>
-                                <div class="o_sc_recent_changes_content">
+                                <div t-if="player['items']" class="o_sc_recent_changes_content mb-2">
                                     <!-- Task 1385 (CR-D, pill tweak): recent-changes
                                          subsection headed by the same pill flag. -->
                                     <div class="mb-1">
@@ -98,6 +96,22 @@
                                         <t t-set="show_player_status" t-value="False"/>
                                     </t>
                                 </div>
+                                <t t-if="player.get('active_injuries')">
+                                    <div class="small fw-bold text-uppercase text-muted mt-2 mb-1">Active injuries</div>
+                                    <t t-foreach="player['active_injuries']" t-as="inj">
+                                        <t t-call="bemade_sports_clinic.portal_card_injury_detail">
+                                            <t t-set="changed" t-value="inj.get('changed')"/>
+                                        </t>
+                                    </t>
+                                </t>
+                                <t t-if="player.get('resolved_injuries')">
+                                    <div class="small fw-bold text-uppercase text-muted mt-2 mb-1">Resolved injuries</div>
+                                    <t t-foreach="player['resolved_injuries']" t-as="inj">
+                                        <t t-call="bemade_sports_clinic.portal_card_injury_detail">
+                                            <t t-set="changed" t-value="inj.get('changed')"/>
+                                        </t>
+                                    </t>
+                                </t>
                             </div>
                         </details>
                     </div>

@@ -8,7 +8,11 @@
  *   only one value per repeated name to Odoo;
  * - « Nouveau lieu »: the venue sheet's form posts through scFetch to the
  *   CSRF-checked /my/venue/create (JSON answer); the created venue is added
- *   to the venue select and selected, the sheet closes.
+ *   to the venue select and selected, the sheet closes;
+ * - task 1597: the Organization select narrows the team checkboxes to that
+ *   organization's teams (``data-sc-org-id``) and unticks the ones it hides
+ *   — the model refuses the teams of two organizations; « All
+ *   organizations » shows every team again (ticks kept).
  */
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
@@ -26,6 +30,32 @@ function syncCsv(form) {
     }
 }
 
+function filterTeams(form) {
+    const select = form.querySelector("select[data-sc-org-select]");
+    if (!select) {
+        return;
+    }
+    const orgId = select.value;
+    for (const box of form.querySelectorAll('input[name="sc_team"]')) {
+        const label = box.closest("label");
+        const visible = !orgId || (label && label.dataset.scOrgId === orgId);
+        if (label) {
+            label.hidden = !visible;
+        }
+        if (!visible) {
+            box.checked = false;
+        }
+    }
+}
+
+function initEventForms() {
+    for (const form of document.querySelectorAll("form[data-sc-event-form]")) {
+        if (inShell(form)) {
+            filterTeams(form);
+        }
+    }
+}
+
 async function createVenue(form) {
     const error = form.querySelector("[data-sc-venue-error]");
     const data = Object.fromEntries(new FormData(form).entries());
@@ -36,6 +66,21 @@ async function createVenue(form) {
         const result = await scFetch(form.action, { method: "POST", data, toast: false });
         if (!result || !result.success) {
             throw new Error((result && result.error) || "");
+        }
+        // The event page's pencil card (owner review 2026-10-11): save the
+        // new venue on the event, then reload so the card shows it.
+        if (form.dataset.scVenueEvent) {
+            await scFetch(`/my/app/save/sports.event/${form.dataset.scVenueEvent}`, {
+                method: "POST",
+                data: {
+                    field: "venue_id",
+                    value: String(result.id),
+                    old_value: form.dataset.scVenueEventVenue || "",
+                },
+                toast: false,
+            });
+            window.location.reload();
+            return;
         }
         const select = document.querySelector("select[data-sc-venue-select]");
         if (select) {
@@ -70,3 +115,20 @@ document.addEventListener("submit", (ev) => {
         createVenue(form);
     }
 });
+
+document.addEventListener("change", (ev) => {
+    const select = ev.target;
+    if (!(select instanceof HTMLSelectElement) || !select.matches("[data-sc-org-select]")) {
+        return;
+    }
+    const form = select.closest("form[data-sc-event-form]");
+    if (form && inShell(form)) {
+        filterTeams(form);
+    }
+});
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEventForms);
+} else {
+    initEventForms();
+}

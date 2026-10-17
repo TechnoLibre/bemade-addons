@@ -28,6 +28,25 @@ def legacy_change_emails_enabled(env):
     return str(raw).strip().lower() not in ('', '0', 'false', 'none')
 
 
+def history_author_uid(env):
+    """The authenticated author of an audit-history row (tasks 1241, 1601).
+
+    Portal saves often go through ``record.sudo().write(vals)``, which rebinds
+    the environment to the superuser; an audit trail must credit the human
+    behind the request, so when running as sudo inside an HTTP request the
+    session uid is recovered instead."""
+    if env.su and request and request.session and request.session.uid:
+        return request.session.uid
+    return env.uid
+
+
+def history_stamp_date(record, when):
+    """``when`` (a UTC datetime) as the reader's local date, formatted in the
+    reader's lang — the date half of the « … on <date> by <author> » stamps
+    (tasks 1406, 1601)."""
+    return format_date(record.env, fields.Date.context_today(record, timestamp=when))
+
+
 external_tracking_fields = {
     "diagnosis",
     "predicted_resolution_date",
@@ -102,11 +121,17 @@ class PatientInjury(models.Model):
     # record access to their teams' non-hidden injuries, so without field
     # groups they could read this through JSON-RPC. Code that builds coach-
     # facing output must not read it as the coach (see _card_injury_detail).
+    # Task 1582: each note is ONE « current state » text — a save replaces
+    # it, every version stays in sports.injury.note.history.
     internal_notes = fields.Text(
         tracking=True,
+        help="Current state (replaces the previous text; the history keeps the versions)",
         groups="base.group_user,bemade_sports_clinic.group_portal_treatment_professional",
     )
-    external_notes = fields.Text(tracking=True)
+    external_notes = fields.Text(
+        tracking=True,
+        help="Current state (replaces the previous text; the history keeps the versions)",
+    )
     predicted_resolution_date = fields.Date(tracking=True)
     resolution_date = fields.Date(
         tracking=True, help="The date when the injury was actually resolved."
@@ -330,15 +355,9 @@ class PatientInjury(models.Model):
 
     def _note_history_author_id(self):
         """Resolve the authenticated author for note-history rows (task 1241).
-
-        Portal saves go through ``injury.sudo().write(vals)``, which rebinds
-        the environment to the superuser; the audit trail must credit the
-        human behind the request, so when running as sudo inside an HTTP
-        request we recover the session uid instead.
-        """
-        if self.env.su and request and request.session and request.session.uid:
-            return request.session.uid
-        return self.env.uid
+        Task 1601: shared with the training recommendation history
+        (``history_author_uid``)."""
+        return history_author_uid(self.env)
 
     def _last_note_history(self, scope):
         """The newest sports.injury.note.history row of ``scope`` for this
@@ -355,10 +374,9 @@ class PatientInjury(models.Model):
         is gone (task 1406)."""
         if not row:
             return ''
-        when = fields.Date.context_today(self, timestamp=row.note_datetime)
         return _(
             'Last note on %(date)s by %(author)s',
-            date=format_date(self.env, when),
+            date=history_stamp_date(self, row.note_datetime),
             author=row.author_id.name or '—',
         )
 
@@ -377,11 +395,14 @@ class PatientInjury(models.Model):
         doesn't change the field produces no row (task 1241).
 
         Task 1404: comparison is strip-normalized so whitespace-only diffs
-        log nothing, and an essentially-empty NEW value — including a genuine
-        clear — logs nothing (customer decision; the traceability trade-off on
-        clear events is explicitly accepted). Stored content stays raw
-        (un-stripped); normalization is for comparison only. The invariant is
-        that no history row ever has essentially-empty content."""
+        log nothing. Stored content stays raw (un-stripped); normalization is
+        for comparison only.
+
+        Owner review 2026-10-14 (supersedes 1404's « a clear logs nothing »):
+        a genuine clear — a non-empty note made essentially empty — IS
+        recorded, as ONE empty-content row (the history shows it « Cleared »,
+        like the training recommendation's). Empty -> whitespace-only still
+        logs nothing (nothing was there to clear)."""
         changed_fields = [f for f in note_history_scope_by_field if f in vals]
         if not changed_fields:
             return []
@@ -394,13 +415,11 @@ class PatientInjury(models.Model):
                 new_norm = (vals.get(fname) or "").strip()
                 if old_norm == new_norm:
                     continue
-                if not new_norm:
-                    # Clears and whitespace-only writes log nothing.
-                    continue
                 history_vals.append({
                     'injury_id': rec.id,
                     'scope': note_history_scope_by_field[fname],
-                    'content': vals.get(fname),
+                    # A clear: an empty row (rendered « Cleared »).
+                    'content': vals.get(fname) if new_norm else '',
                     'author_id': author_id,
                     'note_datetime': now,
                 })
@@ -432,7 +451,10 @@ class PatientInjury(models.Model):
 
         # Update subscriptions if internal_notes changes (unless suppressed)
         if not suppress_followers and 'internal_notes' in vals:
-            for rec in self:
+            # sudo (owner review 2026-10-14): follower-subtype upkeep reads
+            # the followers' users and groups, which a portal therapist saving
+            # the internal notes may not read (res.groups ACL -> 403).
+            for rec in self.sudo():
                 rec._manage_treatment_professional_subscriptions()
 
         # Task 1272: propagate non-note injury changes to the owning player's

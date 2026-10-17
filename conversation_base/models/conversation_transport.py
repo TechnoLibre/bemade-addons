@@ -1,5 +1,11 @@
+import logging
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError
+
+from ..tools import display, mime
+
+_logger = logging.getLogger(__name__)
 
 
 class ConversationTransport(models.Model):
@@ -85,6 +91,21 @@ class ConversationTransport(models.Model):
         "a personal mailbox's traffic must not land in the shared hub "
         "unless a human says so each time. Turn it on for a shared or team "
         "mailbox, where filing is the point.",
+    )
+
+    record_link_mode = fields.Selection(
+        [("auto", "Automatic"), ("suggest", "Suggest"), ("off", "Off")],
+        string="Link Replies to Odoo Records",
+        default="suggest",
+        required=True,
+        help="What to do when an inbound message in this mailbox is a "
+        "reply to mail Odoo itself sent (its headers name an Odoo record). "
+        "Applies to personal mailboxes only: a shared mailbox is always "
+        "Off. Suggest: preselect that record in the capture dialog; you "
+        "still confirm. Automatic: file and link the message without the "
+        "dialog, but only when 'File Replies in Odoo by Default' is also "
+        "on (otherwise it behaves like Suggest); filing still needs a "
+        "click on New Conversation or Link to a Record. Off: do nothing.",
     )
 
     archive_on_capture = fields.Boolean(
@@ -217,6 +238,80 @@ class ConversationTransport(models.Model):
         raise NotImplementedError
 
     # ------------------------------------------------------------
+    # Odoo-origin header resolution (task #4144). Transport-agnostic: it
+    # works on the normalized stub, so every provider benefits.
+    # ------------------------------------------------------------
+
+    def _record_link_active(self):
+        """Single gate: personal mailbox and not switched Off. Shared or
+        Off means no fetch, no parse and no query."""
+        self.ensure_one()
+        return bool(self.user_id) and self.record_link_mode != "off"
+
+    def _resolve_record_from_headers(self, stub):
+        """Resolve a normalized stub's Odoo-origin headers to the record it
+        replies to. Header-only and bounded; never raises.
+
+        Returns ``("link", record)``, ``("existing", conversation)`` or
+        ``(False, None)``. A tattoo is only trusted when an exact local
+        ``mail.message.message_id`` matches (the foreign or deleted case
+        degrades to no suggestion); the record is the local message's own
+        ``model``/``res_id`` and must exist and be readable by the current
+        user (never sudo), so nothing unreadable is ever disclosed. A match
+        on a conversation message stops the scan: the reply belongs to that
+        conversation, not to an older business record.
+        """
+        self.ensure_one()
+        try:
+            candidates = mime.odoo_header_candidates(
+                stub.get("message_id"),
+                stub.get("in_reply_to"),
+                stub.get("references"),
+                stub.get("x_odoo_objects"),
+            )
+            msgids = [c["msgid"] for c in candidates if c["msgid"]]
+            if not msgids:
+                return False, None
+            found = {}
+            for msg in (
+                self.env["mail.message"]
+                .sudo()
+                .search_fetch(
+                    [("message_id", "in", msgids)],
+                    ["message_id", "model", "res_id"],
+                    order="id desc",
+                )
+            ):
+                found.setdefault(msg.message_id, msg)
+            for candidate in candidates:
+                msg = found.get(candidate["msgid"]) if candidate["msgid"] else None
+                if not msg:
+                    continue
+                model, res_id = msg.model, msg.res_id
+                if not model or not res_id or model not in self.env:
+                    continue
+                if model == "mail.conversation":
+                    conv = self.env[model].browse(res_id)
+                    if conv.exists() and conv.has_access("read"):
+                        return "existing", conv
+                    # Unreadable or gone: still the conversation's reply,
+                    # so do not fall through to an older record.
+                    return False, None
+                comodel = self.env[model]
+                if (
+                    comodel._transient
+                    or comodel._abstract
+                    or not self.env["ir.model"]._get(model)
+                ):
+                    continue
+                record = comodel.browse(res_id)
+                if record.exists() and record.has_access("read"):
+                    return "link", record
+        except Exception:  # noqa: BLE001 - any failure means no suggestion
+            _logger.debug("Odoo-origin header resolution failed", exc_info=True)
+        return False, None
+
+    # ------------------------------------------------------------
     # RPC entry points for the OWL inbox viewer (conversation_inbox).
     # Explicit-id @api.model entry points rather than instance methods, so
     # the client can call them without first browsing/loading the record.
@@ -246,7 +341,14 @@ class ConversationTransport(models.Model):
                 )
             )
         raw = transport._fetch(external_id)
-        return transport._normalize(raw)
+        stub = transport._normalize(raw)
+        # The viewer renders the body as HTML: whatever the provider's
+        # _normalize produced, the browser only ever gets the strict
+        # display profile (see tools/display.py). Every other key stays
+        # plain data that the client escapes.
+        if isinstance(stub, dict) and "body" in stub:
+            stub = dict(stub, body=display.sanitize_display_html(stub["body"]))
+        return stub
 
     def _mailbox_action(self, hook, external_id):
         """Gate + dispatch one mailbox write (AC5): the transport must be
