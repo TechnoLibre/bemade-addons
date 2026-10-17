@@ -368,6 +368,13 @@ window.addEventListener("pageshow", (ev) => {
         return;
     }
     if (pageIsStale()) {
+        // Task 1618: this reload replays a back/forward step — the nav stack
+        // (sc_app_nav.js) must not treat it as a reload (which resets it).
+        try {
+            storage() && storage().setItem("sc_nav_bf_reload:v1", "1");
+        } catch {
+            // ignore: the stack falls back to the declared parent
+        }
         window.location.reload();
     } else if (ev.persisted) {
         document.dispatchEvent(new CustomEvent("sc:live-count-refresh"));

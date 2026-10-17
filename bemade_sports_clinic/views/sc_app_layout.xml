@@ -35,6 +35,10 @@
     the screen width decides (phone: back + context, laptop: the trail — no
     user setting). sc_app_nav.js turns the back chevron into history.back()
     when the previous page of this tab is an in-app page.
+    Task 1618: on a laptop the chevron also shows next to the trail when it
+    adds something — sc_app_nav.js marks the shell ``o_sc_back_useful`` after
+    a sideways arrival (the previous page is not the declared parent) or in
+    the installed app (display-mode: standalone).
 -->
 <odoo>
 

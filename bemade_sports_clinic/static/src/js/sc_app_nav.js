@@ -13,11 +13,22 @@
  * (?tab=, filters, ?success= flashes) is not « another page », and a form
  * POST that redirects back to the same page adds one more history entry for
  * it (counted, so back skips them all). Inert outside .o_sc_app.
+ *
+ * Task 1618: on a laptop the breadcrumb is the navigation and the chevron is
+ * hidden — unless it adds something: the shell gets ``o_sc_back_useful``
+ * (the CSS then shows the chevron left of the title) when the app runs
+ * installed (display-mode: standalone — no browser back button), or when the
+ * previous in-app page of this tab is NOT the breadcrumb's direct parent (a
+ * sideways arrival: activities → player, calendar → event, …). A normal
+ * drill-down (previous page = parent) keeps the breadcrumb only. Phones
+ * always show the chevron (unchanged).
  */
 
 const STORE_KEY = "sc_nav_stack:v1";
 const POST_KEY = "sc_nav_post:v1";
 const UP_KEY = "sc_nav_up:v1";
+// Set by sc_fragments.js when a back/forward step reloads a stale page.
+const BF_RELOAD_KEY = "sc_nav_bf_reload:v1";
 const MAX_DEPTH = 50;
 
 function storage() {
@@ -121,6 +132,16 @@ export function syncStack(type) {
     const wentUp = takeFlag(UP_KEY);
     let stack = load();
     const top = stack[stack.length - 1];
+    if (takeFlag(BF_RELOAD_KEY) && type === "reload") {
+        // #1611 reloads a stale page restored by back/forward: the stack
+        // already stepped back to it — keep it (task 1618).
+        if (top && top.k === key) {
+            top.u = url;
+            save(stack);
+            return stack;
+        }
+        type = "back_forward";
+    }
     if (type === "reload") {
         // A reload falls back to the declared parent (owner decision).
         stack = [{ u: url, k: key, n: 1 }];
@@ -176,6 +197,47 @@ export function backDistance() {
     return top.k === pageKey(currentUrl()) ? top.n || 1 : 0;
 }
 
+/** The app runs installed (home-screen / desktop PWA, incl. iOS). */
+export function isStandalone() {
+    try {
+        if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
+            return true;
+        }
+    } catch {
+        // no matchMedia: a browser tab
+    }
+    return window.navigator.standalone === true;
+}
+
+/**
+ * The back chevron adds something next to the breadcrumb: installed app, or
+ * the previous in-app page of this tab is not the declared parent (the
+ * chevron's href).
+ */
+export function backIsUseful() {
+    const back = document.querySelector(".o_sc_app a[data-sc-back]");
+    if (!back) {
+        return false;
+    }
+    if (isStandalone()) {
+        return true;
+    }
+    if (backDistance() <= 0) {
+        return false;
+    }
+    const stack = load();
+    const previous = stack[stack.length - 2];
+    return Boolean(previous && previous.k !== pageKey(back.getAttribute("href") || ""));
+}
+
+/** Toggle ``o_sc_back_useful`` on the shell root (task 1618). */
+export function updateBackUseful() {
+    const shell = document.querySelector(".o_sc_app[data-sc-app-shell]");
+    if (shell) {
+        shell.classList.toggle("o_sc_back_useful", backIsUseful());
+    }
+}
+
 function inShell() {
     return Boolean(document.querySelector(".o_sc_app[data-sc-app-shell]"));
 }
@@ -185,6 +247,7 @@ function init() {
         return;
     }
     syncStack(navigationType());
+    updateBackUseful();
 }
 
 if (document.readyState === "loading") {
@@ -197,6 +260,25 @@ if (document.readyState === "loading") {
 window.addEventListener("pageshow", (ev) => {
     if (ev.persisted && inShell()) {
         syncStack("back_forward");
+        updateBackUseful();
+    }
+});
+
+// Task 1618: the page can switch to the installed display (« Open in app »);
+// ``sc:nav-sync`` re-checks it on demand (tours stub matchMedia).
+try {
+    const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)");
+    standalone && standalone.addEventListener && standalone.addEventListener("change", () => {
+        if (inShell()) {
+            updateBackUseful();
+        }
+    });
+} catch {
+    // no matchMedia
+}
+document.addEventListener("sc:nav-sync", () => {
+    if (inShell()) {
+        updateBackUseful();
     }
 });
 
