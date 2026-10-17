@@ -69,6 +69,11 @@ class ConversationInboxCaptureWizard(models.TransientModel):
         an explicit "Add to Existing") presets the wizard on that record;
         Automatic on a mailbox that files by default files and links at
         once and opens the conversation.
+
+        When the headers instead resolve to a conversation the user can
+        read and the user chose "Add to Existing", that conversation is
+        preselected in the wizard. This is a default only: nothing is
+        filed until the user confirms, whatever the ``record_link_mode``.
         """
         transport = self.env["conversation.transport"].browse(transport_id)
         context = {
@@ -91,6 +96,14 @@ class ConversationInboxCaptureWizard(models.TransientModel):
             kind, target = transport._resolve_record_from_headers(stub)
         except Exception:  # noqa: BLE001 - resolution never blocks capture
             kind, target = False, None
+        if kind == "existing":
+            # Preselect only -- never file a conversation match on the
+            # user's behalf. The resolver already checks readability;
+            # restated here so this entry point can never disclose a
+            # conversation the user cannot read.
+            if mode == "existing" and target.exists() and target.has_access("read"):
+                context["default_conversation_id"] = target.id
+            return wizard_action
         if kind != "link":
             return wizard_action
 
