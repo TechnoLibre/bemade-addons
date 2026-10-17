@@ -2283,11 +2283,6 @@ msgid "<span>Archived notes</span>"
 msgstr "<span>Notes archivées</span>"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
-msgid "<span>Assigned Staff</span>"
-msgstr "<span>Personnel assigné</span>"
-
-#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
 msgid "<span>Delete</span>"
 msgstr "<span>Supprimer</span>"
@@ -2366,11 +2361,6 @@ msgstr "<span>Retour prévu :</span>"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 msgid "<span>Sign-in kiosk</span>"
 msgstr "<span>Borne d'inscription</span>"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
-msgid "<span>Teams</span>"
-msgstr "<span>Équipes</span>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
@@ -11126,6 +11116,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 #: code:addons/bemade_sports_clinic/models/sc_app_roles.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event__team_ids
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_organization_staff__team_count
@@ -14898,6 +14889,8 @@ msgid "Teams changed"
 msgstr "Équipes modifiées"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Add a team…"
@@ -15150,6 +15143,8 @@ msgid "<span>Request a player addition</span>"
 msgstr "<span>Demander l'ajout d'un joueur</span>"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Add a therapist…"
 msgstr "Ajouter un thérapeute…"
@@ -15445,3 +15440,15 @@ msgstr "Rien n'a été téléversé : ces fichiers dépassent 10 Mo : %(files)s"
 #: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Please enter a name."
 msgstr "Veuillez saisir un nom."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+msgid "Assigned staff"
+msgstr "Personnel assigné"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+msgid "No organization"
+msgstr "Aucune organisation"

@@ -1557,7 +1557,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             edit_options = {
                 'types': list(env['sports.event']._fields['event_type']._description_selection(env)),
                 'venues': self._sc_event_venue_options(event_sudo),
-                'teams': [(t.id, t.name) for t in teams.sorted('name')],
+                # Task 1608: grouped by organization (the browse list).
+                'teams': self._sc_team_group_options(teams),
                 'staff': [(u.id, u.name) for u in (self._get_treatment_professionals()
                                                    | event_sudo.assigned_staff_ids).sudo().sorted('name')],
             }
@@ -1575,6 +1576,19 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_can_activities': is_tp or user.has_group('bemade_sports_clinic.group_portal_team_coach'),
             'sc_flash': {'success': success, 'error': error},
         }
+
+    @staticmethod
+    def _sc_team_group_options(teams):
+        """Task 1608 — the teams as grouped tags options
+        ``(id, name, organization name, organization id)``: by organization
+        name, the teams without organization last (« No organization », key
+        ''), name order inside a group."""
+        env = http.request.env
+        none_label = env._("No organization")
+        teams = teams.sudo().sorted(lambda team: (
+            not team.parent_id, (team.parent_id.name or '').lower(), (team.name or '').lower(), team.id))
+        return [(team.id, team.name, team.parent_id.name if team.parent_id else none_label,
+                 team.parent_id.id or '') for team in teams]
 
     @staticmethod
     def _sc_default_event_org(teams, selected_ids, requested=None):
@@ -1664,6 +1678,26 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 field_errors[name] = error
                 error = None
         form['field_errors'] = field_errors
+        # Task 1608: teams and assigned staff are compact multi-selects (the
+        # tags field in form mode) writing the CSV hidden inputs the routes
+        # accept; focusing one opens the full list (teams grouped by
+        # organization), the organization select narrows the teams.
+        team_options = self._sc_team_group_options(values['teams'])
+        staff = values['treatment_professionals']
+        if mode == 'edit':
+            staff |= event.sudo().assigned_staff_ids
+        staff_options = [(user.id, user.name) for user in staff.sudo().sorted('name')]
+        offered_teams = {option[0] for option in team_options}
+        offered_staff = {option[0] for option in staff_options}
+        form['team_csv'] = ','.join(str(i) for i in form['team_ids'] if i in offered_teams)
+        form['staff_csv'] = ','.join(str(i) for i in form['staff_ids'] if i in offered_staff)
+        form['team_props'] = self._sc_form_props(
+            'sc_event_team_ids', env._("Teams"), value=form['team_csv'], options=team_options,
+            placeholder=env._("Add a team…"),
+            groupSelect='sc_event_org' if values.get('organizations') else None)
+        form['staff_props'] = self._sc_form_props(
+            'sc_event_staff_ids', env._("Assigned staff"), value=form['staff_csv'], options=staff_options,
+            placeholder=env._("Add a therapist…"))
         return {
             'sc_form_mode': mode,
             'sc_form': form,

@@ -193,6 +193,7 @@ $sc-p2-laptop: 992px;
         }
     }
 
+    // Task 1608: the full list (browse) — scrollable, grouped.
     .o_sc_tags_options {
         display: flex;
         flex-direction: column;
@@ -201,7 +202,42 @@ $sc-p2-laptop: 992px;
         list-style: none;
         border: 1px solid var(--sc-line);
         border-radius: var(--sc-radius-sm);
-        overflow: hidden;
+        max-height: unquote("min(50vh, 22rem)");
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+
+        &:focus {
+            outline: none;
+        }
+    }
+
+    .o_sc_tags_search {
+        scroll-margin-top: 72px;
+    }
+
+    .o_sc_tags_group {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: var(--sc-space-1) var(--sc-space-3);
+        background: var(--sc-surface-2);
+        border-top: 1px solid var(--sc-line);
+        color: var(--sc-fg-2);
+        font-size: var(--sc-text-sm);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+
+        &:first-child {
+            border-top: 0;
+        }
+    }
+
+    .o_sc_tags_option_active {
+        background: var(--sc-hover);
+        box-shadow: inset 3px 0 0 var(--sc-accent);
     }
 
     .o_sc_tags_option {
@@ -224,6 +260,10 @@ $sc-p2-laptop: 992px;
     }
 
     .o_sc_tags_options > li:first-child .o_sc_tags_option {
+        border-top: 0;
+    }
+
+    .o_sc_tags_group + li .o_sc_tags_option {
         border-top: 0;
     }
 

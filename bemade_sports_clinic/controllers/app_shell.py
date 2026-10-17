@@ -381,6 +381,8 @@ def _timesheet_display(timesheet, field):
 
 # -- sports.event (owner review 2026-10-11: the event page's pencil card) -----
 _EVENT_TIMES = ('date_start', 'date_end', 'therapist_start', 'therapist_end')
+# Task 1608: a new event start sets the end this long after it (legacy portal).
+_EVENT_DEFAULT_HOURS = 2
 
 
 def _csv_ids(value):
@@ -411,7 +413,24 @@ def _event_write(ctrl, event, field, value):
     elif field in _EVENT_TIMES:
         if not value:
             raise ValidationError(_("Please fill in all required fields."))
-        event.write({field: ctrl._parse_portal_datetime(value)})
+        moment = fields.Datetime.to_datetime(ctrl._parse_portal_datetime(value))
+        vals = {field: moment}
+        # Task 1608: the coverage times follow the event times as in the
+        # legacy portal — a new start moves the coverage start to it, the end
+        # to start + 2 h and the coverage end to that end; a new end moves
+        # the coverage end to it when it was empty or earlier. Saved together
+        # and answered under « also » so the card's fields follow.
+        if field == 'date_start' and moment:
+            end = moment + timedelta(hours=_EVENT_DEFAULT_HOURS)
+            vals.update({'therapist_start': moment, 'date_end': end, 'therapist_end': end})
+        elif field == 'date_end' and moment:
+            coverage_end = event.sudo().therapist_end
+            if not coverage_end or coverage_end < moment:
+                vals['therapist_end'] = moment
+        event.write(vals)
+        also = [name for name in vals if name != field]
+        if also:
+            return {'also_fields': also}
     elif field == 'venue_id':
         event.write({'venue_id': int(value) if value else False})
     elif field == 'description':
@@ -1395,8 +1414,10 @@ class AppShellMixin:
 
     @staticmethod
     def _sc_options(pairs):
-        """[(key, label)] -> JSON-safe [[str(key), str(label)]]."""
-        return [[str(key), str(label)] for key, label in pairs]
+        """[(key, label)] -> JSON-safe [[str(key), str(label)]]. Task 1608: a
+        tags option may carry its group, (key, label, group_label, group_key)
+        — kept, as strings."""
+        return [[str(part) for part in option] for option in pairs]
 
     @staticmethod
     def _sc_field_props(record, field, label, input_type='text', **extra):
@@ -1587,6 +1608,26 @@ class AppShellMixin:
             'label': str(label),
             'inputType': input_type,
             'inputId': 'sc_draft_%s' % name,
+            'value': value or '',
+        }
+        if extra.get('options') is not None:
+            extra['options'] = AppShellMixin._sc_options(extra['options'])
+        for key, val in extra.items():
+            if val is not None:
+                props[key] = str(val) if key in ('hint', 'placeholder') else val
+        return json.dumps(props, default=str)
+
+    @staticmethod
+    def _sc_form_props(target, label, input_type='tags', value='', **extra):
+        """Task 1608 — JSON props of a FORM-mode sc_autosave_field: no
+        autosave, no draft; the value goes to the enclosing form's hidden
+        input ``target`` (its id), which the form posts as before."""
+        props = {
+            'mode': 'form',
+            'target': target,
+            'label': str(label),
+            'inputType': input_type,
+            'inputId': '%s_field' % target,
             'value': value or '',
         }
         if extra.get('options') is not None:

@@ -195,3 +195,4 @@ from . import test_app_shell_user_menu_1606
 from . import test_app_shell_user_menu_tours_1606
 from . import test_list_header_1607
 from . import test_list_header_tours_1607
+from . import test_event_form_pickers_1608

@@ -582,12 +582,15 @@
             <t t-set="sc_active_nav" t-value="'events'"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
-            <form t-att-action="sc_form['action']" method="post" class="o_sc_form" data-sc-form="event.form" data-sc-event-form="1">
+            <form t-att-action="sc_form['action']" method="post" class="o_sc_form" data-sc-form="event.form" data-sc-event-form="1"
+                  t-att-data-sc-event-form-mode="sc_form_mode">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <input type="hidden" name="return_url" t-att-value="sc_form['return_url']"/>
                 <input type="hidden" name="description_format" value="text"/>
-                <input type="hidden" name="team_ids" t-att-value="','.join(str(i) for i in sc_form['team_ids'])" data-sc-csv-of="sc_team"/>
-                <input type="hidden" name="assigned_staff_ids" t-att-value="','.join(str(i) for i in sc_form['staff_ids'])" data-sc-csv-of="sc_staff"/>
+                <!-- Task 1608: the submit contract (CSV ids), filled by the
+                     teams / staff multi-selects below (form-mode tags fields). -->
+                <input type="hidden" id="sc_event_team_ids" name="team_ids" t-att-value="sc_form['team_csv']"/>
+                <input type="hidden" id="sc_event_staff_ids" name="assigned_staff_ids" t-att-value="sc_form['staff_csv']"/>
                 <section class="o_sc_card o_sc_fields" data-sc-section="event.form.main">
                     <div class="o_sc_field">
                         <label class="o_sc_field_label" for="sc_event_name">Event Name</label>
@@ -646,10 +649,10 @@
                     </div>
                 </section>
                 <section class="o_sc_card o_sc_fields" data-sc-section="event.form.teams">
-                    <h2 class="o_sc_section_header"><span>Teams</span></h2>
                     <!-- Task 1597: picking an organization narrows the teams
-                         to its own and unticks the others (sc_events.js); the
-                         model refuses the teams of two organizations. -->
+                         to its own and drops the others (the tags field's
+                         groupSelect); the model refuses the teams of two
+                         organizations. -->
                     <div t-if="organizations" class="o_sc_field">
                         <label class="o_sc_field_label" for="sc_event_org">Organization</label>
                         <select id="sc_event_org" name="organization_id" class="o_sc_input o_sc_select" data-sc-org-select="1">
@@ -659,23 +662,16 @@
                             </t>
                         </select>
                     </div>
-                    <t t-foreach="teams" t-as="team">
-                        <label class="o_sc_check" t-att-data-sc-org-id="team.parent_id.id or None">
-                            <input type="checkbox" name="sc_team" t-att-value="team.id"
-                                   t-att-checked="'checked' if team.id in sc_form['team_ids'] else None"/>
-                            <span t-out="team.name"/>
-                        </label>
-                    </t>
+                    <!-- Task 1608: a compact multi-select — focusing it lists
+                         every team (grouped by organization), typing narrows. -->
+                    <div data-sc-event-pick="teams">
+                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_form['team_props']"/></t>
+                    </div>
                 </section>
                 <section class="o_sc_card o_sc_fields" data-sc-section="event.form.staff">
-                    <h2 class="o_sc_section_header"><span>Assigned Staff</span></h2>
-                    <t t-foreach="treatment_professionals" t-as="tp">
-                        <label class="o_sc_check">
-                            <input type="checkbox" name="sc_staff" t-att-value="tp.id"
-                                   t-att-checked="'checked' if tp.id in sc_form['staff_ids'] else None"/>
-                            <span t-out="tp.name"/>
-                        </label>
-                    </t>
+                    <div data-sc-event-pick="staff">
+                        <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_form['staff_props']"/></t>
+                    </div>
                 </section>
                 <div class="o_sc_form_actions">
                     <a t-att-href="sc_form['cancel_url']" class="o_sc_btn o_sc_btn_ghost">Cancel</a>

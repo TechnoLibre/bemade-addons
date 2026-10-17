@@ -47,6 +47,20 @@
  * (``also[field].options``, e.g. a country change → the new country's
  * provinces); ``hideEmpty`` hides a select left with no real choice.
  *
+ * Task 1608 (owner decisions 2026-10-14 / 2026-10-17):
+ * - « form » mode (third mode): no autosave, no draft — the value (a tags
+ *   CSV) is written to the enclosing form's hidden input ``target`` (its
+ *   id), which the form posts as before (the event create form's teams and
+ *   assigned staff);
+ * - tags BROWSE: focusing the search box with an empty query opens the FULL
+ *   scrollable list of the options left to pick (no cap), typing narrows it
+ *   (the words match the option or its group), arrows + Enter pick, Escape
+ *   closes; options may carry a group ([key, label, groupLabel, groupKey]):
+ *   headings separate the groups when more than one is shown;
+ * - ``groupSelect`` (the id of a <select>): its value narrows the options to
+ *   that group (« » = all) and drops the chosen ones of another group (the
+ *   event form's organization select, task 1597).
+ *
  * Owner review 2026-10-14:
  * - a date / date-time / time input saves only once its value is COMPLETE:
  *   when the user leaves it (blur), presses Enter, or picks a value in the
@@ -59,7 +73,7 @@
  * - a 409 whose current value is a value THIS field itself sent is not a
  *   conflict (no banner): the field adopts it and sends its latest value.
  */
-import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useEffect, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
@@ -71,8 +85,6 @@ const DRAFT_DEBOUNCE = 300;
 const DATE_LIKE_TYPES = ["date", "datetime-local", "time", "month", "week", "date_na"];
 // The values this field sent lately (a 409 answering one of them is ours).
 const SENT_MEMORY = 5;
-// tags: suggestions shown at once (owner review 2026-10-10: never a long list).
-const TAGS_MAX_MATCHES = 8;
 
 function fold(text) {
     return String(text || "")
@@ -92,7 +104,7 @@ function asText(value) {
 export class ScAutosaveField extends Component {
     static template = "bemade_sports_clinic.ScAutosaveField";
     static props = {
-        mode: { type: String, optional: true }, // "draft" (default) | "server"
+        mode: { type: String, optional: true }, // "draft" (default) | "server" | "form"
         name: { type: String, optional: true },
         naName: { type: String, optional: true }, // date_na, draft mode
         inputType: { type: String, optional: true },
@@ -114,6 +126,10 @@ export class ScAutosaveField extends Component {
         // Task 1582: the « replace » editor (server-mode textarea only).
         replace: { type: Boolean, optional: true },
         draftKey: { type: String, optional: true },
+        // Task 1608: form mode (the hidden input the value is written to)
+        // and the select narrowing a tags field's options to one group.
+        target: { type: String, optional: true },
+        groupSelect: { type: String, optional: true },
         // server mode
         model: { type: String, optional: true },
         recordId: { type: Number, optional: true },
@@ -124,6 +140,7 @@ export class ScAutosaveField extends Component {
 
     setup() {
         this.inputRef = useRef("input");
+        this.listRef = useRef("list");
         this.state = useState({
             // Task 1582: in replace mode ``value`` is the NEW text being
             // written (empty on edit) and ``current`` the text the server holds.
@@ -136,6 +153,11 @@ export class ScAutosaveField extends Component {
             message: "",
             error: "",
             query: "", // tags: the search box
+            // Task 1608: tags — the option list is open (browse), the option
+            // the arrows point at, the group the options are narrowed to.
+            open: false,
+            active: -1,
+            group: "",
             identity: null, // task 1600: {message, old, new} awaiting confirmation
             // Task 1601: the « updated on … by … » stamp under the field; a
             // save answers the fresh one (``hint``).
@@ -192,11 +214,34 @@ export class ScAutosaveField extends Component {
         if (this.isServer) {
             document.addEventListener("sc:saved", this.onSiblingSaved);
         }
-        onMounted(() => this.restore());
+        this.onGroupChange = (ev) => this.applyGroup(ev.target.value || "");
+        onMounted(() => {
+            this.restore();
+            const select = this.groupSelectEl;
+            if (select) {
+                select.addEventListener("change", this.onGroupChange);
+                this.applyGroup(select.value || "");
+            }
+        });
+        // Task 1608: the option the arrows point at stays in view.
+        useEffect(
+            (active) => {
+                const list = this.listRef.el;
+                const el = list && active >= 0 && list.querySelector(`[data-sc-tags-index="${active}"]`);
+                if (el && el.scrollIntoView) {
+                    el.scrollIntoView({ block: "nearest" });
+                }
+            },
+            () => [this.state.active]
+        );
         onWillUnmount(() => {
             clearTimeout(this.timer);
             window.removeEventListener("online", this.onOnline);
             document.removeEventListener("sc:saved", this.onSiblingSaved);
+            const select = this.groupSelectEl;
+            if (select) {
+                select.removeEventListener("change", this.onGroupChange);
+            }
         });
         if (this.isServer) {
             window.addEventListener("online", this.onOnline);
@@ -219,6 +264,15 @@ export class ScAutosaveField extends Component {
 
     get isServer() {
         return this.props.mode === "server";
+    }
+
+    /** Task 1608: written to the form's hidden input, never saved / drafted. */
+    get isForm() {
+        return this.props.mode === "form";
+    }
+
+    get groupSelectEl() {
+        return this.props.groupSelect ? document.getElementById(this.props.groupSelect) : null;
     }
 
     /** Task 1582: the opt-in « replace » editor (server-mode textarea). */
@@ -313,6 +367,9 @@ export class ScAutosaveField extends Component {
 
     // ------------------------------------------------------------ restore
     restore() {
+        if (this.isForm) {
+            return;
+        }
         const draft = readDraft(this.key);
         if (!draft) {
             return;
@@ -357,7 +414,7 @@ export class ScAutosaveField extends Component {
     onInput() {
         clearTimeout(this.timer);
         this.state.status = "dirty";
-        if (!this.isServer) {
+        if (!this.isServer && !this.isForm) {
             this.timer = setTimeout(() => this.keepDraft(), DRAFT_DEBOUNCE);
         }
     }
@@ -381,6 +438,8 @@ export class ScAutosaveField extends Component {
         }
         if (this.isServer) {
             this.save();
+        } else if (this.isForm) {
+            this.state.status = "idle";
         } else {
             this.keepDraft();
         }
@@ -466,35 +525,173 @@ export class ScAutosaveField extends Component {
         return this.options.filter((opt) => keys.includes(String(opt[0])));
     }
 
-    get tagMatches() {
-        const query = fold(this.state.query).trim();
-        if (!query) {
-            return [];
-        }
-        const words = query.split(/\s+/);
-        return this.options
-            .filter((opt) => !this.isChecked(opt[0]))
-            .filter((opt) => words.every((word) => fold(opt[1]).includes(word)))
-            .slice(0, TAGS_MAX_MATCHES);
+    /** Task 1608: the options a group narrowing leaves (« » = every group). */
+    get groupOptions() {
+        const group = this.state.group;
+        return group ? this.options.filter((opt) => String(opt[3] || "") === group) : this.options;
     }
 
-    addTag(key) {
+    /**
+     * Task 1608 (owner decision 2026-10-17: full visibility): the options left
+     * to pick — ALL of them with an empty query (browse), else the ones every
+     * typed word matches (in the option or its group). Never capped.
+     */
+    get tagMatches() {
+        const words = fold(this.state.query).trim().split(/\s+/).filter(Boolean);
+        return this.groupOptions
+            .filter((opt) => !this.isChecked(opt[0]))
+            .filter((opt) => {
+                const text = fold(`${opt[1]} ${opt[2] || ""}`);
+                return words.every((word) => text.includes(word));
+            });
+    }
+
+    /** The list rows: the options, with a heading per group when more than one is shown. */
+    get tagRows() {
+        const matches = this.tagMatches;
+        const groups = new Set(matches.map((opt) => opt[2] || ""));
+        const headings = groups.size > 1;
+        const rows = [];
+        let current = null;
+        matches.forEach((opt, index) => {
+            const group = opt[2] || "";
+            if (headings && group !== current) {
+                rows.push({ key: `group:${group}`, heading: true, label: group });
+            }
+            current = group;
+            rows.push({ key: String(opt[0]), heading: false, label: opt[1], value: opt[0], index });
+        });
+        return rows;
+    }
+
+    get tagsListId() {
+        return `${this.props.inputId || this.key}_options`;
+    }
+
+    get tagsActiveId() {
+        return this.state.open && this.state.active >= 0
+            ? `${this.tagsListId}_${this.state.active}`
+            : undefined;
+    }
+
+    /** Focus / click in the search box: the full list opens (browse). */
+    openTags() {
+        if (this.props.disabled || this.state.open) {
+            return;
+        }
+        this.state.open = true;
+        this.state.active = -1;
+        const el = this.inputRef.el;
+        if (el && el.scrollIntoView) {
+            el.scrollIntoView({ block: "start", behavior: "smooth" });
+        }
+    }
+
+    closeTags() {
+        this.state.open = false;
+        this.state.active = -1;
+    }
+
+    onTagsInput() {
+        this.state.open = true;
+        this.state.active = -1;
+    }
+
+    /** Focus left the field (not to its own list): the list closes. */
+    onTagsFocusout(ev) {
+        const root = ev.currentTarget;
+        if (ev.relatedTarget && root.contains(ev.relatedTarget)) {
+            return;
+        }
+        setTimeout(() => {
+            if (!root.contains(document.activeElement)) {
+                this.closeTags();
+            }
+        }, 0);
+    }
+
+    /**
+     * Pick an option. A tap / click keeps the list open for the next pick
+     * (the focus goes to the list: the phone keyboard closes); the keyboard
+     * keeps the focus in the search box.
+     */
+    addTag(key, ev) {
         this.state.query = "";
         this.onCheck(key, true);
-        if (this.inputRef.el) {
-            this.inputRef.el.focus();
+        const pointer = Boolean(ev && ev.detail > 0);
+        const count = this.tagMatches.length;
+        if (this.state.active >= count) {
+            this.state.active = count - 1;
+        }
+        const target = pointer && count && this.listRef.el ? this.listRef.el : this.inputRef.el;
+        if (target && document.activeElement !== target) {
+            target.focus();
         }
     }
 
     onTagKeydown(ev) {
-        if (ev.key === "Enter") {
+        if (ev.target !== this.inputRef.el && ev.target !== this.listRef.el) {
+            return; // a chip's « × » keeps its own keys
+        }
+        const matches = this.tagMatches;
+        if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
             ev.preventDefault();
-            const first = this.tagMatches[0];
-            if (first) {
-                this.addTag(first[0]);
+            if (!this.state.open) {
+                this.openTags();
+            }
+            if (!matches.length) {
+                return;
+            }
+            const step = ev.key === "ArrowDown" ? 1 : -1;
+            const next = this.state.active < 0 ? (step > 0 ? 0 : matches.length - 1) : this.state.active + step;
+            this.state.active = Math.max(0, Math.min(matches.length - 1, next));
+        } else if (ev.key === "Enter") {
+            // Never submits the enclosing form.
+            ev.preventDefault();
+            const pick =
+                this.state.open && this.state.active >= 0
+                    ? matches[this.state.active]
+                    : this.state.query.trim()
+                      ? matches[0]
+                      : null;
+            if (pick) {
+                this.addTag(pick[0]);
             }
         } else if (ev.key === "Escape") {
+            if (this.state.open || this.state.query) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
             this.state.query = "";
+            this.closeTags();
+        }
+    }
+
+    /**
+     * Task 1608: narrow the options to ``group`` (« » = all) and drop the
+     * chosen options of another group (an event never mixes organizations).
+     */
+    applyGroup(group) {
+        this.state.group = group;
+        if (!group) {
+            return;
+        }
+        const byKey = new Map(this.options.map((opt) => [String(opt[0]), opt]));
+        const keep = this.checkedKeys.filter((key) => {
+            const opt = byKey.get(key);
+            return !opt || String(opt[3] || "") === group;
+        });
+        if (keep.length !== this.checkedKeys.length) {
+            this.onPick(keep.join(","));
+        }
+    }
+
+    /** Form mode: the value goes to the form's hidden input. */
+    writeTarget() {
+        const el = this.props.target && document.getElementById(this.props.target);
+        if (el) {
+            el.value = this.state.value;
+            el.dispatchEvent(new Event("change", { bubbles: true }));
         }
     }
 
@@ -521,6 +718,9 @@ export class ScAutosaveField extends Component {
                     this.offerUndo(previous);
                 }
             });
+        } else if (this.isForm) {
+            this.writeTarget();
+            this.state.status = "idle";
         } else {
             this.keepDraft();
         }

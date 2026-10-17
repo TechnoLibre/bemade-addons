@@ -14,7 +14,8 @@ Acceptance criteria covered here:
 * UC-3 The form: an Organization select (« All organizations » + the
   organizations of the offered teams) above the team checkboxes; every
   team checkbox carries its organization (``data-sc-org-id``, empty for a
-  team without one).
+  team without one). Task 1608: the checkboxes became the tags field, whose
+  options carry the organization (group key).
 * UC-4 Default organization from context: the posted one after a refusal
   (flash), ``?organization_id=`` (the events list passes its organization
   filter to « New event »), the selected teams' single organization, or the
@@ -26,6 +27,7 @@ Acceptance criteria covered here:
   the remaining team only.
 * UC-6 French (fr_CA): the refusal message and the form's new labels.
 """
+import json
 from datetime import datetime, timedelta
 
 from lxml import html as lxml_html
@@ -103,7 +105,9 @@ class TestEventOrgTeamFilter1597(Org1597Common):
         self.assertFalse(self.env['sports.event'].search([('name', '=', 'SC 1597 Mixed')]))
         text, tree = self._get('/my/event/create')
         self.assertIn('same organization', text)
-        checked = tree.xpath('//form[@data-sc-event-form]//input[@name="sc_team"][@checked]/@value')
+        # Task 1608 (deliberate update): the teams field (tags, form mode)
+        # holds them, and the hidden CSV field the form posts.
+        checked = tree.xpath('//form[@data-sc-event-form]//input[@name="team_ids"]/@value')[0].split(',')
         self.assertEqual(set(checked), {str(self.team_a.id), str(self.team_c.id)})
 
     @mute_logger('odoo.http')
@@ -180,14 +184,17 @@ class TestEventOrgTeamFilter1597(Org1597Common):
         self.assertEqual(values[0], '')
         self.assertIn(str(self.org.id), values)
         self.assertIn(str(self.org2.id), values)
-        orgs = {box.get('value'): box.getparent().get('data-sc-org-id')
-                for box in form.xpath('.//input[@name="sc_team"]')}
+        # Task 1608 (deliberate update): every team option of the tags field
+        # carries its organization (group key; '' for a team without one).
+        teams_card = form.xpath('.//*[@data-sc-section="event.form.teams"]')[0]
+        props = json.loads(teams_card.xpath('.//owl-component/@props')[0])
+        orgs = {opt[0]: opt[3] for opt in props['options']}
         self.assertEqual(orgs[str(self.team_a.id)], str(self.org.id))
         self.assertEqual(orgs[str(self.team_c.id)], str(self.org2.id))
-        self.assertIsNone(orgs[str(self.team_free.id)])
-        # The select sits in the teams card, above the checkboxes.
-        teams_card = form.xpath('.//*[@data-sc-section="event.form.teams"]')[0]
+        self.assertEqual(orgs[str(self.team_free.id)], '')
+        # The select sits in the teams card, above the field, and narrows it.
         self.assertTrue(teams_card.xpath('.//select[@data-sc-org-select]'))
+        self.assertEqual(props['groupSelect'], teams_card.xpath('.//select[@data-sc-org-select]/@id')[0])
 
     # -- UC-4 ------------------------------------------------------------
     def test_default_org_single_org_user(self):
