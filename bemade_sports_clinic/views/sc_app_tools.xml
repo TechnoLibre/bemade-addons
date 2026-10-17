@@ -22,10 +22,12 @@
             <!-- Owner review 2026-10-14: applied on change (sc_forms.js); group
                  by in its own labelled group (it is not a filter). Task 1607:
                  the sort is in the list header, the form keeps its choice. -->
-            <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters"
+            <form method="get" action="/my/sc/timesheets" class="o_sc_filters o_sc_filters_compact" data-sc-section="timesheets.filters"
                   data-sc-autosubmit="1">
                 <input t-if="sortby" type="hidden" name="sortby" t-att-value="sortby"/>
-                <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id or organization_id or group_by) else None">
+                <!-- Task 1617: open on every visit (still collapsible; no
+                     remembered state — collapsing lasts for that visit). -->
+                <details class="o_sc_disclosure" open="open">
                     <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'filter'"/></t>
                         <span>Filters</span>

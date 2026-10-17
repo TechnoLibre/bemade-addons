@@ -200,3 +200,5 @@ from . import test_calendar_staff_colours_1605
 from . import test_digest_history_inline_1614
 from . import test_digest_history_tours_1614
 from . import test_header_order_1615
+from . import test_timesheet_filters_open_1617
+from . import test_timesheet_filters_open_tours_1617
