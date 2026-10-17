@@ -1,7 +1,8 @@
 """Acceptance criteria on the business models:
 
-1. Defaults: the hook lists task / sales order / accounting entry (installed
-   apps only); an admin's removal is not undone by re-running the hook.
+1. Defaults: the hook lists every default model whose app is installed
+   (task, sales order, accounting entry, and helpdesk ticket when helpdesk is
+   present); an admin's removal is not undone by re-running the hook.
 2. project.task and sale.order (and account.move): an unaddressed internal
    follower gets an inbox notification and no email; an addressed one is
    emailed; the customer follower still gets the email.
@@ -12,7 +13,10 @@
    business model here never drops externals.
 """
 
-from odoo.addons.mail_notification_addressed_only.hooks import post_init_hook
+from odoo.addons.mail_notification_addressed_only.hooks import (
+    DEFAULT_MODELS,
+    post_init_hook,
+)
 from odoo.addons.mail_notification_addressed_only.tests.common import (
     AddressedOnlyCommon,
 )
@@ -53,10 +57,9 @@ class TestBusinessModels(AddressedOnlyCommon):
 
     def test_01_defaults_listed_and_removal_survives_rerun(self):
         Rule = self.env["mail.addressed.only.rule"].with_context(active_test=False)
-        self.assertEqual(
-            set(Rule.search([]).mapped("model")),
-            {"project.task", "sale.order", "account.move"},
-        )
+        # helpdesk is optional: expect only the defaults present in this DB
+        expected = {model for model in DEFAULT_MODELS if model in self.env}
+        self.assertEqual(set(Rule.search([]).mapped("model")), expected)
         rule = Rule.search([("model", "=", "sale.order")])
         rule.active = False
         post_init_hook(self.env)
