@@ -71,7 +71,7 @@ export class ConversationInboxAction extends Component {
     const transports = await this.orm.searchRead(
       "conversation.transport",
       [["browsable", "=", true]],
-      ["id", "name", "sendable", "mailbox_writable"]
+      ["id", "name", "sendable", "mailbox_writable", "can_trash_mail"]
     );
     this.state.transports = transports;
     this.state.transportId = transports.length ? transports[0].id : null;
