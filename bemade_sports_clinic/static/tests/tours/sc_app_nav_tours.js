@@ -106,8 +106,15 @@ tours.add("sc_1579_digest_chain", {
             expectUnloadPage: true,
         },
         {
-            content: "Digest list: open a snapshot",
-            trigger: '[data-sc-section="digest.history"] a[data-sc-digest-id]',
+            // Task 1614: a date expands in place; its « Open this day » link
+            // leads to the day's page.
+            content: "Digest list: expand a date",
+            trigger: '[data-sc-section="digest.history"] details[data-sc-digest-row] > summary',
+            run: "click",
+        },
+        {
+            content: "Digest list: open the day's page",
+            trigger: '[data-sc-section="digest.history"] details[open] a[data-sc-digest-id]',
             run(helpers) {
                 reloadIfRestored();
                 return helpers.click();

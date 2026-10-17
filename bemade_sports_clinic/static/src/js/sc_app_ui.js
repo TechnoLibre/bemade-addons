@@ -261,7 +261,9 @@ async function loadLazy(container, url, target) {
         const html = await scFetch(url, { as: "html" });
         target.innerHTML = html;
         // A fragment with its own empty state (task 1581 histories) keeps it.
-        if (!target.querySelector("li, a, tr, .o_sc_empty")) {
+        // Task 1614: [data-sc-lazy-filled] = content even without a link
+        // (a digest day whose players have no page link).
+        if (!target.querySelector("li, a, tr, .o_sc_empty, [data-sc-lazy-filled]")) {
             const empty = document.createElement("p");
             empty.className = "o_sc_empty";
             empty.textContent = _t("Nothing to show.");

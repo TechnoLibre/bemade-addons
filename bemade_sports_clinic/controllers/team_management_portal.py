@@ -547,6 +547,33 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 count=sum(1 for row in roster_rows if row['pending_removal'])),
         }
 
+    def _digest_for_viewer(self, team_id, digest_id):
+        """Access + role gate shared by the snapshot page and its body
+        fragment (tasks 1267, 1614): ``(team, digest, role)``.
+
+        Only a team staff member (or a treatment professional / admin) may read
+        a snapshot (non-member -> 403); a digest of another team -> 404
+        (``MissingError``). The role is resolved exactly as the live dashboard
+        does: a portal TP (or internal/admin) gets the TP view, everyone else the
+        coach view.
+        """
+        try:
+            # Visibility gate — same membership check as the live team page. A
+            # non-member raises AccessError, surfaced as a real 403.
+            team = self._check_team_access(team_id)
+        except AccessError:
+            raise Forbidden(
+                _("You don't have permission to view this team's digest."))
+        # sudo: the team gate above is the access rule; another team's digest
+        # is « not found », never an access error.
+        digest = request.env['sports.team.digest'].sudo().browse(int(digest_id)).exists()
+        if not digest or digest.team_id.id != team.id:
+            raise MissingError(_("This digest does not exist."))
+        is_treatment_prof = self._is_treatment_professional()
+        is_admin = request.env.user.has_group('base.group_system')
+        role = 'tp' if (is_treatment_prof or is_admin) else 'coach'
+        return team, digest, role
+
     @http.route(['/my/team/<int:team_id>/digest/<int:digest_id>'],
                 type='http', auth="user", website=True)
     def portal_team_digest(self, team_id, digest_id, **kw):
@@ -558,34 +585,19 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         professional / admin) may view it; anyone else gets a 403.
         """
         try:
-            # Visibility gate — same membership check as the live team page. A
-            # non-member raises AccessError, surfaced below as a real 403.
-            team = self._check_team_access(team_id)
+            team, digest, role = self._digest_for_viewer(team_id, digest_id)
         except MissingError:
             return request.not_found()
-        except AccessError:
-            raise Forbidden(
-                _("You don't have permission to view this team's digest."))
 
-        digest = request.env['sports.team.digest'].browse(int(digest_id)).exists()
-        if not digest or digest.team_id.id != team.id:
-            return request.not_found()
-
-        # Resolve the viewer's role exactly as the live dashboard does: a portal
-        # TP (or internal/admin) sees the TP view; everyone else the coach view.
-        is_treatment_prof = self._is_treatment_professional()
-        is_admin = request.env.user.has_group('base.group_system')
-        role = 'tp' if (is_treatment_prof or is_admin) else 'coach'
-
-        players = digest.sudo()._render_for_role(role)
+        players = digest._render_for_role(role)
         values = {
             'page_name': 'my_teams',
             'team': team,
-            'digest': digest.sudo(),
+            'digest': digest,
             'players': players,
             # Task 1270 (slice F): the frozen announcement rides in item_data;
             # it is all-staff content, so both roles see it.
-            'announcement': (digest.sudo().item_data or {}).get('announcement'),
+            'announcement': (digest.item_data or {}).get('announcement'),
             'default_url': f'/my/team?team_id={team.id}',
         }
         # Task 1540: the app shell (switch on) or today's template (off);
@@ -594,6 +606,29 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             values['sc_digest_date'] = format_date(request.env, digest.snapshot_date)
         return self._sc_render('bemade_sports_clinic.portal_team_digest',
                                'bemade_sports_clinic.sc_app_team_digest', values)
+
+    @http.route(['/my/team/<int:team_id>/digest/<int:digest_id>/body'],
+                type='http', auth="user", website=True)
+    def portal_team_digest_body(self, team_id, digest_id, **kw):
+        """Task 1614: one snapshot's body alone (no layout, never cached), the
+        lazy body of its date in the app's digest history. Same gate and same
+        role re-gated ``team_digest_render`` as the snapshot page."""
+        try:
+            _team, digest, role = self._digest_for_viewer(team_id, digest_id)
+        except MissingError:
+            return request.not_found()
+        values = {
+            'request': request,
+            'digest': digest,
+            'players': digest._render_for_role(role),
+            'announcement': (digest.item_data or {}).get('announcement'),
+        }
+        html = request.env['ir.ui.view']._render_template(
+            'bemade_sports_clinic.sc_digest_body', values)
+        return request.make_response(html, headers=[
+            ('Content-Type', 'text/html; charset=utf-8'),
+            ('Cache-Control', 'no-store'),
+        ])
 
     def _sanitize_local_back(self, back, team_id):
         """Open-redirect guard for the digest-history backlink (task 1389).
@@ -697,10 +732,17 @@ class TeamManagementPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Task 1540: the full history on the app shell (the modal fragment
         # above — also the P1b sheet — is unchanged).
         if self._sc_app_shell_active():
+            # Task 1614: each date expands in place (lazy body) with its
+            # counts as the subtitle — a coach's re-gated (see _sc_counts).
+            role = ('tp' if (self._is_treatment_professional()
+                             or request.env.user.has_group('base.group_system'))
+                    else 'coach')
             values['sc_digest_rows'] = [{
                 'id': d.id,
                 'label': format_date(request.env, d.snapshot_date),
+                'subtitle': d._sc_counts_label(role),
                 'url': '/my/team/%d/digest/%d' % (team.id, d.id),
+                'body_url': '/my/team/%d/digest/%d/body' % (team.id, d.id),
             } for d in digests]
         return self._sc_render('bemade_sports_clinic.portal_team_digest_history',
                                'bemade_sports_clinic.sc_app_team_digest_history', values)

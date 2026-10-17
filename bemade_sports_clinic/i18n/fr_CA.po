@@ -7554,6 +7554,65 @@ msgid "No changes were recorded for this day."
 msgstr "Aucun changement n'a été enregistré pour cette journée."
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "%(count)s players"
+msgstr "%(count)s joueurs"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "1 player"
+msgstr "1 joueur"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "%(count)s changes"
+msgstr "%(count)s changements"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "1 change"
+msgstr "1 changement"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "%(count)s new injuries"
+msgstr "%(count)s nouvelles blessures"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "1 new injury"
+msgstr "1 nouvelle blessure"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "No changes"
+msgstr "Aucun changement"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
+msgid "Snapshot of %(date)s%(tz)s — changes over the last %(hours)s h"
+msgstr "Instantané du %(date)s%(tz)s — changements des dernières %(hours)s h"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/team_management_portal.py:0
+msgid "This digest does not exist."
+msgstr "Ce sommaire n'existe pas."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team_digest_history
+msgid "Open this day"
+msgstr "Ouvrir cette journée"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.actions.act_window,help:bemade_sports_clinic.sports_clinic_attendance_report_action
 msgid "No clinic attendance yet"
 msgstr "Aucune présence en clinique pour l'instant"
@@ -14086,6 +14145,7 @@ msgstr "Le Fit Crew a besoin d'une connexion pour afficher les équipes et les j
 #. module: bemade_sports_clinic
 #. odoo-javascript
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team_digest_history
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_calendar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_player_row
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_sheet
