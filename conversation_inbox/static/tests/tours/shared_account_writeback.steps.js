@@ -64,8 +64,7 @@ export default [
     title: "Le propriétaire du compte est verrouillé",
     narration:
       "Le propriétaire reste verrouillé tant que l'écriture est activée : seul un gestionnaire Conversations peut attribuer ou retirer le propriétaire, sans quoi un membre pourrait s'emparer d'un compte partagé et supprimer des courriels.",
-    selector:
-      ".o_form_view .o_field_widget[name='user_id'].o_readonly_modifier",
+    selector: ".o_form_view .o_field_widget[name='user_id'].o_readonly_modifier",
     action: "assert",
   },
 ];
