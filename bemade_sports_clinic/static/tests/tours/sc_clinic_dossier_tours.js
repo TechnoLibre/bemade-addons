@@ -35,8 +35,8 @@ function onClinicDossier() {
 function addSteps(diagnosis) {
     return [
         {
-            content: "Open « Add Injury » on the patient file",
-            trigger: `${ADD} > summary`,
+            content: "Open « Add Injury » on the patient file (the list header's « + Ajouter »)",
+            trigger: '.o_sc_list_header button.o_sc_list_add[aria-controls="sc_clinic_injury_add"]',
             run: "click",
         },
         {

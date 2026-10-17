@@ -19,11 +19,13 @@
             <t t-set="sc_active_nav" t-value="'timesheets'"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
-            <!-- Owner review 2026-10-14: applied on change (sc_forms.js); sort /
-                 group by in their own labelled group (they are not filters). -->
+            <!-- Owner review 2026-10-14: applied on change (sc_forms.js); group
+                 by in its own labelled group (it is not a filter). Task 1607:
+                 the sort is in the list header, the form keeps its choice. -->
             <form method="get" action="/my/sc/timesheets" class="o_sc_filters" data-sc-section="timesheets.filters"
                   data-sc-autosubmit="1">
-                <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id or organization_id or group_by or (sortby and sortby != 'date')) else None">
+                <input t-if="sortby" type="hidden" name="sortby" t-att-value="sortby"/>
+                <details class="o_sc_disclosure" t-att-open="'open' if (date_from or date_to or search or team_id or organization_id or group_by) else None">
                     <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'filter'"/></t>
                         <span>Filters</span>
@@ -61,19 +63,9 @@
                             </select>
                         </div>
                     </div>
-                    <fieldset class="o_sc_filter_group" data-sc-section="timesheets.sort">
-                        <legend class="o_sc_filter_group_title">Sort / Group by</legend>
+                    <fieldset class="o_sc_filter_group" data-sc-section="timesheets.group">
+                        <legend class="o_sc_filter_group_title">Group by</legend>
                         <div class="o_sc_filter_grid">
-                            <div class="o_sc_field">
-                                <label for="sc_ts_sort" class="o_sc_field_label">Sort by</label>
-                                <select id="sc_ts_sort" name="sortby" class="o_sc_input o_sc_select">
-                                    <option value="date" t-att-selected="'selected' if (not sortby or sortby == 'date') else None">Date (asc)</option>
-                                    <option value="date_desc" t-att-selected="'selected' if sortby == 'date_desc' else None">Date (desc)</option>
-                                    <option value="team" t-att-selected="'selected' if sortby == 'team' else None">Team</option>
-                                    <option value="org" t-att-selected="'selected' if sortby == 'org' else None">Organization</option>
-                                    <option value="state" t-att-selected="'selected' if sortby == 'state' else None">Status</option>
-                                </select>
-                            </div>
                             <div class="o_sc_field">
                                 <label for="sc_ts_group" class="o_sc_field_label">Group by</label>
                                 <select id="sc_ts_group" name="group_by" class="o_sc_input o_sc_select">
@@ -92,6 +84,20 @@
                 </details>
             </form>
 
+            <!-- Task 1607: the sort, condensed to the right of the list header
+                 (was in the filter panel). -->
+            <t t-call="bemade_sports_clinic.sc_list_header">
+                <t t-set="header_section" t-value="'timesheets.header'"/>
+                <t t-set="sc_sort_date">Date (asc)</t>
+                <t t-set="sc_sort_date_desc">Date (desc)</t>
+                <t t-set="sc_sort_team">Team</t>
+                <t t-set="sc_sort_org">Organization</t>
+                <t t-set="sc_sort_state">Status</t>
+                <t t-set="sorts" t-value="sc_sort_options('sortby', [('date', sc_sort_date), ('date_desc', sc_sort_date_desc), ('team', sc_sort_team), ('org', sc_sort_org), ('state', sc_sort_state)], sortby or 'date')"/>
+                <t t-set="sort_id" t-value="'sc_timesheets_sort'"/>
+                <t t-set="sort_label">Sort timesheets</t>
+                <t t-set="sort_section" t-value="'timesheets.sort'"/>
+            </t>
             <!-- Task 1611: a read-fragment list — a time change moves the card
                  to its date group (headings and order as after a reload). -->
             <div t-if="sc_timesheet_groups" class="o_sc_list" data-sc-section="timesheets.list"
@@ -248,7 +254,18 @@
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <div t-if="success == 'note_added'" t-att-data-sc-draft-clear="sc_quick_note_prefix" hidden="hidden"/>
 
-            <form action="/my/notepad/add" method="post" class="o_sc_card o_sc_form" id="quick-add" data-sc-form="note.add">
+            <!-- Task 1607: « + Ajouter » right above the notes opens / closes
+                 the quick-add form (docked open, as before). -->
+            <t t-call="bemade_sports_clinic.sc_list_header">
+                <t t-set="header_section" t-value="'notepad.header'"/>
+                <t t-set="add_label">Add a note</t>
+                <t t-set="add_panel" t-value="'sc_notepad_add'"/>
+                <t t-set="add_open" t-value="True"/>
+                <t t-set="add_key" t-value="'notepad.add'"/>
+            </t>
+            <details class="o_sc_card o_sc_list_add_panel" id="sc_notepad_add" data-sc-section="notepad.add" open="open">
+                <summary class="o_sc_disclosure_summary"><span>Quick note</span></summary>
+            <form action="/my/notepad/add" method="post" class="o_sc_form" id="quick-add" data-sc-form="note.add">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <t t-set="sc_qn_label">Quick note</t>
                 <t t-set="sc_qn_placeholder">Type a note to self…</t>
@@ -266,6 +283,7 @@
                     <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="note.add">Add</button>
                 </div>
             </form>
+            </details>
 
             <div t-if="sc_note_rows" class="o_sc_list" data-sc-section="notepad.list">
                 <t t-foreach="sc_note_rows" t-as="row">

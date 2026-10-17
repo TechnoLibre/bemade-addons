@@ -349,6 +349,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'show_cancelled': bool(kw.get('show_cancelled')),
             'search': kw.get('search'),
             'is_therapist': is_therapist,
+            # Task 1607: « + Ajouter » above the calendar (as the list's).
+            'can_edit': is_therapist,
         }
         # Task 1540: the shell calendar (sc_calendar component, same feed).
         if self._sc_app_shell_active():
@@ -1440,7 +1442,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                       for group in values['grouped_events']]
         filters_open = any(values.get(key) for key in (
             'organization_id', 'team_id', 'assigned_user_id', 'date_from', 'show_cancelled', 'group_by',
-            'search')) or (values.get('sortby') not in (None, '', 'date', 'date_desc'))
+            'search'))
         return dict(
             bar,
             sc_event_groups=groups,

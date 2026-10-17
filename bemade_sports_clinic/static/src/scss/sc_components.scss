@@ -253,45 +253,6 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         }
     }
 
-    // App-bar primary action: a compact « + » on phones so the title keeps
-    // the room (the label squeezed « Shawinigan… » to « SH… »); icon +
-    // label from laptop width. The label stays the accessible name.
-    .o_sc_appbar_action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        flex: none;
-        min-width: var(--sc-tap);
-        min-height: var(--sc-tap);
-        padding: 0 10px;
-
-        .o_sc_icon {
-            width: 20px;
-            height: 20px;
-        }
-    }
-
-    .o_sc_appbar_action_label {
-        display: none;
-    }
-
-    // Task 1611: the primary action's read-fragment holder (refreshed in
-    // place after a save) takes no box of its own.
-    .o_sc_appbar_action_slot {
-        display: contents;
-    }
-
-    @media (min-width: $sc-laptop) {
-        .o_sc_appbar_action {
-            padding: 0 14px;
-        }
-
-        .o_sc_appbar_action_label {
-            display: inline;
-        }
-    }
-
     @media (min-width: $sc-laptop) {
         .o_sc_main {
             margin-left: var(--sc-rail-width);
@@ -573,9 +534,9 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         }
     }
 
-    // Narrow phones (360 px): logo + title + clock + search + avatar (+ the
-    // page action until #1607) — slimmer icon buttons and gaps keep the
-    // title readable. The buttons stay 44 px tall.
+    // Narrow phones (360 px): logo + title + clock + search + avatar (task
+    // 1607: no page action in the bar any more) — slimmer icon buttons and
+    // gaps keep the title readable. The buttons stay 44 px tall.
     @media (max-width: 399.98px) {
         .o_sc_appbar {
             gap: 4px;
@@ -585,11 +546,6 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
             .o_sc_icon_btn,
             .o_sc_logo {
                 width: 40px;
-            }
-
-            .o_sc_appbar_action {
-                min-width: 40px;
-                padding: 0 8px;
             }
         }
     }
@@ -1276,6 +1232,168 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         align-items: center;
         justify-content: space-between;
         gap: var(--sc-space-2);
+    }
+
+    // Task 1607: the list header — « + Ajouter » on the left, the sort menu
+    // on the right, ONE line directly above the list (same on phone and
+    // laptop; 44 px targets).
+    .o_sc_list_header {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-2);
+        min-height: var(--sc-tap);
+        min-width: 0;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    .o_sc_list_add.o_sc_btn_sm {
+        flex: none;
+        min-height: var(--sc-tap);
+        padding: 0 14px 0 10px;
+        gap: 6px;
+
+        .o_sc_icon {
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    .o_sc_list_add[aria-expanded="true"] {
+        box-shadow: inset 0 0 0 2px var(--sc-accent-fg);
+    }
+
+    .o_sc_list_header_count {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_sort_menu {
+        position: relative;
+        margin-left: auto;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .o_sc_sort_toggle {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-sm);
+        background: var(--sc-surface);
+        color: var(--sc-fg-2);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            flex: none;
+        }
+
+        &[aria-expanded="true"] {
+            border-color: var(--sc-accent);
+            color: var(--sc-fg);
+        }
+    }
+
+    .o_sc_sort_current {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_menu_popup {
+        position: absolute;
+        z-index: 40;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 200px;
+        max-width: calc(100vw - 24px);
+        padding: 6px;
+        background: var(--sc-surface);
+        color: var(--sc-fg);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-md);
+        box-shadow: var(--sc-shadow);
+        display: flex;
+        flex-direction: column;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .o_sc_menu_item {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-2);
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border-radius: var(--sc-radius-sm);
+        color: var(--sc-fg);
+        font-weight: 500;
+        text-decoration: none;
+        white-space: nowrap;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            flex: none;
+            visibility: hidden;
+        }
+
+        &[aria-checked="true"] {
+            color: var(--sc-accent);
+            font-weight: 600;
+
+            .o_sc_icon {
+                visibility: visible;
+            }
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: var(--sc-hover);
+            text-decoration: none;
+        }
+    }
+
+    // The event page's timesheets section (task 1607): its read-fragment
+    // holders take no room while empty, nor does the section when all are.
+    .o_sc_event_timesheets {
+        > [data-sc-fragment]:empty {
+            display: none;
+        }
+
+        &:not(:has(> [data-sc-fragment]:not(:empty))) {
+            display: none;
+        }
+    }
+
+    // The inline add panel the header's « + Ajouter » opens: its own
+    // <summary> is hidden (the header is the one control) and, closed, it
+    // takes no room.
+    .o_sc_list_add_panel {
+        > summary {
+            display: none;
+        }
+
+        &:not([open]) {
+            display: none;
+        }
     }
 
     // On / off switch (owner review 2026-10-10). A link with role="switch" +

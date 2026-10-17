@@ -284,9 +284,39 @@
             <!-- ============================= Players ============================= -->
             <section class="o_sc_tab_panel" data-sc-tab-panel="players" role="tabpanel"
                      t-att-hidden="None if sc_active_tab == 'players' else 'hidden'">
-                <details t-if="sc_show_add" class="o_sc_card o_sc_disclosure" id="sc_add_player"
+                <t t-if="sc_pending_count and can_remove_on_team and sc_can('team.pending_removals')"
+                   t-call="bemade_sports_clinic.sc_banner">
+                    <t t-set="tone" t-value="'warn'"/>
+                    <t t-set="title">Pending removals</t>
+                    <t t-out="sc_pending_label"/>
+                </t>
+                <!-- Task 1607: the roster's list header — « + Ajouter » (add a
+                     player: search the existing ones first, then create; or
+                     request an addition) opens the panel below it; the sort
+                     (by status / by number) on the right. -->
+                <t t-call="bemade_sports_clinic.sc_list_header">
+                    <t t-set="header_section" t-value="'team.roster.header'"/>
+                    <t t-if="sc_show_add">
+                        <t t-set="add_label">Add a player</t>
+                        <t t-set="add_panel" t-value="'sc_add_player'"/>
+                        <t t-set="add_open" t-value="bool(sc_add_search)"/>
+                        <t t-set="add_key" t-value="'team.add_player'"/>
+                    </t>
+                    <t t-elif="sc_show_request">
+                        <t t-set="add_label">Request a player addition</t>
+                        <t t-set="add_panel" t-value="'sc_request_add'"/>
+                        <t t-set="add_key" t-value="'team.request_add'"/>
+                    </t>
+                    <t t-set="sc_sort_status">By status</t>
+                    <t t-set="sc_sort_number">By number</t>
+                    <t t-set="sorts" t-value="sc_sort_options('sort', [('status', sc_sort_status), ('number', sc_sort_number)], 'number' if roster_sort_mode == 'number' else 'status', ('add_first', 'add_last', 'add_dob'))"/>
+                    <t t-set="sort_id" t-value="'sc_roster_sort'"/>
+                    <t t-set="sort_label">Sort players</t>
+                    <t t-set="sort_section" t-value="'team.roster.sort'"/>
+                </t>
+                <details t-if="sc_show_add" class="o_sc_card o_sc_disclosure o_sc_list_add_panel" id="sc_add_player"
                          data-sc-section="team.add_player" t-att-open="'open' if sc_add_search else None">
-                    <summary class="o_sc_disclosure_summary" data-sc-action="team.add_player">
+                    <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
                         <span>Add a player</span>
                     </summary>
@@ -368,9 +398,9 @@
                         </t>
                     </t>
                 </details>
-                <details t-elif="sc_show_request" class="o_sc_card o_sc_disclosure" id="sc_request_add"
+                <details t-elif="sc_show_request" class="o_sc_card o_sc_disclosure o_sc_list_add_panel" id="sc_request_add"
                          data-sc-section="team.request_add">
-                    <summary class="o_sc_disclosure_summary" data-sc-action="team.request_add">
+                    <summary class="o_sc_disclosure_summary">
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
                         <span>Request a player addition</span>
                     </summary>
@@ -398,18 +428,6 @@
                         </div>
                     </form>
                 </details>
-                <t t-if="sc_pending_count and can_remove_on_team and sc_can('team.pending_removals')"
-                   t-call="bemade_sports_clinic.sc_banner">
-                    <t t-set="tone" t-value="'warn'"/>
-                    <t t-set="title">Pending removals</t>
-                    <t t-out="sc_pending_label"/>
-                </t>
-                <div class="o_sc_sort o_sc_segmented" role="group" aria-label="Sort players">
-                    <a t-att-href="sc_team_url + '&amp;sort=status'"
-                       t-att-aria-pressed="'true' if roster_sort_mode != 'number' else 'false'">By status</a>
-                    <a t-att-href="sc_team_url + '&amp;sort=number'"
-                       t-att-aria-pressed="'true' if roster_sort_mode == 'number' else 'false'">By number</a>
-                </div>
                 <div t-if="sc_roster_rows" class="o_sc_list" data-sc-section="team.roster">
                     <t t-foreach="sc_roster_rows" t-as="row">
                         <!-- Task 1593: the legacy card's content (no team links

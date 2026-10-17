@@ -14,7 +14,15 @@
  *
  * The items are plain links: « Se déconnecter » keeps the logout route (and
  * sc_app_ui.js still clears the device drafts on it). Inert outside .o_sc_app.
+ *
+ * Task 1607: the list header's sort menu is the same kind of popup —
+ * button[data-sc-menu-toggle] + [data-sc-menu-popup] whose items are
+ * a[role="menuitemradio"] links (the checked one gets the focus on open).
  */
+
+const TOGGLE = "[data-sc-user-menu-toggle], [data-sc-menu-toggle]";
+const POPUP = "[data-sc-user-menu-popup], [data-sc-menu-popup]";
+const ITEM = '[role="menuitem"], [role="menuitemradio"]';
 
 function popupOf(toggle) {
     const id = toggle.getAttribute("aria-controls");
@@ -22,7 +30,7 @@ function popupOf(toggle) {
 }
 
 function itemsOf(popup) {
-    return [...popup.querySelectorAll('[role="menuitem"]')];
+    return [...popup.querySelectorAll(ITEM)];
 }
 
 function close(toggle, { focus = false } = {}) {
@@ -37,9 +45,10 @@ function close(toggle, { focus = false } = {}) {
 }
 
 function closeAll(except) {
-    for (const toggle of document.querySelectorAll(
-        '.o_sc_app [data-sc-user-menu-toggle][aria-expanded="true"]'
-    )) {
+    for (const toggle of document.querySelectorAll(TOGGLE)) {
+        if (toggle.getAttribute("aria-expanded") !== "true" || !toggle.closest(".o_sc_app")) {
+            continue;
+        }
         if (toggle !== except) {
             close(toggle);
         }
@@ -55,16 +64,20 @@ function open(toggle, which = "first") {
     popup.hidden = false;
     toggle.setAttribute("aria-expanded", "true");
     const items = itemsOf(popup);
-    const target = which === "last" ? items[items.length - 1] : items[0];
+    const checked = items.find((item) => item.getAttribute("aria-checked") === "true");
+    const target =
+        which === "last" ? items[items.length - 1] : which === "first" && checked ? checked : items[0];
     if (target) {
         target.focus();
     }
 }
 
 function toggleOf(el) {
-    const popup = el.closest("[data-sc-user-menu-popup]");
+    const popup = el.closest(POPUP);
     return popup
-        ? document.querySelector(`[data-sc-user-menu-toggle][aria-controls="${popup.id}"]`)
+        ? [...document.querySelectorAll(TOGGLE)].find(
+              (toggle) => toggle.getAttribute("aria-controls") === popup.id
+          ) || null
         : null;
 }
 
@@ -73,7 +86,7 @@ document.addEventListener("click", (ev) => {
         closeAll();
         return;
     }
-    const toggle = ev.target.closest("[data-sc-user-menu-toggle]");
+    const toggle = ev.target.closest(TOGGLE);
     if (toggle) {
         if (toggle.getAttribute("aria-expanded") === "true") {
             close(toggle);
@@ -82,11 +95,11 @@ document.addEventListener("click", (ev) => {
         }
         return;
     }
-    const item = ev.target.closest('[data-sc-user-menu-popup] [role="menuitem"]');
-    if (item) {
+    const item = ev.target.closest(ITEM);
+    if (item && item.closest(POPUP)) {
         return; // the link navigates
     }
-    if (!ev.target.closest("[data-sc-user-menu-popup]")) {
+    if (!ev.target.closest(POPUP)) {
         closeAll();
     }
 });
@@ -96,8 +109,8 @@ document.addEventListener("keydown", (ev) => {
     if (!target || !target.closest) {
         return;
     }
-    const toggle = target.closest(".o_sc_app [data-sc-user-menu-toggle]");
-    if (toggle) {
+    const toggle = target.closest(TOGGLE);
+    if (toggle && toggle.closest(".o_sc_app")) {
         if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
             ev.preventDefault();
             open(toggle, ev.key === "ArrowUp" ? "last" : "first");
@@ -107,15 +120,15 @@ document.addEventListener("keydown", (ev) => {
         }
         return;
     }
-    const item = target.closest('.o_sc_app [data-sc-user-menu-popup] [role="menuitem"]');
-    if (!item) {
+    const item = target.closest(ITEM);
+    if (!item || !item.closest(POPUP) || !item.closest(".o_sc_app")) {
         return;
     }
     const owner = toggleOf(item);
     if (!owner) {
         return;
     }
-    const items = itemsOf(item.closest("[data-sc-user-menu-popup]"));
+    const items = itemsOf(item.closest(POPUP));
     const index = items.indexOf(item);
     let next = null;
     switch (ev.key) {

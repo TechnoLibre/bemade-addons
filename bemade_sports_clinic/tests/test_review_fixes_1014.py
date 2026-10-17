@@ -24,8 +24,9 @@ Acceptance criteria covered here:
   anchors; a record the viewer may not open stays plain text.
 * RF6 The events list / calendar, clinics and timesheets filters apply on
   change (``data-sc-autosubmit``; the « Apply filters » button kept only as
-  the no-JS / Enter fallback); sort and group by sit in their own labelled
-  « Sort / Group by » group, not among the filters. Tour: a date applies
+  the no-JS / Enter fallback); the group by sits in its own labelled
+  « Group by » group, not among the filters (task 1607: the sort moved to
+  the list header). Tour: a date applies
   once complete, a select at once, the panel stays open.
 * RF8 The event end-before-start refusal (and the therapist / coverage /
   travel time-order refusals) are translated (fr_CA); on the event form the
@@ -226,23 +227,25 @@ class TestReviewFixes1014Pages(AppShellCommon):
 
     def test_filters_apply_on_change_sort_apart(self):
         self._login_tp()
-        for url, section, sort_section in (
-                ('/my/events', 'events.filters', 'events.sort'),
-                ('/my/sc/timesheets', 'timesheets.filters', 'timesheets.sort')):
+        # Task 1607 (deliberate update): the sort left the filter panel for
+        # the list header; the group by keeps its own labelled group.
+        for url, section, group_section in (
+                ('/my/events', 'events.filters', 'events.group'),
+                ('/my/sc/timesheets', 'timesheets.filters', 'timesheets.group')):
             _text_, tree = self._get(url)
             form = self._filter_form(tree, section)
-            group = form.xpath('.//fieldset[@data-sc-section="%s"]' % sort_section)
+            group = form.xpath('.//fieldset[@data-sc-section="%s"]' % group_section)
             self.assertEqual(len(group), 1, url)
-            self.assertEqual(_text(group[0].xpath('./legend')[0]), 'Sort / Group by')
-            self.assertEqual(sorted(group[0].xpath('.//select/@name')), ['group_by', 'sortby'])
-            # The sort / group selects are not among the filters.
-            others = [n for n in form.xpath('.//select/@name') if n not in ('group_by', 'sortby')]
+            self.assertEqual(_text(group[0].xpath('./legend')[0]), 'Group by')
+            self.assertEqual(group[0].xpath('.//select/@name'), ['group_by'])
+            # The group select is not among the filters; no sort select.
+            others = [n for n in form.xpath('.//select/@name') if n != 'group_by']
             self.assertTrue(others, url)
-            self.assertEqual(len(form.xpath('.//select[@name="sortby"]')), 1)
+            self.assertFalse(form.xpath('.//select[@name="sortby"]'), url)
         # The calendar shares the bar, without sort / group by.
         _text_, tree = self._get('/my/events/calendar')
         form = self._filter_form(tree, 'events.filters')
-        self.assertFalse(form.xpath('.//fieldset[@data-sc-section="events.sort"]'))
+        self.assertFalse(form.xpath('.//fieldset[@data-sc-section="events.group"]'))
         _text_, tree = self._get('/my/clinics')
         self._filter_form(tree, 'clinics.filters')
 
@@ -348,7 +351,9 @@ class TestReviewFixes1014I18n(TestAppShellI18n1538):
         self._switch(True)
         self._login_tp()
         text = self._fr('/my/events')
-        self.assertIn('Trier / Regrouper', text)
+        # Task 1607 (deliberate update): the sort is in the list header.
+        self.assertIn('Grouper par', text)
+        self.assertIn('Trier les événements', text)
         tree = lxml_html.fromstring(self._fr(
             '/my/team?team_id=%s&tab=players&add_last=Newplayer' % self.team_a.id))
         hint = tree.xpath('//*[@data-sc-create-hint]')[0]

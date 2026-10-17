@@ -599,14 +599,10 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             })
         active_filters = any(values.get(key) for key in (
             'team_id', 'organization_id', 'match_status', 'practice_status', 'jersey_number'))
-        # The sort switch flips the mode and keeps the active filters (the
-        # page resets: the order changes what page 1 holds).
-        toggle_args = {key: val for key, val in http.request.httprequest.args.items()
-                       if key != 'sort' and val}
-        toggle_args['sort'] = 'name' if values['players_sort_mode'] == 'status' else 'status'
+        # Task 1607: the sort menu (sc_sort_options) keeps the active filters
+        # and resets the page itself.
         return {
             'sc_player_rows': rows,
-            'sc_players_sort_toggle_url': '/my/players?' + urllib.parse.urlencode(toggle_args),
             'sc_can_create_player': is_tp_admin and self._is_treatment_professional(),
             'sc_filters_open': active_filters,
             'sc_players_count_label': env._("%(count)s player(s)", count=values['players_count']),

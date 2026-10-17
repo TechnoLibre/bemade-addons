@@ -134,8 +134,8 @@ tours.add("sc_1616_card_sections", {
 tours.add("sc_1616_documents_upload", {
     steps: () => [
         {
-            content: "« Add » in the card's Documents",
-            trigger: `${DOCS} button[data-sc-action="injury.documents.add"]`,
+            content: "« + Ajouter » in the card's Documents list header",
+            trigger: `${DOCS} .o_sc_list_header button.o_sc_list_add[data-sc-action="injury.documents.add"]`,
             run: "click",
         },
         {

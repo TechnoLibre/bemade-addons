@@ -88,15 +88,17 @@ class TestFragmentsEvent1611(FragmentsCommon):
     def test_staff_refreshes_list_and_add_timesheet(self):
         self._login_tp()
         payload = self._saved(self.event, 'assigned_staff_ids', '')
-        for part in ('read', 'action', 'ts-add'):
+        # Task 1607 (deliberate update): « Add My Timesheet » left the app
+        # bar (« :action ») for the timesheets list header (« :ts-head »).
+        for part in ('read', 'ts-head', 'ts-add'):
             self.assertRefreshes(payload, self._ekey(part))
-        answer = self._fragments(self._url(), [self._ekey('action'), self._ekey('ts-add'), self._ekey('read')])
-        self.assertNotIn('timesheet.add', answer['fragments'][self._ekey('action')])
+        answer = self._fragments(self._url(), [self._ekey('ts-head'), self._ekey('ts-add'), self._ekey('read')])
+        self.assertNotIn('timesheet.add', answer['fragments'][self._ekey('ts-head')])
         self.assertNotIn('<dialog', answer['fragments'][self._ekey('ts-add')])
         self.assertNotIn('PC TP', answer['fragments'][self._ekey('read')])
         self._saved(self.event, 'assigned_staff_ids', str(self.tp.id))
-        answer = self._fragments(self._url(), [self._ekey('action'), self._ekey('ts-add'), self._ekey('read')])
-        self.assertIn('data-sc-action="timesheet.add"', answer['fragments'][self._ekey('action')])
+        answer = self._fragments(self._url(), [self._ekey('ts-head'), self._ekey('ts-add'), self._ekey('read')])
+        self.assertIn('data-sc-action="timesheet.add"', answer['fragments'][self._ekey('ts-head')])
         self.assertIn('sc_ts_add_sheet', answer['fragments'][self._ekey('ts-add')])
         self.assertIn('PC TP', answer['fragments'][self._ekey('read')])
         self.assertFragmentMatchesPage(self._url(), self._ekey('ts-add'))

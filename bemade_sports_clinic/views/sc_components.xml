@@ -53,6 +53,7 @@
             <t t-elif="icon == 'mail'"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></t>
             <t t-elif="icon == 'check'"><path d="M20 6L9 17l-5-5"/></t>
             <t t-elif="icon == 'filter'"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></t>
+            <t t-elif="icon == 'sort'"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></t>
             <t t-else=""><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></t>
         </svg>
     </template>
@@ -134,6 +135,76 @@
             <span t-out="title"/>
             <a t-if="more_url" t-att-href="more_url" class="o_sc_section_more" t-out="more_label"/>
         </h2>
+    </template>
+
+    <!--
+        Task 1607 — the list header: ONE line directly above a list, the same
+        on every page (the app bar carries no list action any more).
+        « + Ajouter » on the left — always that label; add_label (the full
+        action, « Add Injury », « Create a player »…) is its accessible name —
+        and the sort, condensed into a menu, on the right. Variables (all
+        optional; nothing set renders nothing):
+          add_label      the full action (aria-label / title)
+          add_url        a link …
+          add_sheet      … or the id of the sheet (dialog) it opens …
+          add_panel      … or the id of the inline <details> it opens / closes
+                         (the panel follows the header; sc_list_header.js)
+          add_open       add_panel only: the panel renders open
+          add_key        data-sc-action of the add control
+          count          a short count text (« 12 player(s) »)
+          sorts          [{key, label, url, active}] (sc_sort_options), the
+                         menu's links; sort_id (unique on the page, the
+                         popup's id), sort_label (« Sort players »),
+                         sort_section (data-sc-section of the menu)
+          header_section data-sc-section of the header line
+          header_fragment its read-fragment key (task 1611), when a save
+                         can change what it offers
+    -->
+    <template id="sc_list_header" name="App shell: list header">
+        <div t-if="add_label or sorts or count or header_fragment" class="o_sc_list_header"
+             t-att-data-sc-section="header_section or None"
+             t-att-data-sc-fragment="header_fragment or None">
+            <t t-if="add_label">
+                <t t-set="sc_add_text">Add</t>
+                <a t-if="add_url" t-att-href="add_url" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm o_sc_list_add"
+                   t-att-data-sc-action="add_key or None" t-att-aria-label="add_label" t-att-title="add_label">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                    <span class="o_sc_list_add_label" t-out="sc_add_text"/>
+                </a>
+                <button t-elif="add_sheet" type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm o_sc_list_add"
+                        t-att-data-sc-sheet-open="add_sheet" t-att-data-sc-action="add_key or None"
+                        t-att-aria-label="add_label" t-att-title="add_label">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                    <span class="o_sc_list_add_label" t-out="sc_add_text"/>
+                </button>
+                <button t-elif="add_panel" type="button" class="o_sc_btn o_sc_btn_primary o_sc_btn_sm o_sc_list_add"
+                        t-att-aria-controls="add_panel" t-att-aria-expanded="'true' if add_open else 'false'"
+                        data-sc-list-add-toggle="1" t-att-data-sc-action="add_key or None"
+                        t-att-aria-label="add_label" t-att-title="add_label">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
+                    <span class="o_sc_list_add_label" t-out="sc_add_text"/>
+                </button>
+            </t>
+            <span t-if="count" class="o_sc_meta o_sc_list_header_count" t-out="count"/>
+            <div t-if="sorts" class="o_sc_sort_menu" t-att-data-sc-section="sort_section or None">
+                <t t-set="sc_sort_current" t-value="([s for s in sorts if s['active']] or sorts)[0]"/>
+                <button type="button" class="o_sc_sort_toggle" data-sc-menu-toggle="1" aria-haspopup="menu"
+                        aria-expanded="false" t-att-aria-controls="sort_id">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'sort'"/></t>
+                    <span class="visually-hidden" t-out="sort_label"/>
+                    <span class="o_sc_sort_current" t-out="sc_sort_current['label']"/>
+                </button>
+                <div t-att-id="sort_id" class="o_sc_menu_popup o_sc_sort_popup" role="menu" data-sc-menu-popup="1"
+                     t-att-aria-label="sort_label" hidden="hidden">
+                    <a t-foreach="sorts" t-as="sort" t-att-href="sort['url']" role="menuitemradio"
+                       class="o_sc_menu_item" t-att-data-sc-sort="sort['key']"
+                       t-att-aria-checked="'true' if sort['active'] else 'false'">
+                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'check'"/></t>
+                        <span t-out="sort['label']"/>
+                    </a>
+                </div>
+            </div>
+        </div>
     </template>
 
     <!--

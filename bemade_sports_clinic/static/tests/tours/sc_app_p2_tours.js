@@ -244,8 +244,8 @@ tours.add("sc_status_pill_refresh", {
 tours.add("sc_injury_inline_create", {
     steps: () => [
         {
-            content: "Open « Add Injury »",
-            trigger: 'details#sc_new_injury > summary',
+            content: "Open « Add Injury » from the list header's « + Ajouter »",
+            trigger: '.o_sc_list_header button.o_sc_list_add[aria-controls="sc_new_injury"][aria-expanded="false"]',
             run: "click",
         },
         {

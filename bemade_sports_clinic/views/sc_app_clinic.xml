@@ -135,8 +135,6 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="event.name"/>
             <t t-set="sc_active_nav" t-value="'clinic'"/>
-            <t t-set="sc_add_label">Add a patient</t>
-            <t t-set="sc_primary_action" t-value="{'sheet': 'sc_clinic_add_sheet', 'label': sc_add_label, 'key': 'clinic.add'}"/>
 
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <div t-if="success == 'note_added' and sc_note_draft_prefix"
@@ -168,6 +166,14 @@
                 <section class="o_sc_tab_panel o_sc_clinic_pane" data-sc-tab-panel="worklist" role="tabpanel"
                          id="clinic-worklist" data-sc-section="clinic.worklist"
                          t-att-hidden="None if sc_clinic_active_tab == 'worklist' else 'hidden'">
+                    <!-- Task 1607: « + Ajouter » (the add-patient sheet, was in
+                         the app bar) right above the worklist. -->
+                    <t t-call="bemade_sports_clinic.sc_list_header">
+                        <t t-set="header_section" t-value="'clinic.worklist.header'"/>
+                        <t t-set="add_label">Add a patient</t>
+                        <t t-set="add_sheet" t-value="'sc_clinic_add_sheet'"/>
+                        <t t-set="add_key" t-value="'clinic.add'"/>
+                    </t>
                     <owl-component name="bemade_sports_clinic.sc_clinic_worklist" t-att-props="sc_worklist_props">
                         <t t-call="bemade_sports_clinic.sc_clinic_worklist_static"/>
                     </owl-component>

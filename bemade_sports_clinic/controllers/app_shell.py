@@ -32,6 +32,7 @@ import logging
 import re
 import time
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from dateutil.relativedelta import relativedelta
 import werkzeug.exceptions
@@ -1009,6 +1010,31 @@ def sc_fragment_key(record, part):
     return '%s:%s:%s' % (record._name, record.id, part)
 
 
+# Task 1607: the list header's sort menu — each option re-opens the CURRENT
+# page with the sort parameter set (the other query parameters kept, the
+# pager reset: the order changes what page 1 holds).
+_SC_PAGER_SUFFIX_RE = re.compile(r'/page/\d+/?$')
+# Never carried by a sort link: the pager and a POST round-trip's flash.
+_SC_SORT_DROP_ARGS = ('page', 'success', 'error', 'error_files')
+
+
+def sc_sort_options(path, args, param, options, current, drop=()):
+    """``[{key, label, url, active}]`` for ``options`` ``[(key, label)]``:
+    ``path`` (pager suffix dropped) + ``args`` (a werkzeug MultiDict) with
+    ``param=key``, minus ``drop`` (and the pager / flash arguments);
+    ``active`` marks ``current``."""
+    base = _SC_PAGER_SUFFIX_RE.sub('', path or '') or '/'
+    skip = {param, *_SC_SORT_DROP_ARGS, *drop}
+    keep = [(key, value) for key, value in (args.items(multi=True) if args else ())
+            if key not in skip and value not in (None, '')]
+    return [{
+        'key': key,
+        'label': label,
+        'url': '%s?%s' % (base, urlencode(keep + [(param, key)])),
+        'active': key == current,
+    } for key, label in options]
+
+
 def sc_now_ms():
     """Server time in ms (the render stamp and the save's ``saved_at``: both
     on the server clock, so the « back » check never compares two clocks)."""
@@ -1207,6 +1233,9 @@ class AppShellMixin:
             # Task 1611: read fragments (keys of the regions a save refreshes)
             # and the render stamp the « back » check compares against.
             'sc_fragment_key': sc_fragment_key,
+            # Task 1607: the sort menu of a list header (sc_list_header).
+            'sc_sort_options': lambda param, options, current, drop=(): sc_sort_options(
+                path, request.httprequest.args, param, options, current, drop),
             'sc_rendered_at': sc_now_ms(),
             # Task 1585: tap-to-call / tap-to-email hrefs (sc_display_row
             # with ``href_kind``, the event page's staff / organization).

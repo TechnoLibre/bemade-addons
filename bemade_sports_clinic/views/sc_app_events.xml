@@ -59,6 +59,8 @@
             <input t-if="sc_event_filter_list and sc_event_segment == 'past'" type="hidden" name="segment" value="past"/>
             <input t-if="sc_event_filter_list and no_default_dates" type="hidden" name="no_default_dates" value="1"/>
             <input t-if="sc_events_back_url" type="hidden" name="return_url" t-att-value="sc_events_back_url"/>
+            <!-- Task 1607: the sort chosen in the list header survives a filter change. -->
+            <input t-if="sc_event_filter_list and sortby" type="hidden" name="sortby" t-att-value="sortby"/>
             <details class="o_sc_disclosure" t-att-open="'open' if sc_event_filters_open else None">
                 <summary class="o_sc_disclosure_summary">
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'filter'"/></t>
@@ -109,19 +111,11 @@
                         <span>Show cancelled events</span>
                     </label>
                 </div>
-                <fieldset t-if="sc_event_filter_list" class="o_sc_filter_group" data-sc-section="events.sort">
-                    <legend class="o_sc_filter_group_title">Sort / Group by</legend>
+                <!-- Task 1607: the sort is in the list header (sc_list_header);
+                     the group by stays here, in its own labelled group. -->
+                <fieldset t-if="sc_event_filter_list" class="o_sc_filter_group" data-sc-section="events.group">
+                    <legend class="o_sc_filter_group_title">Group by</legend>
                     <div class="o_sc_filter_grid">
-                        <div class="o_sc_field">
-                            <label for="sc_ev_sort" class="o_sc_field_label">Sort by</label>
-                            <select id="sc_ev_sort" name="sortby" class="o_sc_input o_sc_select">
-                                <option value="date" t-att-selected="'selected' if (not sortby or sortby == 'date') else None">Date (asc)</option>
-                                <option value="date_desc" t-att-selected="'selected' if sortby == 'date_desc' else None">Date (desc)</option>
-                                <option value="name" t-att-selected="'selected' if sortby == 'name' else None">Name</option>
-                                <option value="team" t-att-selected="'selected' if sortby == 'team' else None">Team</option>
-                                <option value="assigned" t-att-selected="'selected' if sortby == 'assigned' else None">Assigned</option>
-                            </select>
-                        </div>
                         <div class="o_sc_field">
                             <label for="sc_ev_group" class="o_sc_field_label">Group by</label>
                             <select id="sc_ev_group" name="group_by" class="o_sc_input o_sc_select">
@@ -147,15 +141,29 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['events']"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-if="can_edit">
-                <t t-set="sc_create_label">New event</t>
-                <!-- Task 1597: « New event » opens on the list's organization filter. -->
-                <t t-set="sc_primary_action" t-value="{'url': ('/my/event/create?organization_id=%s' % organization_id) if organization_id else '/my/event/create', 'label': sc_create_label, 'key': 'events.create'}"/>
-            </t>
             <t t-call="bemade_sports_clinic.sc_event_segments">
                 <t t-set="active" t-value="sc_event_segment"/>
             </t>
             <t t-call="bemade_sports_clinic.sc_event_filter_bar"/>
+            <!-- Task 1607: « + Ajouter » (a new event, on the list's
+                 organization filter — task 1597) and the sort, above the list. -->
+            <t t-call="bemade_sports_clinic.sc_list_header">
+                <t t-set="header_section" t-value="'events.header'"/>
+                <t t-if="can_edit">
+                    <t t-set="add_label">New event</t>
+                    <t t-set="add_url" t-value="('/my/event/create?organization_id=%s' % organization_id) if organization_id else '/my/event/create'"/>
+                    <t t-set="add_key" t-value="'events.create'"/>
+                </t>
+                <t t-set="sc_sort_date">Date (asc)</t>
+                <t t-set="sc_sort_date_desc">Date (desc)</t>
+                <t t-set="sc_sort_name">Name</t>
+                <t t-set="sc_sort_team">Team</t>
+                <t t-set="sc_sort_assigned">Assigned</t>
+                <t t-set="sorts" t-value="sc_sort_options('sortby', [('date', sc_sort_date), ('date_desc', sc_sort_date_desc), ('name', sc_sort_name), ('team', sc_sort_team), ('assigned', sc_sort_assigned)], sortby or 'date')"/>
+                <t t-set="sort_id" t-value="'sc_events_sort'"/>
+                <t t-set="sort_label">Sort events</t>
+                <t t-set="sort_section" t-value="'events.sort'"/>
+            </t>
             <div t-if="sc_event_groups" class="o_sc_list" data-sc-section="events.list">
                 <section t-foreach="sc_event_groups" t-as="group" class="o_sc_group" t-att-data-sc-group="group['key']">
                     <h3 class="o_sc_group_title" t-out="group['label']"/>
@@ -217,6 +225,16 @@
                 <t t-set="active" t-value="'calendar'"/>
             </t>
             <t t-call="bemade_sports_clinic.sc_event_filter_bar"/>
+            <!-- Task 1607: « + Ajouter » above the calendar (no sort: the
+                 calendar orders by time). -->
+            <t t-call="bemade_sports_clinic.sc_list_header">
+                <t t-set="header_section" t-value="'events.header'"/>
+                <t t-if="can_edit">
+                    <t t-set="add_label">New event</t>
+                    <t t-set="add_url" t-value="('/my/event/create?organization_id=%s' % organization_id) if organization_id else '/my/event/create'"/>
+                    <t t-set="add_key" t-value="'events.create'"/>
+                </t>
+            </t>
             <t t-call="bemade_sports_clinic.sc_calendar">
                 <t t-set="props" t-value="sc_calendar_props"/>
             </t>
@@ -365,13 +383,10 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="event.name"/>
             <!-- Task 1611: a save of the event refreshes the title, the crumb
-                 and « Add My Timesheet » (assigned staff) in place. -->
+                 and the timesheets section's « + Ajouter » (assigned staff,
+                 task 1607: in the section's list header) in place. -->
             <t t-set="sc_page_key" t-value="'sports.event:%s' % event.id"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
-            <t t-if="can_add_timesheet">
-                <t t-set="sc_ts_label">Add My Timesheet</t>
-                <t t-set="sc_primary_action" t-value="{'sheet': 'sc_ts_add_sheet', 'label': sc_ts_label, 'key': 'timesheet.add', 'icon': 'timesheet'}"/>
-            </t>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
 
             <!-- Owner review 2026-10-11: the pencil edit paradigm — a therapist
@@ -463,35 +478,53 @@
                 <t t-set="venue_event" t-value="event"/>
             </t>
 
-            <section t-if="can_view_timesheets" class="o_sc_section" data-sc-section="event.timesheets">
+            <!-- Task 1607: « + Ajouter » (« Add My Timesheet ») is the list
+                 header right above the timesheets. The section is there for a
+                 therapist who can edit the event too, its title / header
+                 being read fragments: assigning yourself shows them in place
+                 (it takes no room while every holder is empty). -->
+            <section t-if="can_view_timesheets or sc_event_editable" class="o_sc_section o_sc_event_timesheets"
+                     data-sc-section="event.timesheets">
                 <!-- Task 1584: admins see every therapist's rows — a neutral
                      title; a therapist sees their own. -->
-                <t t-call="bemade_sports_clinic.sc_section_header">
-                    <t t-if="show_all_timesheets" t-set="title">Timesheets</t>
-                    <t t-else="" t-set="title">My Timesheets</t>
-                </t>
-                <div t-att-data-sc-fragment="sc_fragment_key(event, 'missing')">
-                    <t t-call="bemade_sports_clinic.sc_banner" t-if="missing_count and show_all_timesheets">
+                <div t-att-data-sc-fragment="sc_fragment_key(event, 'ts-title')"><t t-if="can_view_timesheets">
+                    <t t-call="bemade_sports_clinic.sc_section_header">
+                        <t t-if="show_all_timesheets" t-set="title">Timesheets</t>
+                        <t t-else="" t-set="title">My Timesheets</t>
+                    </t>
+                </t></div>
+                <div t-att-data-sc-fragment="sc_fragment_key(event, 'missing')"><t t-if="missing_count and show_all_timesheets">
+                    <t t-call="bemade_sports_clinic.sc_banner">
                         <t t-set="tone" t-value="'warn'"/>
                         <span data-sc-missing-timesheets="1"><strong>Missing timesheets:</strong> <t t-out="missing_names"/></span>
                     </t>
-                </div>
+                </t></div>
+                <div t-att-data-sc-fragment="sc_fragment_key(event, 'ts-head')"><t t-if="can_view_timesheets">
+                    <t t-call="bemade_sports_clinic.sc_list_header">
+                        <t t-set="header_section" t-value="'event.timesheets.header'"/>
+                        <t t-if="can_add_timesheet">
+                            <t t-set="add_label">Add My Timesheet</t>
+                            <t t-set="add_sheet" t-value="'sc_ts_add_sheet'"/>
+                            <t t-set="add_key" t-value="'timesheet.add'"/>
+                        </t>
+                    </t>
+                    <t t-if="not sc_timesheet_rows" t-call="bemade_sports_clinic.sc_empty_state">
+                        <t t-set="message">No timesheets yet.</t>
+                    </t>
+                </t></div>
                 <div t-if="sc_timesheet_rows" class="o_sc_list"
                      t-att-data-sc-fragment="sc_fragment_key(event, 'timesheets')" data-sc-fragment-mode="list">
                     <t t-foreach="sc_timesheet_rows" t-as="row">
                         <t t-call="bemade_sports_clinic.sc_timesheet_card"/>
                     </t>
                 </div>
-                <t t-else="" t-call="bemade_sports_clinic.sc_empty_state">
-                    <t t-set="message">No timesheets yet.</t>
-                </t>
                 <t t-call="bemade_sports_clinic.sc_timesheet_sheets">
                     <t t-set="rows" t-value="sc_timesheet_rows"/>
                     <t t-set="return_url" t-value="event_return_url"/>
                 </t>
             </section>
 
-            <!-- Task 1611: with the app bar's « Add My Timesheet », a read
+            <!-- Task 1611: with the list header's « Add My Timesheet », a read
                  fragment (assigning yourself to the event offers it at once). -->
             <div t-att-data-sc-fragment="sc_fragment_key(event, 'ts-add')">
             <t t-if="can_add_timesheet" t-call="bemade_sports_clinic.sc_sheet">

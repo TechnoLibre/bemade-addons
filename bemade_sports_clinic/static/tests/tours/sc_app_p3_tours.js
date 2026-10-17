@@ -98,8 +98,8 @@ tours.add("sc_1540_event_timesheet", {
             expectUnloadPage: true,
         },
         {
-            content: "« Ajouter ma feuille de temps » (app bar)",
-            trigger: 'header button[data-sc-sheet-open="sc_ts_add_sheet"]',
+            content: "« + Ajouter » (Add My Timesheet) in the timesheets list header",
+            trigger: '[data-sc-section="event.timesheets"] .o_sc_list_header button.o_sc_list_add[data-sc-sheet-open="sc_ts_add_sheet"]',
             run: "click",
         },
         {

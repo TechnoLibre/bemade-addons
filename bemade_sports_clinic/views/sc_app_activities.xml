@@ -124,8 +124,15 @@
         activity_types, assignable_users, default_activity_type_id, today.
     -->
     <template id="sc_activity_add_sheet" name="App shell: add activity (inline)">
-        <details class="o_sc_card o_sc_disclosure" data-sc-section="activity.add">
-            <summary class="o_sc_disclosure_summary" data-sc-action="activity.add">
+        <!-- Task 1607: opened by the list header's « + Ajouter ». -->
+        <t t-call="bemade_sports_clinic.sc_list_header">
+            <t t-set="header_section" t-value="'activity.add.header'"/>
+            <t t-set="add_label">Add Activity</t>
+            <t t-set="add_panel" t-value="'sc_activity_add'"/>
+            <t t-set="add_key" t-value="'activity.add'"/>
+        </t>
+        <details class="o_sc_card o_sc_disclosure o_sc_list_add_panel" id="sc_activity_add" data-sc-section="activity.add">
+            <summary class="o_sc_disclosure_summary">
                 <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'plus'"/></t>
                 <span>Add Activity</span>
             </summary>
@@ -170,19 +177,29 @@
         </details>
     </template>
 
+    <!-- Task 1607: the activities page's list header — « + Ajouter » (the
+         add-activity page, was the app bar's « Add Activity »). -->
+    <template id="sc_activities_header" name="App shell: activities list header">
+        <t t-call="bemade_sports_clinic.sc_list_header">
+            <t t-set="header_section" t-value="'activities.header'"/>
+            <t t-if="sc_add_activity_url">
+                <t t-set="add_label">Add Activity</t>
+                <t t-set="add_url" t-value="sc_add_activity_url"/>
+                <t t-set="add_key" t-value="'activity.add'"/>
+            </t>
+        </t>
+    </template>
+
     <!-- /my/activities (+ ?model=&res_id= context views, /my/team/activities,
          /my/event/activities) in the shell. -->
     <template id="sc_app_activities" name="Sports Clinic App: activities">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="sc_nav_labels['activities']"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
-            <t t-if="sc_add_activity_url">
-                <t t-set="sc_add_activity_label">Add Activity</t>
-                <t t-set="sc_primary_action" t-value="{'url': sc_add_activity_url, 'label': sc_add_activity_label, 'key': 'activity.add'}"/>
-            </t>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <t t-set="sc_can_reassign" t-value="show_assignee and sc_can('activities.reassign')"/>
             <t t-if="simplified">
+                <t t-call="bemade_sports_clinic.sc_activities_header"/>
                 <t t-call="bemade_sports_clinic.sc_activity_list">
                     <t t-set="show_assignee" t-value="True"/>
                     <t t-set="can_reassign" t-value="sc_can_reassign"/>
@@ -194,6 +211,7 @@
                     <t t-set="tabs" t-value="sc_activity_tabs"/>
                     <t t-set="active" t-value="sc_activity_active_tab"/>
                 </t>
+                <t t-call="bemade_sports_clinic.sc_activities_header"/>
                 <t t-foreach="sc_activity_tabs" t-as="atab">
                     <section class="o_sc_tab_panel" t-att-data-sc-tab-panel="atab[0]" role="tabpanel"
                              t-att-hidden="None if sc_activity_active_tab == atab[0] else 'hidden'">

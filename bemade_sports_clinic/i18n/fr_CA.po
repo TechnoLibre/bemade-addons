@@ -2925,16 +2925,27 @@ msgstr "Date de retour réelle"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_notepad
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_list_header
 msgid "Add"
 msgstr "Ajouter"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_breadcrumbs_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activities_header
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_add_sheet
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activities
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activity_form
 msgid "Add Activity"
 msgstr "Ajouter une activité"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_add_form
+msgid "Add Treatment Note"
+msgstr "Ajouter une note de traitement"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_notepad
+msgid "Add a note"
+msgstr "Ajouter une note"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_add_contact
@@ -3024,6 +3035,11 @@ msgstr "Ajouter un lieu"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 msgid "Add a patient"
 msgstr "Ajouter un patient"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Add a player"
+msgstr "Ajouter un joueur"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
@@ -3218,6 +3234,7 @@ msgstr "Utilisateurs autorisés"
 #. module: bemade_sports_clinic
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__res_users__players_sort_mode__name
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__res_users__teams_sort_mode__alpha
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_teams
 msgid "Alphabetical"
 msgstr "Alphabétique"
@@ -3526,7 +3543,7 @@ msgstr "Assigné à :"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 msgid "Assigned"
 msgstr "Assigné"
 
@@ -4644,16 +4661,16 @@ msgstr "Date (mois)"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Date (asc)"
 msgstr "Date (croissant)"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Date (desc)"
 msgstr "Date (décroissant)"
 
@@ -7310,12 +7327,12 @@ msgstr "S/O"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_contact_fields
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Name"
 msgstr "Nom"
@@ -7369,6 +7386,7 @@ msgstr "Détails du nouveau joueur"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events_calendar
 msgid "New event"
 msgstr "Nouvel événement"
 
@@ -9761,6 +9779,11 @@ msgid "Report Injury"
 msgstr "Signaler une blessure"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
+msgid "Request a player addition"
+msgstr "Demander l'ajout d'un joueur"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_create_injury
 msgid "Report Injury for"
 msgstr "Signaler une blessure pour"
@@ -10450,21 +10473,19 @@ msgid "Sort"
 msgstr "Trier"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
-msgid "Sort / Group by"
-msgstr "Trier / Regrouper"
-
-#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
 msgid "Sort by"
 msgstr "Trier par"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
+msgid "Sort events"
+msgstr "Trier les événements"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_team
 msgid "Sort players"
 msgstr "Trier les joueurs"
@@ -10474,6 +10495,11 @@ msgstr "Trier les joueurs"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_teams
 msgid "Sort teams"
 msgstr "Trier les équipes"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
+msgid "Sort timesheets"
+msgstr "Trier les feuilles de temps"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_clinic_attendance__source
@@ -10926,6 +10952,7 @@ msgstr "Touchez de nouveau pour retirer"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_timesheets_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_clinics
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_events
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_timesheets
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
@@ -12515,6 +12542,11 @@ msgstr "Date de téléversement"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_documents
 msgid "Upload Document"
 msgstr "Télécharger un document"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Upload a document"
+msgstr "Téléverser un document"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_documents
@@ -14297,6 +14329,11 @@ msgid "<span>Add Treatment Note</span>"
 msgstr "<span>Ajouter une note de traitement</span>"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_notepad
+msgid "<span>Quick note</span>"
+msgstr "<span>Note rapide</span>"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_row
 msgid "<span>Cancel</span>"
 msgstr "<span>Annuler</span>"
@@ -15381,11 +15418,6 @@ msgstr "<small class=\"o_sc_hint\">Plusieurs fichiers à la fois — 10 Mo maxim
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "<span class=\"o_sc_dropzone_text\">Choose files or drop them here</span>"
 msgstr "<span class=\"o_sc_dropzone_text\">Choisissez des fichiers ou déposez-les ici</span>"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
-msgid "<span>Add</span>"
-msgstr "<span>Ajouter</span>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card

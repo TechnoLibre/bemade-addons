@@ -123,14 +123,18 @@
                 </div>
             </form>
 
-            <div class="o_sc_sort o_sc_segmented" role="group" aria-label="Sort teams">
-                <a t-attf-href="/my/teams?sort=activity#{search_qs}"
-                   t-att-aria-pressed="'true' if sort_mode == 'activity' else 'false'">Recent activity</a>
-                <a t-attf-href="/my/teams?sort=alpha#{search_qs}"
-                   t-att-aria-pressed="'true' if sort_mode == 'alpha' else 'false'">Alphabetical</a>
-                <a t-if="can_rank" t-attf-href="/my/teams?sort=mine#{search_qs}"
-                   t-att-aria-pressed="'true' if sort_mode == 'mine' else 'false'">My order</a>
-            </div>
+            <!-- Task 1607: the sort in the list header (a menu, same control
+                 on every list); no add on this list. -->
+            <t t-call="bemade_sports_clinic.sc_list_header">
+                <t t-set="header_section" t-value="'teams.header'"/>
+                <t t-set="sc_sort_activity">Recent activity</t>
+                <t t-set="sc_sort_alpha">Alphabetical</t>
+                <t t-set="sc_sort_mine">My order</t>
+                <t t-set="sorts" t-value="sc_sort_options('sort', [('activity', sc_sort_activity), ('alpha', sc_sort_alpha)] + ([('mine', sc_sort_mine)] if can_rank else []), sort_mode)"/>
+                <t t-set="sort_id" t-value="'sc_teams_sort'"/>
+                <t t-set="sort_label">Sort teams</t>
+                <t t-set="sort_section" t-value="'teams.sort'"/>
+            </t>
 
             <div t-if="teams" class="o_sc_list">
                 <t t-foreach="teams" t-as="team">
