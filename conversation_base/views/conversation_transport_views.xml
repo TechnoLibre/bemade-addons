@@ -31,7 +31,19 @@
                             <field name="searchable" />
                             <field name="sendable" />
                             <field name="pushable" />
-                            <field name="mailbox_writable" />
+                            <!-- Server-side check is authoritative: only a
+                                 Conversations manager can enable write-back
+                                 on a shared account. Others only see it
+                                 editable on their personal accounts. -->
+                            <field
+                name="mailbox_writable"
+                groups="conversation_base.group_conversation_manager"
+              />
+                            <field
+                name="mailbox_writable"
+                readonly="not user_id"
+                groups="!conversation_base.group_conversation_manager"
+              />
                             <field name="artifact_only" />
                         </group>
                         <group name="triage" string="Triage">
