@@ -110,7 +110,10 @@ class TestClinicDossierInline1590(ClinicDossier1590Common):
         cards = section.xpath('.//details[@data-sc-edit-card="injury"]')
         self.assertEqual([c.get('id') for c in cards], ['clinic-injury-%s' % self.injury.id])
         card = cards[0]
-        self.assertEqual(card.get('data-sc-edit-reload'), '1')
+        # Task 1611: no reload on « Done » — the card is a read-fragment
+        # list item (its summary and read view refresh in place).
+        self.assertIsNone(card.get('data-sc-edit-reload'))
+        self.assertEqual(card.get('data-sc-fragment-item'), 'sports.patient.injury:%s:card' % self.injury.id)
         self.assertTrue(card.xpath('.//button[@data-sc-edit-toggle]'))
         props = self._props(card)
         for fname in ('external_notes', 'internal_notes'):

@@ -69,14 +69,14 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
 
     # -- UC-PS1 ----------------------------------------------------------
     def test_status_save_answers_the_stage_chip(self):
+        """Task 1611: the status chips refresh as the player's read fragments
+        (``refresh``), no ad-hoc ``stage`` payload any more."""
         self._login_tp()
-        for value, tone in (('no:no', 'red'), ('no:yes', 'yellow'),
-                            ('no:no_contact', 'yellow'), ('yes:yes', 'green')):
+        for value in ('no:no', 'no:yes', 'no:no_contact', 'yes:yes'):
             resp = self._save_status(value)
             self.assertEqual(resp.status_code, 200, resp.text)
-            stage = resp.json()['stage']
-            self.assertEqual(stage['tone'], tone, value)
-            self.assertTrue(stage['label'], value)
+            self.assertNotIn('stage', resp.json())
+            self.assertIn('sports.patient:%s:*' % self.player.id, resp.json()['refresh'], value)
 
     # -- UC-PS2 ----------------------------------------------------------
     def test_header_status_selector(self):

@@ -358,10 +358,9 @@ tours.add("sc_event_pencil", {
             trigger: '[data-sc-edit-card="event"] .o_sc_autosave[data-sc-field="name"][data-sc-state="saved"]',
         },
         {
-            content: "Done: the card reloads with the new name",
+            content: "Done: the card closes (task 1611: no reload, the title is a read fragment)",
             trigger: '[data-sc-edit-card="event"] [data-sc-edit-done]',
             run: "click",
-            expectUnloadPage: true,
         },
         {
             content: "The title shows the new name",
@@ -485,12 +484,17 @@ tours.add("sc_player_inline_edit", {
         {
             // Task 1579: the context line is the PHONE's (hidden on a
             // laptop, where this tour runs): check its text, not visibility.
+            // Task 1611: refreshed as a read fragment (a fetch after the save).
             content: "The app bar context follows",
             trigger: '[data-sc-edit-card="identity"] [data-sc-edit-view="read"]',
-            run() {
-                const context = document.querySelector(".o_sc_appbar_context");
-                if (!context || !context.textContent.includes("Safety")) {
-                    throw new Error(`context line reads « ${context && context.textContent} »`);
+            async run() {
+                const start = Date.now();
+                const context = () => document.querySelector(".o_sc_appbar_context");
+                while (!(context() && context().textContent.includes("Safety"))) {
+                    if (Date.now() - start > 8000) {
+                        throw new Error(`context line reads « ${context() && context().textContent} »`);
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             },
         },

@@ -9,7 +9,8 @@
  * - « Nouveau lieu »: the venue sheet's form posts through scFetch to the
  *   CSRF-checked /my/venue/create (JSON answer); the created venue is added
  *   to the venue select and selected, the sheet closes; on the event page
- *   (task 1612) the same request also sets it on the event, then reloads;
+ *   (task 1612) the same request also sets it on the event — task 1611: the
+ *   page then shows it in place (an « sc:saved » of the venue), no reload;
  * - task 1597: the Organization select narrows the team checkboxes to that
  *   organization's teams (``data-sc-org-id``) and unticks the ones it hides
  *   — the model refuses the teams of two organizations; « All
@@ -80,8 +81,35 @@ async function createVenue(form) {
             throw new Error((result && result.error) || "");
         }
         if (form.dataset.scVenueEvent) {
-            // Reload so the card (and its venue choices) show the new venue.
-            window.location.reload();
+            // Task 1611: no reload — the save is announced like an autosave
+            // of the venue: the card's venue field takes the new choices and
+            // value (« also »), the read view and the title refresh as read
+            // fragments, the sheet's own write date follows (below).
+            const recordId = Number(form.dataset.scVenueEvent);
+            const shown = { value: result.id, display: result.name, options: result.venue_options };
+            document.dispatchEvent(
+                new CustomEvent("sc:saved", {
+                    detail: {
+                        model: "sports.event",
+                        recordId,
+                        field: "venue_id",
+                        result: {
+                            ok: true,
+                            write_date: result.event_write_date,
+                            value: result.id,
+                            display: result.name,
+                            also: { venue_id: shown },
+                            refresh: result.refresh || [`sports.event:${recordId}:*`],
+                            saved_at: result.saved_at,
+                        },
+                    },
+                })
+            );
+            form.reset();
+            const sheet = form.closest("dialog");
+            if (sheet) {
+                sheet.close();
+            }
             return;
         }
         const select = document.querySelector("select[data-sc-venue-select]");

@@ -22,7 +22,7 @@ Acceptance criteria:
 * AC5 The event page's sheet carries the event id, its write_date and its
   current venue for the client to post.
 * AC6 (browser tour, phone width) rename the event, then « New venue »:
-  one request, no error, the card shows the venue after the reload. The
+  one request, no error, the card shows the venue (task 1611: in place, no reload). The
   laptop layout and the error rendering stay for the dev-review click-through.
 """
 from lxml import html as lxml_html
@@ -63,6 +63,17 @@ class TestAppShellEventVenue1612(AppShellCommon):
         self.assertEqual(payload['id'], venue.id)
         self.event.invalidate_recordset()
         self.assertEqual(self.event.venue_id, venue)
+
+    def test_create_answers_the_in_place_refresh(self):
+        """Task 1611: no reload — the answer carries the card's fresh venue
+        choices, the read fragments to refresh and the save's server time."""
+        self._login_tp()
+        payload = self._create('V1611 Arena', event_id=self.event.id,
+                               write_date=self._wd(self.event), old_value='').json()
+        venue = self._venues('V1611 Arena')
+        self.assertIn([str(venue.id), 'V1611 Arena'], payload['venue_options'])
+        self.assertIn('sports.event:%s:*' % self.event.id, payload['refresh'])
+        self.assertIsInstance(payload['saved_at'], int)
 
     # -- AC2 -------------------------------------------------------------
     @mute_logger('odoo.http')

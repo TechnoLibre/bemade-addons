@@ -116,6 +116,8 @@
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_injury_fallback">Injury</t>
             <t t-set="sc_title" t-value="injury.diagnosis or sc_injury_fallback"/>
+            <!-- Task 1611: a diagnosis save refreshes the title / crumb. -->
+            <t t-set="sc_page_key" t-value="'sports.patient.injury:%s' % injury.id"/>
             <t t-set="sc_active_nav" t-value="'players'"/>
             <t t-set="sc_flash" t-value="sc_injury_flash"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
@@ -123,13 +125,12 @@
                  ONE pencil per card reveals its fields (saved as you leave
                  each one; status and visibility at once, with « Undo »). -->
             <div class="o_sc_grid2">
-                <section class="o_sc_card o_sc_edit_card" data-sc-edit-card="injury-details" data-sc-section="injury.details"
-                         data-sc-edit-reload="1">
+                <section class="o_sc_card o_sc_edit_card" data-sc-edit-card="injury-details" data-sc-section="injury.details">
                     <t t-call="bemade_sports_clinic.sc_edit_card_head">
                         <t t-set="title">Details</t>
                         <t t-set="editable" t-value="True"/>
                     </t>
-                    <dl class="o_sc_kv" data-sc-edit-view="read">
+                    <dl class="o_sc_kv" data-sc-edit-view="read" t-att-data-sc-fragment="sc_fragment_key(injury, 'details')">
                         <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Diagnosis/Description</t><t t-set="record" t-value="injury"/><t t-set="field" t-value="'diagnosis'"/></t>
                         <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Date of Injury</t><t t-set="record" t-value="injury"/><t t-set="field" t-value="'sc_injury_date'"/></t>
                         <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Injury status</t><t t-set="record" t-value="injury"/><t t-set="field" t-value="'stage'"/></t>

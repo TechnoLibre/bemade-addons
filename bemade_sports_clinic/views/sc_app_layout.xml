@@ -17,6 +17,10 @@
       sc_primary_action optional {'url', 'label'} rendered in the app bar;
                         {'sheet': <dialog id>, 'label'} opens that sheet
                         instead (task 1542)
+      sc_page_key       optional « <model>:<id> » of the page's record (task
+                        1611): the title, the crumb and the primary action
+                        become read fragments (<key>:appbar / :crumb /
+                        :action) that a save of that record refreshes
     Navigation comes from the declarative registry (models/sc_app_roles.py):
     sc_tabs / sc_rail — the layout never branches on groups.
 
@@ -61,7 +65,8 @@
             <div class="o_sc_app" data-sc-app-shell="1"
                  t-att-data-sc-theme="sc_theme or 'dark'"
                  t-att-data-sc-top="'0' if sc_parent_url else '1'"
-                 t-att-data-sc-db="sc_db" t-att-data-sc-uid="sc_uid">
+                 t-att-data-sc-db="sc_db" t-att-data-sc-uid="sc_uid"
+                 t-att-data-sc-rendered-at="sc_rendered_at">
 
                 <!-- Laptop: left rail -->
                 <aside class="o_sc_rail" aria-label="Navigation">
@@ -94,13 +99,12 @@
                         <a t-else="" href="/my/home" class="o_sc_logo" aria-label="Le Fit Crew">
                             <t t-call="bemade_sports_clinic.sc_logo_mark"/>
                         </a>
-                        <h1 class="o_sc_appbar_title">
-                            <span class="o_sc_appbar_title_text" t-att-data-sc-heading="'title' if sc_heading_live else None" t-out="sc_title"/>
+                        <h1 class="o_sc_appbar_title" t-att-data-sc-fragment="('%s:appbar' % sc_page_key) if sc_page_key else None">
+                            <span class="o_sc_appbar_title_text" t-out="sc_title"/>
                             <small t-if="sc_context and sc_parent_url"
-                                   class="o_sc_appbar_context" t-out="sc_context"
-                                   t-att-data-sc-heading="'context' if sc_heading_live else None"
-                                   t-att-data-sc-heading-team="sc_heading_team if sc_heading_live else None"/>
+                                   class="o_sc_appbar_context" t-out="sc_context"/>
                         </h1>
+                        <span class="o_sc_appbar_action_slot" t-att-data-sc-fragment="('%s:action' % sc_page_key) if sc_page_key else None">
                         <button t-if="sc_primary_action and sc_primary_action.get('sheet')" type="button"
                                 t-att-data-sc-sheet-open="sc_primary_action['sheet']"
                                 t-att-data-sc-action="sc_primary_action.get('key')"
@@ -116,6 +120,7 @@
                             <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="sc_primary_action.get('icon') or 'plus'"/></t>
                             <span class="o_sc_appbar_action_label" t-out="sc_primary_action['label']"/>
                         </a>
+                        </span>
                         <form t-if="sc_theme_choice" method="post" action="/my/app/pref" class="o_sc_theme_toggle" data-sc-pref="1">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="redirect" t-att-value="sc_current_url"/>
@@ -157,7 +162,7 @@
                                 <a t-att-href="crumb[1]" t-out="crumb[0]"/>
                             </li>
                             <li class="o_sc_crumb_current" aria-current="page"
-                                t-att-data-sc-heading="'title' if sc_heading_live else None" t-out="sc_title"/>
+                                t-att-data-sc-fragment="('%s:crumb' % sc_page_key) if sc_page_key else None" t-out="sc_title"/>
                         </ol>
                     </nav>
 

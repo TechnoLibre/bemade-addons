@@ -179,3 +179,8 @@ from . import test_review_fixes_1014
 from . import test_app_shell_event_venue_1612
 from . import test_app_shell_injury_verify_1612
 from . import test_clinic_counts_plural_1612
+from . import test_app_shell_fragments_1611
+from . import test_app_shell_fragments_player_1611
+from . import test_app_shell_fragments_injury_1611
+from . import test_app_shell_fragments_event_1611
+from . import test_app_shell_fragments_tours_1611

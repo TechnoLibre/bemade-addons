@@ -93,10 +93,9 @@ tours.add("sc_1590_clinic_injury_edit", {
             },
         },
         {
-            content: "« Done » (the card changed: the page reloads)",
+            content: "« Done » (task 1611: the card closes, no reload)",
             trigger: `${NEW_CARD} [data-sc-edit-done]`,
             run: "click",
-            expectUnloadPage: true,
         },
         {
             content: "Same clinic, same patient, file tab; the card reads the note",

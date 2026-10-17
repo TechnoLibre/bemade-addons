@@ -103,8 +103,11 @@ class TestAppShellPlayerLayout(PlayerInlineCommon):
         self.assertEqual(len(training), 1)
         hero = tree.xpath('//*[@data-sc-section="player.hero"]')[0]
         self.assertIs(training[0].getparent(), hero)
+        # Task 1611: the banner sits in its always-rendered read-fragment
+        # holder (filled / cleared in place).
         allergies = training[0].getnext()
-        self.assertIn('o_sc_banner', allergies.get('class'))
+        self.assertEqual(allergies.get('data-sc-section'), 'player.allergies')
+        self.assertTrue(allergies.xpath('./*[contains(@class, "o_sc_banner")]'))
         self.assertIn('Synthetic peanuts', allergies.text_content())
         self.assertIn('training_recommendation', self._owl(training[0]))
         self.assertTrue(training[0].xpath('.//owl-component[contains(@props, "sc_training_history_sheet")]'))

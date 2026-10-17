@@ -4,7 +4,7 @@ from odoo.tools import format_datetime, html2plaintext, plaintext2html
 from odoo.exceptions import UserError, AccessError
 from datetime import datetime, timedelta
 from .access_control_mixin import AccessControlMixin
-from .app_shell import AppShellMixin
+from .app_shell import AppShellMixin, sc_now_ms, sc_refresh_patterns
 import json
 import logging
 import pytz
@@ -1275,10 +1275,24 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 event.flush_recordset()
         except Exception as e:  # noqa: BLE001 — answered, the savepoint rolled back
             return {'success': False, 'error': str(e.args[0] if e.args else e)}
+        # Task 1611: what the page needs to show the venue in place (no
+        # reload): the card's fresh venue choices, the read fragments to
+        # refresh, the server time of the save (the « back » check).
         return {
             'success': True, 'id': venue.id, 'name': venue.name,
             'event_write_date': fields.Datetime.to_string(event.sudo().write_date),
+            'venue_options': self._sc_options(self._sc_event_venue_options(event.sudo())),
+            'refresh': sc_refresh_patterns('sports.event', event, 'venue_id'),
+            'saved_at': sc_now_ms(),
         }
+
+    @staticmethod
+    def _sc_event_venue_options(event_sudo):
+        """The event card's venue choices: every venue, plus the event's own."""
+        venues = http.request.env['res.partner'].search([('is_venue', '=', True)], order='name')
+        if event_sudo.venue_id and event_sudo.venue_id not in venues:
+            venues |= event_sudo.venue_id.sudo()
+        return [('', '—')] + [(v.id, v.name) for v in venues]
 
     # ------------------------------------------------------------------
     # Task 1540 — the app shell (switch on): values of the events pages
@@ -1538,12 +1552,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         edit_options = {}
         if values['can_edit']:
             teams = (self._get_accessible_teams() | event_sudo.team_ids).sudo()
-            venues = env['res.partner'].search([('is_venue', '=', True)], order='name')
-            if event_sudo.venue_id and event_sudo.venue_id not in venues:
-                venues |= event_sudo.venue_id.sudo()
             edit_options = {
                 'types': list(env['sports.event']._fields['event_type']._description_selection(env)),
-                'venues': [('', '—')] + [(v.id, v.name) for v in venues],
+                'venues': self._sc_event_venue_options(event_sudo),
                 'teams': [(t.id, t.name) for t in teams.sorted('name')],
                 'staff': [(u.id, u.name) for u in (self._get_treatment_professionals()
                                                    | event_sudo.assigned_staff_ids).sudo().sorted('name')],

@@ -358,9 +358,11 @@
     <template id="sc_note_card" name="App shell: note card">
         <!-- Owner review 2026-10-11: an editable note is a pencil card. -->
         <article t-attf-class="o_sc_card o_sc_note_card #{'o_sc_edit_card' if edit_props else ''}" t-att-data-sc-note-id="note.id"
-                 t-att-data-sc-edit-card="('note-%s' % note.id) if edit_props else None"
-                 t-att-data-sc-edit-reload="'1' if edit_props else None">
-            <div class="o_sc_meta o_sc_note_meta">
+                 t-att-data-sc-edit-card="('note-%s' % note.id) if edit_props else None">
+            <!-- Task 1611: the meta line and the « modified » stamp are read
+                 fragments (a save of the note — or of its linked injury's
+                 diagnosis — refreshes them in place). -->
+            <div class="o_sc_meta o_sc_note_meta" t-att-data-sc-fragment="sc_fragment_key(note, 'meta')">
                 <span t-out="note.portal_when_label"/>
                 <span>·</span>
                 <span class="o_sc_note_author" t-out="note.sudo().user_id.name"/>
@@ -394,8 +396,10 @@
                 </div>
             </t>
             <p t-else="" class="o_sc_pre o_sc_note_text" t-out="note.note"/>
-            <p t-if="note.modified_label" class="o_sc_meta o_sc_note_modified" t-att-title="note.modified_by_name"
-               t-out="note.modified_label"/>
+            <div class="o_sc_note_stamp" t-att-data-sc-fragment="sc_fragment_key(note, 'stamp')">
+                <p t-if="note.modified_label" class="o_sc_meta o_sc_note_modified" t-att-title="note.modified_by_name"
+                   t-out="note.modified_label"/>
+            </div>
         </article>
     </template>
 

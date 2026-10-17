@@ -213,10 +213,9 @@ tours.add("sc_1587_note_date_injury", {
             trigger: `${NOTE_CARD} .o_sc_autosave[data-sc-field="injury_id"][data-sc-state="saved"]`,
         },
         {
-            content: "Done: the card reloads",
+            content: "Done: the card closes (task 1611: no reload, the meta line is a read fragment)",
             trigger: `${NOTE_CARD} [data-sc-edit-done]`,
             run: "click",
-            expectUnloadPage: true,
         },
         {
             content: "The meta line shows the new injury",

@@ -293,6 +293,9 @@
     <template id="sc_app_activity_detail" name="Sports Clinic App: activity detail">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="activity.summary or activity.activity_type_id.name"/>
+            <!-- Task 1611: a save refreshes the title, the state chip and the
+                 read view in place (and the app bar's overdue badge). -->
+            <t t-set="sc_page_key" t-value="'mail.activity:%s' % activity.id"/>
             <t t-set="sc_active_nav" t-value="'activities'"/>
             <t t-call="bemade_sports_clinic.sc_flash_banners"/>
             <t t-set="act_state" t-value="'overdue' if activity.date_deadline &lt; today_date else ('today' if activity.date_deadline == today_date else 'planned')"/>
@@ -300,9 +303,9 @@
                  activity is edited in place (was a separate edit page); the
                  type stays read-only, as the edit route always treated it. -->
             <section t-attf-class="o_sc_card #{'o_sc_edit_card' if sc_activity_editable else ''}" data-sc-section="activity.detail"
-                     t-att-data-sc-edit-card="'activity' if sc_activity_editable else None" data-sc-edit-reload="1">
+                     t-att-data-sc-edit-card="'activity' if sc_activity_editable else None">
                 <div class="o_sc_edit_card_head">
-                    <span class="o_sc_chips">
+                    <span class="o_sc_chips" t-att-data-sc-fragment="sc_fragment_key(activity, 'chips')">
                         <span t-if="act_state == 'overdue'" class="o_sc_chip o_sc_chip_red">Overdue</span>
                         <span t-elif="act_state == 'today'" class="o_sc_chip o_sc_chip_yellow">Today</span>
                         <span t-else="" class="o_sc_chip o_sc_chip_ghost">Planned</span>
@@ -315,7 +318,7 @@
                         </button>
                     </t>
                 </div>
-                <div data-sc-edit-view="read">
+                <div data-sc-edit-view="read" t-att-data-sc-fragment="sc_fragment_key(activity, 'read')">
                     <dl class="o_sc_kv">
                         <dt>Summary</dt><dd><span t-att-data-sc-display="sc_display_key(activity, 'summary')" t-out="activity.summary or '—'"/></dd>
                         <dt>Activity Type</dt><dd><span t-field="activity.activity_type_id"/></dd>

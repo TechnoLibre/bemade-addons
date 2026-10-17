@@ -230,11 +230,13 @@
     <template id="sc_timesheet_card" name="App shell: timesheet card">
         <!-- Owner review 2026-10-11: the pencil edit paradigm — an own,
              not-yet-invoiced timesheet is edited in place (was a sheet). -->
+        <!-- Task 1611: the head and the read lines are read fragments (a save
+             refreshes the « when », the lines and their totals in place). -->
         <article t-attf-class="o_sc_card o_sc_timesheet #{'o_sc_edit_card' if row['editable'] else ''}" t-att-data-sc-timesheet-id="row['id']"
                  t-att-data-sc-state="row['state']" t-att-data-sc-edit-card="('timesheet-%s' % row['id']) if row['editable'] else None"
-                 data-sc-edit-reload="1">
+                 t-att-data-sc-fragment-item="sc_fragment_key(row['record'], 'card')">
             <div class="o_sc_card_head">
-                <div>
+                <div t-att-data-sc-fragment="sc_fragment_key(row['record'], 'head')">
                     <a t-if="show_event" t-att-href="row['event_url']" class="o_sc_row_title" t-out="row['title']"/>
                     <strong t-else="" t-out="row['when']"/>
                     <p class="o_sc_meta">
@@ -254,7 +256,7 @@
                     </t>
                 </span>
             </div>
-            <dl class="o_sc_kv" data-sc-edit-view="read">
+            <dl class="o_sc_kv" data-sc-edit-view="read" t-att-data-sc-fragment="sc_fragment_key(row['record'], 'read')">
                 <t t-foreach="row['lines']" t-as="line">
                     <dt t-out="line[0]"/>
                     <dd t-out="line[1]"/>
@@ -362,6 +364,9 @@
     <template id="sc_app_event" name="Sports Clinic App: event">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title" t-value="event.name"/>
+            <!-- Task 1611: a save of the event refreshes the title, the crumb
+                 and « Add My Timesheet » (assigned staff) in place. -->
+            <t t-set="sc_page_key" t-value="'sports.event:%s' % event.id"/>
             <t t-set="sc_active_nav" t-value="'events'"/>
             <t t-if="can_add_timesheet">
                 <t t-set="sc_ts_label">Add My Timesheet</t>
@@ -373,9 +378,9 @@
                  edits the event in place (was a separate edit page). -->
             <t t-set="sc_event_editable" t-value="bool(can_edit and sc_event_edit_options)"/>
             <section t-attf-class="o_sc_card o_sc_hero #{'o_sc_edit_card' if sc_event_editable else ''}" data-sc-section="event.hero"
-                     t-att-data-sc-edit-card="'event' if sc_event_editable else None" data-sc-edit-reload="1">
+                     t-att-data-sc-edit-card="'event' if sc_event_editable else None">
                 <div class="o_sc_edit_card_head">
-                    <span class="o_sc_chips">
+                    <span class="o_sc_chips" t-att-data-sc-fragment="sc_fragment_key(event, 'chips')">
                         <span class="o_sc_chip o_sc_chip_ghost" t-out="sc_event_kind"/>
                         <span t-attf-class="o_sc_chip #{'o_sc_chip_red' if event_sudo.state == 'cancelled' else 'o_sc_chip_ghost'}" t-out="sc_event_state"/>
                     </span>
@@ -387,7 +392,7 @@
                         </button>
                     </t>
                 </div>
-                <div data-sc-edit-view="read">
+                <div data-sc-edit-view="read" t-att-data-sc-fragment="sc_fragment_key(event, 'read')">
                 <dl class="o_sc_kv">
                     <dt>When</dt><dd t-out="sc_event_when or '—'"/>
                     <t t-if="sc_event_therapist_when"><dt>Therapist</dt><dd t-out="sc_event_therapist_when"/></t>
@@ -465,11 +470,14 @@
                     <t t-if="show_all_timesheets" t-set="title">Timesheets</t>
                     <t t-else="" t-set="title">My Timesheets</t>
                 </t>
-                <t t-call="bemade_sports_clinic.sc_banner" t-if="missing_count and show_all_timesheets">
-                    <t t-set="tone" t-value="'warn'"/>
-                    <span data-sc-missing-timesheets="1"><strong>Missing timesheets:</strong> <t t-out="missing_names"/></span>
-                </t>
-                <div t-if="sc_timesheet_rows" class="o_sc_list">
+                <div t-att-data-sc-fragment="sc_fragment_key(event, 'missing')">
+                    <t t-call="bemade_sports_clinic.sc_banner" t-if="missing_count and show_all_timesheets">
+                        <t t-set="tone" t-value="'warn'"/>
+                        <span data-sc-missing-timesheets="1"><strong>Missing timesheets:</strong> <t t-out="missing_names"/></span>
+                    </t>
+                </div>
+                <div t-if="sc_timesheet_rows" class="o_sc_list"
+                     t-att-data-sc-fragment="sc_fragment_key(event, 'timesheets')" data-sc-fragment-mode="list">
                     <t t-foreach="sc_timesheet_rows" t-as="row">
                         <t t-call="bemade_sports_clinic.sc_timesheet_card"/>
                     </t>
@@ -483,6 +491,9 @@
                 </t>
             </section>
 
+            <!-- Task 1611: with the app bar's « Add My Timesheet », a read
+                 fragment (assigning yourself to the event offers it at once). -->
+            <div t-att-data-sc-fragment="sc_fragment_key(event, 'ts-add')">
             <t t-if="can_add_timesheet" t-call="bemade_sports_clinic.sc_sheet">
                 <t t-set="sheet_id" t-value="'sc_ts_add_sheet'"/>
                 <t t-set="title">Add My Timesheet</t>
@@ -504,6 +515,7 @@
                     </div>
                 </form>
             </t>
+            </div>
 
             <t t-if="sc_can_cancel" t-call="bemade_sports_clinic.sc_sheet">
                 <t t-set="sheet_id" t-value="'sc_event_cancel_sheet'"/>

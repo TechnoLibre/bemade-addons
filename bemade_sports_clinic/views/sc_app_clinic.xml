@@ -256,7 +256,10 @@
                                 <t t-set="card_patient" t-value="patient"/>
                                 <t t-set="card_add_id" t-value="'sc_clinic_injury_add'"/>
                             </t>
-                            <div t-if="sc_injury_rows" class="o_sc_list" data-sc-section="clinic.dossier.injury_list">
+                            <!-- Task 1611: a read-fragment list — a card resolved here
+                                 drops out (once closed), the others re-order. -->
+                            <div t-if="sc_injury_rows" class="o_sc_list" data-sc-section="clinic.dossier.injury_list"
+                                 t-att-data-sc-fragment="sc_fragment_key(patient, 'active-injuries')" data-sc-fragment-mode="list">
                                 <t t-foreach="sc_injury_rows" t-as="row">
                                     <t t-call="bemade_sports_clinic.sc_injury_card"/>
                                 </t>

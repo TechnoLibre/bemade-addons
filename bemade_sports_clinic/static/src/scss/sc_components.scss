@@ -276,6 +276,12 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         display: none;
     }
 
+    // Task 1611: the primary action's read-fragment holder (refreshed in
+    // place after a save) takes no box of its own.
+    .o_sc_appbar_action_slot {
+        display: contents;
+    }
+
     @media (min-width: $sc-laptop) {
         .o_sc_appbar_action {
             padding: 0 14px;
