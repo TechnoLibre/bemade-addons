@@ -3763,6 +3763,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_org_staff_promote_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_player_removal_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -3818,6 +3819,7 @@ msgstr "Changements capturés (vue interne)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Category"
 msgstr "Catégorie"
 
@@ -4803,6 +4805,7 @@ msgstr ""
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_edit_injury
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Delete Injury"
 msgstr "Supprimer la blessure"
 
@@ -4839,6 +4842,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form_calendar_popup
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Description"
 msgstr ""
 
@@ -4862,6 +4866,7 @@ msgstr "Description détaillée de l'événement"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_injury_view_list
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_view_list_embedded
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Details"
 msgstr "Détails"
 
@@ -5071,6 +5076,7 @@ msgstr "Document téléchargé avec succès."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_injury_view_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_view_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Documents"
 msgstr ""
 
@@ -5088,6 +5094,7 @@ msgstr "Rôle dominant"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_edit_card_done
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Done"
 msgstr "Terminé"
 
@@ -5131,6 +5138,7 @@ msgstr "Chaque partenaire ne peut être lié qu'à une seule équipe."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_row
 msgid "Edit"
 msgstr "Modifier"
 
@@ -6473,6 +6481,7 @@ msgstr "Blessure mise à jour (%s)"
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Injury updated."
 msgstr "Blessure mise à jour."
 
@@ -7293,6 +7302,7 @@ msgstr "S/O"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_contact_fields
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_event_filter_bar
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Name"
 msgstr "Nom"
 
@@ -7547,6 +7557,7 @@ msgstr "Aucun document disponible"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "No documents uploaded"
 msgstr "Aucun document téléchargé"
 
@@ -7783,6 +7794,7 @@ msgstr "Note"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_note_history
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_injury_view_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Note History"
 msgstr "Historique des notes"
 
@@ -7852,6 +7864,7 @@ msgstr "Bloc-notes"
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__team_info_notes
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_activity_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Notes"
 msgstr ""
 
@@ -11419,6 +11432,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_clinic_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_treatment_note_edit_form
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "The selected injury does not belong to this patient."
 msgstr "La blessure sélectionnée n'appartient pas à ce patient."
 
@@ -14444,6 +14458,7 @@ msgstr "Date inconnue"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_row
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_sheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -14454,12 +14469,14 @@ msgstr "Supprimer ce contact ?"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Delete this document?"
 msgstr "Supprimer ce document ?"
 
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Document deleted."
 msgstr "Document supprimé."
 
@@ -14467,6 +14484,7 @@ msgstr "Document supprimé."
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Document uploaded."
 msgstr "Document téléversé."
 
@@ -14514,6 +14532,7 @@ msgstr "Infos"
 #. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Injury deleted."
 msgstr "Blessure supprimée."
 
@@ -14637,6 +14656,7 @@ msgstr "Statut de jeu"
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "Please choose a file."
 msgstr "Veuillez choisir un fichier."
 
@@ -14699,6 +14719,7 @@ msgstr "Envoyer la demande"
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "The file is too large (10 MB maximum)."
 msgstr "Le fichier est trop volumineux (10 Mo maximum)."
 
@@ -14706,6 +14727,7 @@ msgstr "Le fichier est trop volumineux (10 Mo maximum)."
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "The upload failed."
 msgstr "Le téléversement a échoué."
 
@@ -14720,6 +14742,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid ""
 "This will also delete its treatment notes, documents and activity history. "
 "This action cannot be undone."
@@ -14743,6 +14766,7 @@ msgstr "Annuler"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Upload"
 msgstr "Téléverser"
 
@@ -14769,6 +14793,7 @@ msgstr ""
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 msgid "Yes, Delete Injury"
 msgstr "Oui, supprimer la blessure"
 
@@ -14797,6 +14822,7 @@ msgstr "Vous ne pouvez pas modifier cet enregistrement."
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/patient_injury_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
 msgid "You do not have permission to do this."
 msgstr "Vous n'avez pas la permission de faire ceci."
 
@@ -14967,8 +14993,8 @@ msgstr "Saisissez un diagnostic."
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/clinic_portal.py:0
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
-msgid "This injury can no longer be undone; delete it from its page."
-msgstr "Cette blessure ne peut plus être annulée ; supprimez-la depuis sa page."
+msgid "This injury can no longer be undone; delete it from its card."
+msgstr "Cette blessure ne peut plus être annulée ; supprimez-la depuis sa fiche."
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -15305,3 +15331,63 @@ msgstr "La date de résolution ne peut pas être dans le futur."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_quick_button
 msgid "Verify"
 msgstr "Vérifier"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "%(count)s documents uploaded."
+msgstr "%(count)s documents téléversés."
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_injury_card.js:0
+msgid "%(count)s file(s) chosen"
+msgstr "%(count)s fichier(s) choisi(s)"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_injury_card.js:0
+msgid "%(size)s — over 10 MB"
+msgstr "%(size)s — plus de 10 Mo"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "<small class=\"o_sc_hint\">Several files at once — 10 MB maximum each</small>"
+msgstr "<small class=\"o_sc_hint\">Plusieurs fichiers à la fois — 10 Mo maximum chacun</small>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "<span class=\"o_sc_dropzone_text\">Choose files or drop them here</span>"
+msgstr "<span class=\"o_sc_dropzone_text\">Choisissez des fichiers ou déposez-les ici</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "<span>Add</span>"
+msgstr "<span>Ajouter</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "Add documents"
+msgstr "Ajouter des documents"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "Files"
+msgstr "Fichiers"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+msgid "Files over 10 MB cannot be uploaded. Remove them to continue."
+msgstr "Les fichiers de plus de 10 Mo ne peuvent pas être téléversés. Retirez-les pour continuer."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Nothing was uploaded: these files are over 10 MB: %(files)s"
+msgstr "Rien n'a été téléversé : ces fichiers dépassent 10 Mo : %(files)s"
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Please enter a name."
+msgstr "Veuillez saisir un nom."

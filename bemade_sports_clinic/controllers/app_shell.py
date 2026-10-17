@@ -762,6 +762,51 @@ def _contact_write(ctrl, contact, field, value):
     return {}
 
 
+# -- sports.injury.document (task 1616: a document of an injury card) ---------
+# The legacy categories « xray » / « mri » read (and are re-saved) as
+# « Medical Imaging ».
+_DOCUMENT_LEGACY_CATEGORIES = {'xray': 'medical_imaging', 'mri': 'medical_imaging'}
+
+
+def _document_check(ctrl, document):
+    """The injury's (or, unlinked, the player's) access — as the download."""
+    doc = document.sudo()
+    if doc.injury_id:
+        ctrl._check_access_to_injury(doc.injury_id.id)
+    else:
+        ctrl._check_access_to_patient(doc.patient_id.id)
+
+
+def _document_permission(ctrl, document):
+    """Portal therapists hold a READ-ONLY ACL on documents (the upload is
+    sudo too): whoever may upload may rename / re-file them."""
+    user = request.env.user
+    return bool(ctrl._is_treatment_professional() and sc_app_roles.can(
+        'documents.upload', user._sc_app_roles(), is_system=user.has_group('base.group_system')))
+
+
+def _document_read(document, field):
+    if field == 'category':
+        return _DOCUMENT_LEGACY_CATEGORIES.get(document.category, document.category)
+    return AppShellPortal._sc_save_value(document, field, raw=True)
+
+
+def _document_write(ctrl, document, field, value):
+    if field == 'name':
+        value = (value or '').strip()
+        if not value:
+            raise ValidationError(_("Please enter a name."))
+        document.sudo().write({'name': value})
+    elif field == 'category':
+        category = _selection_value(document, field, value)
+        if not category:
+            raise ValidationError(_("Invalid value."))
+        document.sudo().write({'category': category})
+    else:
+        document.sudo().write({'description': (value or '').strip() or False})
+    return {}
+
+
 # Task 1611: cross-record read fragments.
 def _injury_patient_fragments(injury):
     """An injury's player page / dossier: its card list, the hero, the
@@ -897,6 +942,18 @@ SAVE_REGISTRY = {
         },
         'check': _contact_check,
         'write': _contact_write,
+        'refresh': {'*': ['*']},
+    },
+    # Task 1616: a document of an injury card — re-filed after a multi-file
+    # upload (one category / description applied to all of them).
+    'sports.injury.document': {
+        'fields': {'name': _TP_ROLES, 'category': _TP_ROLES, 'description': _TP_ROLES},
+        'check': _document_check,
+        'write': _document_write,
+        'read': _document_read,
+        'sudo_write': True,
+        'permission': _document_permission,
+        # The document row (name, category · date · author, description).
         'refresh': {'*': ['*']},
     },
 }
@@ -1370,26 +1427,115 @@ class AppShellMixin:
             'sc_visibility_options': list(zip(('0', '1'), visibility_labels)),
             'sc_consent_options': [('', '')] + list(
                 Injury._fields['parental_consent']._description_selection(env)),
+            # Task 1616: the card's Documents (upload sheet, per-document
+            # edit) — the deprecated « xray » / « mri » keys left out.
+            'sc_document_category_options': [
+                (key, label) for key, label
+                in env['sports.injury.document']._fields['category']._description_selection(env)
+                if key not in _DOCUMENT_LEGACY_CATEGORIES],
         }
 
+    def _sc_injury_card_url(self, injury, team_id=None, clinic=None):
+        """Task 1616: where an injury lives in the app — its OPEN card: the
+        clinic dossier's when ``clinic`` (a validated clinic) lists it there
+        (a current injury of a patient on that clinic's worklist), else the
+        player page's Injuries tab (team / clinic context kept)."""
+        patient = injury.sudo().patient_id
+        if clinic and injury.stage in ('active', 'unverified') and request.env[
+                'sports.clinic.attendance'].sudo().search_count([
+                    ('event_id', '=', clinic.id), ('patient_id', '=', patient.id)], limit=1):
+            return '/my/clinic/%s?patient=%s&tab=dossier&injury=%s#clinic-injury-%s' % (
+                clinic.id, patient.id, injury.id, injury.id)
+        url = '/my/player?player_id=%s' % patient.id
+        try:
+            team_id = int(team_id or 0)
+        except (TypeError, ValueError):
+            team_id = 0
+        if team_id:
+            url += '&team_id=%s' % team_id
+        if clinic:
+            url += '&clinic_id=%s' % clinic.id
+        return '%s&tab=injuries&injury=%s#injury-%s' % (url, injury.id, injury.id)
+
+    @staticmethod
+    def _sc_injury_card_flash(kw):
+        """Task 1616: the round-trip messages of an injury card (its
+        documents' upload / delete, its deletion, an old injury-page save)
+        — on every page listing cards (player page, clinic dossier)."""
+        env = request.env
+        try:
+            count = int(kw.get('count') or 0)
+        except (TypeError, ValueError):
+            count = 0
+        success = {
+            'document_uploaded': env._("Document uploaded."),
+            'documents_uploaded': env._("%(count)s documents uploaded.", count=count),
+            'document_deleted': env._("Document deleted."),
+            'injury_deleted': env._("Injury deleted."),
+            'injury_updated': env._("Injury updated."),
+        }.get(kw.get('success'))
+        files = (kw.get('error_files') or '')[:300]
+        error = {
+            'no_file': env._("Please choose a file."),
+            'file_too_large': (
+                env._("Nothing was uploaded: these files are over 10 MB: %(files)s", files=files)
+                if files else env._("The file is too large (10 MB maximum).")),
+            'upload_failed': env._("The upload failed."),
+            'invalid_injury': env._("The selected injury does not belong to this patient."),
+            'permission_denied': env._("You do not have permission to do this."),
+        }.get(kw.get('error'))
+        return {'success': success, 'error': error}
+
+    def _sc_injury_card_documents(self, injuries):
+        """Task 1616: the Documents of a whole card list in ONE query —
+        ``{injury_id: [{'doc', 'meta'}]}`` (newest first). sudo(): the
+        injuries were access-checked by the page (as the former documents
+        page did)."""
+        env = request.env
+        if not injuries:
+            return {}
+        labels = dict(env['sports.injury.document']._fields['category']._description_selection(env))
+        out = {}
+        for doc in env['sports.injury.document'].sudo().search(
+                [('injury_id', 'in', injuries.ids)], order='create_date desc, id desc'):
+            out.setdefault(doc.injury_id.id, []).append({
+                'doc': doc,
+                'meta': ' · '.join(part for part in (
+                    labels.get(doc.category, ''), format_date(env, doc.create_date),
+                    doc.created_by_id.display_name or '') if part),
+            })
+        return out
+
     def _sc_injury_card_row(self, injury, ctx_qs, is_tp, tp_view, opened_id=0, created_id=0,
-                            clocks=None):
+                            clocks=None, list_url=None, anchor_prefix='injury-', documents=None):
         """One row of an injury card list: ?injury=<id> opens it read-only,
         ?created=<id> (its creator only) opens it in edit mode with the
         « Undo ». Task 1592: ``clocks`` (``_sc_activity_clocks`` of the
-        whole card list, ONE query) gives the card its activity clock."""
+        whole card list, ONE query) gives the card its activity clock.
+        Task 1616: ``list_url`` (the page listing the card) makes the card's
+        own address (``card_url``: where an upload / delete comes back to,
+        the card open); ``documents`` (``_sc_injury_card_documents`` of the
+        whole list) its Documents."""
         env = request.env
         stages = dict(injury._fields['stage']._description_selection(env))
         when = (format_date(env, injury.injury_date) if injury.injury_date
                 else env._("Date unknown"))
+        card_url = ('%s&injury=%s#%s%s' % (list_url, injury.id, anchor_prefix, injury.id)
+                    if list_url else self._sc_injury_card_url(injury))
+        if not list_url:
+            list_url = '/my/player?player_id=%s&tab=injuries' % injury.sudo().patient_id.id
         return {
             'id': injury.id,
+            # Task 1616: the injury page is retired — the card is the page.
+            'url': card_url,
             'title': injury.diagnosis or env._("Injury"),
             'subtitle': ' · '.join(part for part in (when, stages.get(injury.stage, '')) if part),
             'dot': self.SC_INJURY_TONES.get(injury.stage, 'green'),
             'chip': stages.get(injury.stage, ''),
             'hidden': bool(injury.hidden_from_coaches),
-            'url': '/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs),
+            'card_url': card_url,
+            'list_url': list_url,
+            'documents': (documents or {}).get(injury.id, []),
             'injury': injury,
             'open': injury.id in (opened_id, created_id),
             'created': injury.id == created_id and injury.create_uid == env.user,

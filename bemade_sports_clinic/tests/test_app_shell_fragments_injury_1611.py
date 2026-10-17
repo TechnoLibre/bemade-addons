@@ -18,8 +18,8 @@ Acceptance criteria:
   upload) and the linked-injury name in the treatment notes' meta line.
 * AC-I4 Treatment note date / link / text -> the note's meta line and its
   « modified » stamp, in the server's date format.
-* AC-I5 Injury page: diagnosis -> app bar title, crumb, document title; the
-  details read view.
+* AC-I5 Injury page (task 1616: the open card): diagnosis -> the card's
+  summary; the Details / Notes read views are refreshed too.
 * AC-I6 Clinic dossier: a resolved injury drops out of « Active injuries »
   (list fragment).
 """
@@ -125,16 +125,17 @@ class TestFragmentsInjury1611(FragmentsCommon):
 
     # -- AC-I5 -------------------------------------------------------------
     def test_injury_page_title_follows_diagnosis(self):
+        # Task 1616: the injury page is the open card — its title is the
+        # card's summary, refreshed by a diagnosis save.
         self._login_tp()
         url = '/my/injury/edit?injury_id=%s' % self.injury.id
+        resp = self.url_open(url, allow_redirects=False)
+        self.assertIn('injury=%s' % self.injury.id, resp.headers.get('Location', ''))
         payload = self._saved(self.injury, 'diagnosis', 'Synthetic elbow')
-        for part in ('appbar', 'crumb', 'details'):
+        for part in ('summary', 'read', 'notes'):
             self.assertRefreshes(payload, self._ikey(self.injury, part))
-        answer = self._fragments(url, [self._ikey(self.injury, 'appbar'), self._ikey(self.injury, 'crumb'),
-                                       self._ikey(self.injury, 'details')])
-        self.assertIn('Synthetic elbow', answer['title'])
-        for part in ('appbar', 'crumb', 'details'):
-            self.assertIn('Synthetic elbow', answer['fragments'][self._ikey(self.injury, part)], part)
+        summary = self._fragment(self._url(), self._ikey(self.injury, 'summary'))
+        self.assertIn('Synthetic elbow', self._text(summary))
 
 
 @tagged('post_install', '-at_install')

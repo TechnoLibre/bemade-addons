@@ -1008,10 +1008,15 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         injury_clocks = self._sc_activity_clocks(
             values['injuries'], lambda i: '%s&tab=activities' % base_url)
 
+        # Task 1616: the cards' Documents (one query) and their own address
+        # (an upload / delete comes back to the card, open).
+        injury_documents = self._sc_injury_card_documents(values['injuries'])
+
         def _injury_row(injury):
             return self._sc_injury_card_row(
                 injury, ctx_qs, is_tp, tp_view, opened_id=opened_id, created_id=created_id,
-                clocks=injury_clocks)
+                clocks=injury_clocks, list_url='%s&tab=injuries' % base_url,
+                documents=injury_documents)
 
         # Owner review 2026-10-10: current injuries (active, unverified)
         # first, then resolved; each by injury date, newest first.
@@ -1157,6 +1162,13 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'invalid_user': env._("You cannot assign this activity to that user."),
             'injury_visibility': env._("Please choose whether coaches can see this injury."),
             'injury_diagnosis': env._("Please enter a diagnosis."),
-            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its card."),
         }.get(kw.get('error'))
+        # Task 1616: the injury cards' messages (several documents, a file
+        # list over the limit, an old injury-page save).
+        card = AppShellMixin._sc_injury_card_flash(kw)
+        if kw.get('success') in ('documents_uploaded', 'injury_updated', 'document_deleted'):
+            success = card['success']
+        if kw.get('error') == 'file_too_large':
+            error = card['error']
         return {'success': success, 'error': error}

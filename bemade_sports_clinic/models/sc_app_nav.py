@@ -159,14 +159,6 @@ def _player_parent(v):
     })
 
 
-def _injury_parent(v):
-    return ('sc_app_injury_edit', {
-        'injury': v['injury'],
-        'team': v.get('team'),
-        'clinic_event': v.get('clinic_event'),
-    })
-
-
 def _heading(v):
     player = _player_of(v)
     return player.sudo()._portal_heading_name() if player else ''
@@ -241,19 +233,6 @@ def _player_context(v):
     team_label = team.name if team else str(nav_label('players'))
     player = _player_of(v)
     return ' · '.join(part for part in (team_label, player.position if player else '') if part)
-
-
-def _injury_from(env, match, args):
-    injury = _readable(env, 'sports.patient.injury', _arg(args, 'injury_id'))
-    if not injury:
-        return None
-    team = _readable(env, 'sports.team', _arg(args, 'team_id'))
-    return {'injury': injury, 'team': team,
-            'clinic_event': _clinic_from(env, _arg(args, 'clinic_id'))}
-
-
-def _injury_label(v):
-    return _name(v['injury'], 'diagnosis') or str(_lt('Injury'))
 
 
 def _clinic_from_path(env, match, args):
@@ -368,12 +347,10 @@ PAGES = {page.key: page for page in (
     Page('sc_app_player_create', parent=lambda v: ('sc_app_players', {})),
     # -- injuries ------------------------------------------------------
     Page('sc_app_injury_new', parent=_player_parent, context=_heading),
-    Page('sc_app_injury_edit', path=r'/my/injury/edit', from_url=_injury_from,
-         url=lambda v: '/my/injury/edit?injury_id=%s%s' % (v['injury'].id, _ctx_qs(v)),
-         label=_injury_label, parent=_player_parent, context=_heading),
+    # Task 1616: no injury page / injury documents page any more — the
+    # injury is its open card (/my/injury/edit and /my/injury/documents
+    # redirect there).
     Page('sc_app_treatment_notes', parent=_player_parent, context=_heading),
-    Page('sc_app_injury_documents', parent=_injury_parent,
-         context=lambda v: _name(v['injury'], 'diagnosis') or _heading(v)),
     # -- clinics -------------------------------------------------------
     Page('sc_app_clinic', path=r'/my/clinic/(\d+)', from_url=_clinic_from_path,
          url=lambda v: '/my/clinic/%s' % v['event'].id,

@@ -189,3 +189,5 @@ from . import test_retour_prevu_tours_1603
 from . import test_retour_prevu_i18n_1603
 from . import test_injury_quick_actions_1604
 from . import test_injury_quick_tours_1604
+from . import test_injury_card_sections_1616
+from . import test_injury_card_tours_1616

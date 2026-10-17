@@ -101,8 +101,9 @@ class TestAppShellPencil(AppShellCommon):
         read = notes.xpath('.//*[@data-sc-edit-view="read"]')[0].text_content()
         self.assertIn('Synthetic ext', read)
         self.assertIn('Synthetic int', read)
-        self.assertTrue(notes.xpath('.//*[@data-sc-sheet-open="sc_note_history_sheet"]'
-                                    '[not(ancestor::*[@data-sc-edit-view="edit"])]'))
+        # Task 1616: the injury page is the open card (per-injury sheet ids).
+        self.assertTrue(notes.xpath('.//*[@data-sc-sheet-open="sc_note_history_sheet_%s"]'
+                                    '[not(ancestor::*[@data-sc-edit-view="edit"])]' % self.injury.id))
         self.assertNotIn('Saved as you go', text)
 
     # -- UC-PE2 ----------------------------------------------------------

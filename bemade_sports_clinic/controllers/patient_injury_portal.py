@@ -7,11 +7,10 @@ from odoo import http, fields, _
 from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager
-from odoo.tools import format_date
 from .access_control_mixin import AccessControlMixin
-from ..models import sc_app_roles
 from .app_shell import AppShellMixin
 from datetime import datetime, timedelta
+from urllib.parse import quote as url_quote
 
 _logger = logging.getLogger(__name__)
 
@@ -431,40 +430,28 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect('/my/players')
             
         injury = self._check_access_to_injury(injury_id)
-        values = self._edit_injury_form_values(injury, team_id, post)
-        # Task 1539: the app shell (switch on: each field saved on blur
-        # through /my/app/save, status / visibility instant with undo) or
-        # today's template (off). The clinic modal fragment is unchanged.
+        # Task 1616: the app shell has no injury page any more — the injury
+        # is its open card (player page, or the clinic dossier listing it);
+        # an old link / bookmark lands there. Switch off: today's page.
         if self._sc_app_shell_active():
-            values.update(self._sc_injury_edit_values(injury, values))
-        return self._sc_render('bemade_sports_clinic.portal_edit_injury',
-                               'bemade_sports_clinic.sc_app_injury_edit', values)
+            return self._sc_injury_card_redirect(injury, post, team_id=team_id)
+        values = self._edit_injury_form_values(injury, team_id, post)
+        return request.render('bemade_sports_clinic.portal_edit_injury', values)
 
-    def _sc_injury_edit_values(self, injury, values):
-        env = request.env
-        Injury = env['sports.patient.injury']
-        roles = env.user._sc_app_roles()
-        is_tp = values['is_treatment_prof']
-        ctx_qs = values.get('ctx_qs') or ''
-        consent_options = [('', '')] + list(
-            Injury._fields['parental_consent']._description_selection(env))
-        # Labels first, keys zipped in (babel's extractor, see app_shell).
-        visibility_labels = (env._("Coaches"), env._("Hidden"))
-        return {
-            'sc_stage_options': list(Injury._fields['stage']._description_selection(env)),
-            'sc_visibility_options': list(zip(('0', '1'), visibility_labels)),
-            'sc_consent_options': consent_options,
-            'sc_diagnosis_editable': bool(is_tp or injury.stage == 'unverified'),
-            'sc_is_tp_view': bool(is_tp and roles & sc_app_roles.TP),
-            'sc_documents_url': '/my/injury/documents?injury_id=%s%s' % (injury.id, ctx_qs),
-            # Task 1581: the notes history sheet (fetched on every open).
-            'sc_note_history_url': '/my/injury/%s/notes/history/fragment' % injury.id,
-            'sc_injury_flash': {
-                'success': env._("Injury successfully updated.")
-                if values.get('success') == 'injury_updated' else False,
-                'error': values.get('error') or False,
-            },
-        }
+    # The round-trip messages an old injury-page link may still carry.
+    _SC_CARD_FLASH = ('success', 'error')
+
+    def _sc_injury_card_redirect(self, injury, post, team_id=None):
+        """Task 1616: redirect to ``injury``'s open card, in the navigation
+        context of ``post`` (team, validated clinic) and with its
+        ``success`` / ``error`` message."""
+        team_id = team_id or post.get('team_id')
+        url = self._sc_injury_card_url(injury, team_id=team_id, clinic=self._clinic_context(post))
+        for key in self._SC_CARD_FLASH:
+            value = post.get(key)
+            if value and re.fullmatch(r'[\w-]{1,64}', str(value)):
+                url = self._url_with_query(url, '%s=%s' % (key, value))
+        return request.redirect(url)
 
     def _edit_injury_form_values(self, injury, team_id, post):
         """The edit form's qcontext — shared by the page and, with the
@@ -1011,7 +998,8 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # the injury page's sheet now; an old link lands on that page (same
         # team / clinic context). Switch off: today's page, unchanged.
         if self._sc_app_shell_active():
-            return request.redirect('/my/injury/edit?injury_id=%s%s' % (injury.id, ctx_qs))
+            # Task 1616: … which is now the injury's open card.
+            return self._sc_injury_card_redirect(injury, post, team_id=team_context_id)
         values = {
             'injury': injury,
             'patient': injury.patient_id,
@@ -1092,6 +1080,10 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             return request.redirect('/my/players')
             
         injury = self._check_access_to_injury(injury_id)
+        # Task 1616: in the app shell the documents are the injury card's
+        # « Documents » section — an old link lands on the open card.
+        if self._sc_app_shell_active():
+            return self._sc_injury_card_redirect(injury, post, team_id=team_id)
             
         # Get documents for this injury
         documents = request.env['sports.injury.document'].sudo().search(
@@ -1146,42 +1138,8 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'ctx_qs': ctx_qs,
         }
         
-        # Task 1539: the app shell (switch on) or today's template (off).
-        if self._sc_app_shell_active():
-            values.update(self._sc_documents_values(documents, values))
-        return self._sc_render('bemade_sports_clinic.portal_injury_documents',
-                               'bemade_sports_clinic.sc_app_injury_documents', values)
+        return request.render('bemade_sports_clinic.portal_injury_documents', values)
 
-    def _sc_documents_values(self, documents, values):
-        env = request.env
-        labels = dict(env['sports.injury.document']._fields['category']._description_selection(env))
-        nav = {}
-        if values.get('team_context_id'):
-            nav['team_id'] = values['team_context_id']
-        if values.get('clinic_event'):
-            nav['clinic_id'] = values['clinic_event'].id
-        return {
-            'sc_document_rows': [{
-                'doc': doc,
-                'meta': ' · '.join(part for part in (
-                    labels.get(doc.category, ''), format_date(env, doc.create_date),
-                    doc.created_by_id.display_name or '') if part),
-            } for doc in documents],
-            'sc_nav_hidden': nav,
-            'sc_flash': {
-                'success': {
-                    'document_uploaded': env._("Document uploaded."),
-                    'document_deleted': env._("Document deleted."),
-                }.get(values.get('success')),
-                'error': {
-                    'no_file': env._("Please choose a file."),
-                    'file_too_large': env._("The file is too large (10 MB maximum)."),
-                    'upload_failed': env._("The upload failed."),
-                    'permission_denied': env._("You do not have permission to do this."),
-                }.get(values.get('error')),
-            },
-        }
-        
     @http.route(['/my/injury/document/upload'], type='http', auth='user', website=True, methods=['POST'])
     def upload_injury_document(self, **post):
         """Upload a document for an injury"""
@@ -1296,38 +1254,51 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             tail = f"#{frag}" if frag else ''
             return request.redirect(f"{base}{sep}{qs}{tail}")
 
-        attachment = post.get('attachment')
-        if not attachment:
+        # Task 1616: SEVERAL files at once (the injury card's « Add »): each
+        # 10 MB at most, all or nothing — one oversized file and none is
+        # saved (the message names it). One category / description for all;
+        # ``document_name`` names a single file only.
+        files = [f for f in request.httprequest.files.getlist('attachment') if f and f.filename]
+        if not files:
             return _redirect('error=no_file')
 
+        injury_id = False
+        if post.get('injury_id'):
+            try:
+                injury_id = int(post['injury_id'])
+            except (TypeError, ValueError):
+                injury_id = 0
+            if injury_id not in patient.sudo().injury_ids.ids:
+                return _redirect('error=invalid_injury')
+
         try:
-            name = attachment.filename
-            safe_file_name = self._sanitize_filename(name)
-            file_content = attachment.read()
-            file_size = len(file_content)
-
-            # 10MB limit
-            if file_size > 10 * 1024 * 1024:
-                return _redirect('error=file_too_large')
-
-            # Create patient-linked document (injury optional)
-            request.env['sports.injury.document'].sudo().create({
+            payloads = [(f.filename, f.read()) for f in files]
+            too_large = [name for name, content in payloads if len(content) > self.SC_DOCUMENT_MAX_BYTES]
+            if too_large:
+                names = ', '.join(self._sanitize_filename(name) for name in too_large)[:300]
+                return _redirect('error=file_too_large&error_files=%s' % url_quote(names))
+            single_name = (post.get('document_name') or '').strip() if len(payloads) == 1 else ''
+            vals_list = [{
                 'patient_id': patient.id,
-                'injury_id': int(post['injury_id']) if post.get('injury_id') else False,
-                'name': post.get('document_name', name),
+                'injury_id': injury_id,
+                'name': single_name or name,
                 'description': post.get('description', ''),
-                'category': post.get('category', 'other'),
-                'file_content': base64.b64encode(file_content),
-                'file_name': safe_file_name,
+                'category': post.get('category') or 'other',
+                'file_content': base64.b64encode(content),
+                'file_name': self._sanitize_filename(name),
                 'created_by_id': request.env.user.id,
-            })
-
-            return _redirect('success=document_uploaded')
-
+            } for name, content in payloads]
+            with request.env.cr.savepoint():
+                request.env['sports.injury.document'].sudo().create(vals_list)
         except Exception as e:
             _logger.error(f"Error uploading patient document: {e}")
             return _redirect('error=upload_failed')
-        
+        if len(vals_list) > 1:
+            return _redirect('success=documents_uploaded&count=%s' % len(vals_list))
+        return _redirect('success=document_uploaded')
+
+    SC_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+
     @http.route(['/my/injury/document/delete/<int:document_id>'], type='http', auth='user',
                 website=True, methods=['POST'], csrf=True)
     def delete_injury_document(self, document_id, **post):
@@ -1349,15 +1320,22 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # Keep the team/clinic nav context across the round-trip (task 1410).
         ctx_qs = _nav_ctx_qs(post, self._clinic_context(post))
 
+        # Task 1616: the injury card posts where to come back (the card).
+        return_url = self._safe_return_url(post.get('return_url'), None)
+
         # Check if user is a treatment professional (only they can delete documents)
         is_treatment_prof = self._is_treatment_professional()
         if not is_treatment_prof:
+            if return_url:
+                return request.redirect(self._url_with_query(return_url, 'error=permission_denied'))
             return request.redirect(f'/my/injury/documents?injury_id={document.injury_id.id}{ctx_qs}&error=permission_denied')
             
         # Delete the document
         injury_id = document.injury_id.id
         document.sudo().unlink()
         
+        if return_url:
+            return request.redirect(self._url_with_query(return_url, 'success=document_deleted'))
         # Redirect back to documents page with success message
         return request.redirect(f'/my/injury/documents?injury_id={injury_id}{ctx_qs}&success=document_deleted')
         
@@ -1412,6 +1390,10 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             injury.sudo().unlink()
             _logger.info(f"Injury {injury_id} deleted by user {request.env.user.id}")
             
+            # Task 1616: from the injury card — back to the list it was in
+            # (the player's Injuries tab or the clinic dossier).
+            if post.get('sc_card') and post.get('return_url'):
+                return request.redirect(self._url_with_query(return_url, 'success=injury_deleted'))
             # Redirect back to player page with success message
             return request.redirect(f'/my/player?player_id={patient_id}{ctx_qs}&success=injury_deleted')
             

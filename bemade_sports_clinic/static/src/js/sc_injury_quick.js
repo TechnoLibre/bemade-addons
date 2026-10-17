@@ -4,7 +4,7 @@
  * them alone, and the routes refuse anyone else.
  *
  * - button[data-sc-injury-quick="verify"] (an unverified injury's card row
- *   or injury page header): ONE tap posts /my/injury/<id>/verify;
+ *   — task 1616: the injury page is the open card): ONE tap posts /my/injury/<id>/verify;
  * - button[data-sc-injury-quick="resolve"] (an active one): opens the
  *   layout's #sc_injury_resolve_sheet (« Résoudre cette blessure ? », the
  *   resolution date, default today); its confirm posts

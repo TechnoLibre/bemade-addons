@@ -107,7 +107,9 @@ class TestAppShellActivityRows1595(_ActivityRowsMixin, AppShellCommon):
         row = self._row(tree, self.act_injury)
         self.assertEqual(self._related(row), [
             ('sports.patient', '/my/player?player_id=%s' % self.player.id, 'One, Pat'),
-            ('sports.patient.injury', '/my/injury/edit?injury_id=%s' % self.injury.id, 'Sprain'),
+            # Task 1616: the injury's open card (no injury page any more).
+            ('sports.patient.injury', '/my/player?player_id=%s&tab=injuries&injury=%s#injury-%s' % (
+                self.player.id, self.injury.id, self.injury.id), 'Sprain'),
         ])
 
     # -- UC-3 ------------------------------------------------------------
@@ -149,7 +151,8 @@ class TestAppShellActivityRows1595(_ActivityRowsMixin, AppShellCommon):
         self.assertEqual(_text(dt), 'Created')
         related = tree.xpath('//*[@data-sc-section="activity.related"]//a/@href')
         self.assertEqual(related, ['/my/player?player_id=%s' % self.player.id,
-                                   '/my/injury/edit?injury_id=%s' % self.injury.id])
+                                   '/my/player?player_id=%s&tab=injuries&injury=%s#injury-%s' % (
+                                       self.player.id, self.injury.id, self.injury.id)])
         # The sheets still return to the related record.
         form = tree.xpath('//dialog[@id="sc_activity_complete_sheet"]//form')[0]
         self.assertEqual(form.xpath('.//input[@name="return_url"]/@value'),

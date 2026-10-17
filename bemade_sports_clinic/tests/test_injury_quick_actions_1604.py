@@ -241,16 +241,19 @@ class TestInjuryQuickActions1604(QuickActionsMixin, FragmentsCommon):
         self.assertEqual(self._buttons(node, 'verify'), [])
 
     def test_buttons_on_the_injury_page(self):
+        # Task 1616: the injury page is the open card — its row (summary)
+        # carries the button.
         self._login_tp()
         for injury, action in ((self.unverified, 'verify'), (self.injury, 'resolve')):
             tree = self._page('/my/injury/edit?injury_id=%s' % injury.id)
-            header = tree.xpath('//*[@data-sc-fragment="sports.patient.injury:%s:quick"]' % injury.id)
-            self.assertEqual(len(header), 1, action)
-            self.assertEqual(len(self._buttons(header[0], action)), 1, action)
+            card = tree.xpath('//details[@id="injury-%s"][@open]' % injury.id)
+            self.assertEqual(len(card), 1, action)
+            summary = card[0].xpath('./summary[@data-sc-fragment="sports.patient.injury:%s:summary"]' % injury.id)
+            self.assertEqual(len(self._buttons(summary[0], action)), 1, action)
             self.assertEqual(len(tree.xpath('//dialog[@id="sc_injury_resolve_sheet"]')), 1)
         tree = self._page('/my/injury/edit?injury_id=%s' % self.resolved.id)
-        header = tree.xpath('//*[@data-sc-fragment="sports.patient.injury:%s:quick"]' % self.resolved.id)
-        self.assertEqual(self._buttons(header[0] if header else None), [])
+        card = tree.xpath('//details[@id="injury-%s"]' % self.resolved.id)
+        self.assertEqual(self._buttons(card[0] if card else None), [])
 
     def test_coach_sees_no_button(self):
         self._login_coach()

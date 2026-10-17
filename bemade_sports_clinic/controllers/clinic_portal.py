@@ -1033,9 +1033,11 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'invalid_date': env._("Please enter a valid date."),
             'injury_visibility': env._("Please choose whether coaches can see this injury."),
             'injury_diagnosis': env._("Please enter a diagnosis."),
-            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its card."),
         }.get(kw.get('error'))
-        return {'success': success, 'error': error}
+        # Task 1616: the dossier's injury cards (documents, deletion).
+        card = AppShellMixin._sc_injury_card_flash(kw)
+        return {'success': success or card['success'], 'error': error or card['error']}
 
     def _sc_clinic_values(self, event, values, kw):
         """/my/clinic/<id> in the shell: phone = two tabs (waiting list ·
@@ -1091,10 +1093,14 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # of its own — task 1409), in the clinic context.
         injury_clocks = self._sc_activity_clocks(current, lambda i: (
             '/my/player?player_id=%s%s&tab=activities' % (i.patient_id.id, values['dossier_ctx_qs'])))
+        # Task 1616: the cards' Documents (one query) and their own address.
+        injury_documents = self._sc_injury_card_documents(current)
+        dossier_url = '/my/clinic/%s?patient=%s&tab=dossier' % (event.id, selected.id) if selected else None
         injury_rows = [
             self._sc_injury_card_row(
                 injury, values['dossier_ctx_qs'], is_tp, tp_view,
-                opened_id=opened_id, created_id=created_id, clocks=injury_clocks)
+                opened_id=opened_id, created_id=created_id, clocks=injury_clocks,
+                list_url=dossier_url, anchor_prefix='clinic-injury-', documents=injury_documents)
             for injury in current]
         staff = event_sudo.assigned_staff_ids
         return {

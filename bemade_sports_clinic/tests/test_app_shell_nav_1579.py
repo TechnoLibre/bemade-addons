@@ -174,20 +174,17 @@ class TestAppShellNav1579(Nav1579Common):
         self.assertEqual(crumbs, [(HOME, 'Home')])
 
     def test_injury_pages_keep_the_player_context(self):
+        # Task 1616: the injury page and its documents page are the injury's
+        # open card on the player page — same team context, same crumbs.
         player_url = '/my/player?player_id=%s&team_id=%s' % (self.player.id, self.team_a.id)
-        back, crumbs, current, context = self._nav(
-            '/my/injury/edit?injury_id=%s&team_id=%s' % (self.injury.id, self.team_a.id))
-        self.assertEqual(back, [player_url])
-        self.assertEqual(crumbs, [('/my/teams', 'Teams'), (self.players_tab, 'PC Team A'),
-                                  (player_url, self.player_name)])
-        self.assertEqual(current, 'Sprain')
-        self.assertEqual(context, self.player_name)
-        injury_url = '/my/injury/edit?injury_id=%s&team_id=%s' % (self.injury.id, self.team_a.id)
-        back, crumbs, _current, context = self._nav(
-            '/my/injury/documents?injury_id=%s&team_id=%s' % (self.injury.id, self.team_a.id))
-        self.assertEqual(back, [injury_url])
-        self.assertEqual(crumbs[-1], (injury_url, 'Sprain'))
-        self.assertEqual(context, 'Sprain')
+        for old in ('/my/injury/edit?injury_id=%s&team_id=%s', '/my/injury/documents?injury_id=%s&team_id=%s'):
+            back, crumbs, current, context = self._nav(old % (self.injury.id, self.team_a.id))
+            self.assertEqual(back, [self.players_tab], old)
+            self.assertEqual(crumbs, [('/my/teams', 'Teams'), (self.players_tab, 'PC Team A')], old)
+            self.assertEqual(current, self.player_name, old)
+            resp = self.url_open(old % (self.injury.id, self.team_a.id), allow_redirects=False)
+            self.assertIn('%s&tab=injuries&injury=%s#injury-%s' % (player_url, self.injury.id, self.injury.id),
+                          resp.headers.get('Location', ''))
 
     def test_clinic_and_event_pages(self):
         back, crumbs, current, _context = self._nav('/my/clinic/%s' % self.clinic.id)

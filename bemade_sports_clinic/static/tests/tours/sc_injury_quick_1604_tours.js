@@ -126,25 +126,26 @@ tours.add("sc_1604_resolve_row", {
     ],
 });
 
-// ------------------------------------ the injury page header: « Verify »
+// ------------- an OPEN card (task 1616: the former injury page): « Verify »
 tours.add("sc_1604_page_verify", {
     steps: () => [
         {
-            content: "Tap « Verify » in the injury page header",
-            trigger: ".o_sc_injury_quick button[data-sc-injury-quick=verify]",
+            content: "Tap « Verify » on the open card's row",
+            trigger: "details.o_sc_injury_item[open] summary button[data-sc-injury-quick=verify]",
             run(helpers) {
                 markNoReload();
                 return helpers.click();
             },
         },
         {
-            content: "The header now offers « Resolve » — no reload",
+            content: "The row now offers « Resolve » — the card stays open, no reload",
             trigger: ".o_sc_app",
             async run() {
-                await waitFor(
-                    () => document.querySelector(".o_sc_injury_quick button[data-sc-injury-quick=resolve]"),
-                    "header refreshed"
-                );
+                await waitFor(() => {
+                    const button = quick("Synthetic strain");
+                    return button && button.dataset.scInjuryQuick === "resolve";
+                }, "row refreshed");
+                assert(card("Synthetic strain").open, "the row button closed the card");
                 assertNoReload();
             },
         },

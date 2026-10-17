@@ -251,7 +251,6 @@
                             <t t-set="clinic_event" t-value="event"/>
                             <t t-set="card_origin" t-value="'clinic'"/>
                             <t t-set="card_id_prefix" t-value="'clinic-injury-'"/>
-                            <t t-set="card_note_hint" t-value="True"/>
                             <t t-call="bemade_sports_clinic.sc_injury_add_card">
                                 <t t-set="card_patient" t-value="patient"/>
                                 <t t-set="card_add_id" t-value="'sc_clinic_injury_add'"/>

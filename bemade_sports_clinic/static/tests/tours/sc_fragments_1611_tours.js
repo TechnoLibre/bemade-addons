@@ -151,11 +151,13 @@ tours.add("sc_1611_player_fragments", {
 // ------------------------------------- injury card (player Injuries tab)
 const CARD = ".o_sc_injury_item[open]";
 
+const CARD_DETAILS = `${CARD} section[data-sc-edit-card="injury-details"]`;
+
 tours.add("sc_1611_injury_stage", {
     steps: () => [
         {
-            content: "Open card: pencil",
-            trigger: `${CARD} button[data-sc-edit-toggle]`,
+            content: "Open card: the Details pencil (task 1616: one per group)",
+            trigger: `${CARD_DETAILS} button[data-sc-edit-toggle]`,
             run(helpers) {
                 markNoReload();
                 return helpers.click();
@@ -174,25 +176,25 @@ tours.add("sc_1611_injury_stage", {
             content: "The summary turns green at once, the card stays open in edit mode",
             trigger: `${CARD} > summary .o_sc_dot.o_sc_tone_green`,
             run() {
-                assert(document.querySelector(`${CARD}[data-sc-edit-open]`), "the card closed");
+                assert(document.querySelector(`${CARD_DETAILS}[data-sc-edit-open]`), "the card closed");
                 assertNoReload();
             },
         },
         {
             content: "Done",
-            trigger: `${CARD} [data-sc-edit-done]`,
+            trigger: `${CARD_DETAILS} [data-sc-edit-done]`,
             run: "click",
         },
         {
             content: "The read view shows the resolution date; resolved card moved last",
-            trigger: `${CARD} [data-sc-edit-view="read"]:not([hidden])`,
+            trigger: `${CARD_DETAILS} [data-sc-edit-view="read"]:not([hidden])`,
             async run() {
                 const card = document.querySelector(CARD);
                 await waitFor(() => {
                     const items = [...document.querySelectorAll('[data-sc-section="player.injuries"] [data-sc-fragment-item]')];
                     return items[items.length - 1] === card;
                 }, "resolved card last");
-                assert(card.querySelectorAll('[data-sc-edit-view="read"] dt').length >= 3, "read rows");
+                assert(card.querySelectorAll('[data-sc-edit-card="injury-details"] [data-sc-edit-view="read"] dt').length >= 3, "read rows");
                 assertNoReload();
             },
         },

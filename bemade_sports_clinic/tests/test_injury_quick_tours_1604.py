@@ -11,8 +11,8 @@ Acceptance criteria (static/tests/tours/sc_injury_quick_1604_tours.js):
   on the chosen date and — the player's last active injury — opens the
   #1603 « last_resolved » proposal with that date; the row loses its
   button in place (no reload).
-* AC-T3 « Verify » in the injury page header: the header then offers
-  « Resolve » (no reload).
+* AC-T3 « Verify » on an OPEN card's row (task 1616: the former injury
+  page): the row then offers « Resolve », the card stays open (no reload).
 """
 from odoo import fields
 from odoo.tests import tagged
@@ -70,7 +70,8 @@ class QuickTours:
         self.assertEqual(self.player.predicted_return_date, D('2030-03-01'))
 
     def test_page_verify(self):
-        self.start_tour('/my/injury/edit?injury_id=%s' % self.strain.id, 'sc_1604_page_verify',
+        # Task 1616: the injury page is the open card now.
+        self.start_tour('%s&injury=%s' % (self._player_url(), self.strain.id), 'sc_1604_page_verify',
                         login='pc.tp@example.com')
         self.env.invalidate_all()
         self.assertEqual(self.strain.stage, 'active')

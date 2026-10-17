@@ -324,17 +324,23 @@
     <!--
         Task 1539 — document row. Variables: doc (sports.injury.document),
         download_url, delete_sheet (dialog id of the delete confirm, or
-        False), meta (subtitle text).
+        False), meta (subtitle text). Task 1616: optional edit_toggle (the
+        pencil of the enclosing per-document edit card) and fragment_key
+        (the text is a read fragment refreshed by a save of the document).
     -->
     <template id="sc_document_row" name="App shell: document row">
         <div class="o_sc_entity_row o_sc_entity_row_static o_sc_doc_row" t-att-data-sc-document-id="doc.id">
             <span class="o_sc_row_lead"><t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'documents'"/></t></span>
-            <span class="o_sc_row_text">
+            <span class="o_sc_row_text" t-att-data-sc-fragment="fragment_key or None">
                 <span class="o_sc_row_title" t-out="doc.name"/>
                 <span class="o_sc_row_subtitle" t-out="meta"/>
                 <span t-if="doc.description" class="o_sc_row_subtitle" t-out="doc.description"/>
             </span>
             <span class="o_sc_row_trailing">
+                <button t-if="edit_toggle" type="button" class="o_sc_icon_btn" data-sc-edit-toggle="1"
+                        aria-expanded="false" data-sc-action="documents.edit" aria-label="Edit" title="Edit">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'edit'"/></t>
+                </button>
                 <a t-att-href="download_url" class="o_sc_icon_btn" data-sc-action="documents.download"
                    aria-label="Download" title="Download">
                     <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'download'"/></t>
