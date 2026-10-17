@@ -18,7 +18,7 @@
 #
 {
     'name': 'Sports Clinic Management',
-    'version': "19.0.1.62.0",
+    'version': "19.0.1.63.0",
     'summary': 'Comprehensive sports medicine clinic management with portal access and activity tracking.',
     'description': """
 Sports Clinic Management System
@@ -153,6 +153,7 @@ sign-in kiosk uses the brand tokens and self-hosted Teko / DM Sans fonts
         "security/team_digest_rules.xml",
         "security/sports_quick_note_rules.xml",
         "security/sports_clinic_attendance_rules.xml",
+        "security/training_history_rules.xml",
         # Task 1401: personal /my/teams order, own-rows-only rule.
         "security/sports_team_user_rank_rules.xml",
         "data/sports_clinic_data.xml",

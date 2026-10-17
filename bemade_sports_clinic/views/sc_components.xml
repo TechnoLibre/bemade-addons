@@ -282,6 +282,7 @@
             </span>
             <p t-if="value" t-attf-class="o_sc_field_value #{'o_sc_pre' if pre else ''}" t-out="value"/>
             <p t-else="" class="o_sc_field_value o_sc_muted" t-out="empty or '—'"/>
+            <small t-if="static_hint" class="o_sc_hint" t-out="static_hint"/>
         </div>
     </template>
 

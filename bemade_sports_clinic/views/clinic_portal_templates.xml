@@ -464,11 +464,18 @@
                                                 <textarea name="training_recommendation" id="clinic_training_recommendation"
                                                           class="form-control form-control-sm" rows="2"
                                                           t-esc="selected_patient.training_recommendation or ''"/>
+                                                <!-- Task 1601: last SAVED change — date + author. -->
+                                                <small t-if="selected_patient.last_training_recommendation_info"
+                                                       class="text-muted d-block mt-1 o_sc_last_note_stamp"
+                                                       t-esc="selected_patient.last_training_recommendation_info"/>
                                                 <button type="submit" class="btn btn-sm bg-o-color-1 text-white mt-2">Save</button>
                                             </form>
                                             <div t-elif="(selected_patient.training_recommendation or '').strip()">
                                                 <strong>Training Recommendation:</strong>
                                                 <span style="white-space: pre-wrap;" t-esc="selected_patient.training_recommendation"/>
+                                                <small t-if="selected_patient.last_training_recommendation_info"
+                                                       class="text-muted d-block mt-1 o_sc_last_note_stamp"
+                                                       t-esc="selected_patient.last_training_recommendation_info"/>
                                             </div>
                                         </div>
                                     </div>
