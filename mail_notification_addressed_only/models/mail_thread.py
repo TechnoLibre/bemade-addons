@@ -1,4 +1,6 @@
-from odoo import api, models
+from odoo import api, models, modules
+
+TEST_CONTEXT_KEY = "test_mail_notification_addressed_only"
 
 
 class MailThread(models.AbstractModel):
@@ -7,8 +9,17 @@ class MailThread(models.AbstractModel):
     @api.model
     def _addressed_only_applies(self):
         """Whether this model is listed. Inert (False) unless it has an
-        active rule; abstract models and discuss channels never apply."""
+        active rule; abstract models and discuss channels never apply. During
+        tests it applies only with the ``test_mail_notification_addressed_only``
+        context key."""
         if self._abstract or self._name == "discuss.channel":
+            return False
+        # While a test suite runs, stay inert unless the test opts in, so the
+        # suites of other modules keep their stock notification expectations
+        # when this module is installed alongside them.
+        if modules.module.current_test and not self.env.context.get(
+            TEST_CONTEXT_KEY
+        ):
             return False
         return self._name in self.env[
             "mail.addressed.only.rule"

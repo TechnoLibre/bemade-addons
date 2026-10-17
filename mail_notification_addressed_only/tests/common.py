@@ -8,6 +8,11 @@ class AddressedOnlyCommon(MailCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The mechanism is inert during tests unless opted in (see
+        # mail.thread._addressed_only_applies).
+        cls.env = cls.env(
+            context=dict(cls.env.context, test_mail_notification_addressed_only=True)
+        )
         group_user = cls.env.ref("base.group_user")
         cls.internal_follower = cls.env["res.users"].create(
             {

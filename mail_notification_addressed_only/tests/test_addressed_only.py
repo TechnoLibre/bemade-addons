@@ -9,6 +9,9 @@
    do not.
 6. Settings toggle: removing archives the rule and restores stock behaviour,
    re-adding turns it back on; nothing else is affected.
+7. While a test suite runs, the mechanism stays inert unless the test opts in
+   through the ``test_mail_notification_addressed_only`` context key, so other
+   modules' suites keep their stock expectations.
 """
 
 from odoo.tests import Form, tagged
@@ -112,3 +115,14 @@ class TestAddressedOnly(AddressedOnlyCommon):
 
     def test_08_discuss_channel_never_applies(self):
         self.assertFalse(self.env["discuss.channel"]._addressed_only_applies())
+
+    def test_09_other_suites_see_stock_behaviour(self):
+        """Without the opt-in context key, a running test suite of another
+        module keeps stock behaviour even on a listed model."""
+        self._list_model("res.partner")
+        record = self.record.with_context(test_mail_notification_addressed_only=False)
+        self.assertFalse(record._addressed_only_applies())
+        message = self._post(record)
+        partner = self.internal_follower.partner_id
+        self.assertTrue(self._mails_to(partner))
+        self.assertFalse(self._inbox_notif(message, partner))
