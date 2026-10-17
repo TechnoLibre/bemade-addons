@@ -121,11 +121,17 @@ class PatientInjury(models.Model):
     # record access to their teams' non-hidden injuries, so without field
     # groups they could read this through JSON-RPC. Code that builds coach-
     # facing output must not read it as the coach (see _card_injury_detail).
+    # Task 1582: each note is ONE « current state » text — a save replaces
+    # it, every version stays in sports.injury.note.history.
     internal_notes = fields.Text(
         tracking=True,
+        help="Current state (replaces the previous text; the history keeps the versions)",
         groups="base.group_user,bemade_sports_clinic.group_portal_treatment_professional",
     )
-    external_notes = fields.Text(tracking=True)
+    external_notes = fields.Text(
+        tracking=True,
+        help="Current state (replaces the previous text; the history keeps the versions)",
+    )
     predicted_resolution_date = fields.Date(tracking=True)
     resolution_date = fields.Date(
         tracking=True, help="The date when the injury was actually resolved."

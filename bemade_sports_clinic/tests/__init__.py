@@ -165,3 +165,5 @@ from . import test_identity_guard_i18n_1600
 from . import test_app_shell_theme_1602
 from . import test_app_shell_admin_coach_1598
 from . import test_training_history_1601
+from . import test_note_replace_editor_1582
+from . import test_note_replace_tours_1582

@@ -580,3 +580,58 @@ $sc-p2-laptop: 992px;
         }
     }
 }
+
+// Task 1582 — the injury notes' « replace » editor (sc_autosave_field
+// replace=True): the current text read-only above an empty « New note ».
+.o_sc_app {
+    .o_sc_replace_current {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: var(--sc-space-2);
+        padding: var(--sc-space-2);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-sm);
+        background: var(--sc-surface-2);
+    }
+
+    .o_sc_replace_current_text {
+        max-height: 9.5em;
+        overflow-y: auto;
+        color: var(--sc-fg-2);
+        overflow-wrap: anywhere;
+    }
+
+    .o_sc_replace_caption {
+        font-size: var(--sc-text-xs);
+        font-weight: 600;
+        color: var(--sc-fg-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .o_sc_replace_new_head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sc-space-2);
+        margin-bottom: 4px;
+    }
+
+    .o_sc_replace_reuse {
+        font-size: var(--sc-text-xs);
+    }
+
+    .o_sc_replace_hint {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px var(--sc-space-2);
+        margin-top: 4px;
+
+        .o_sc_link_btn {
+            font-size: var(--sc-text-xs);
+        }
+    }
+}

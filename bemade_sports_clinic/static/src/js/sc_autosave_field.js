@@ -32,6 +32,13 @@
  *   (old → new); « Confirm » re-posts with confirm=1, « Cancel » restores
  *   the saved value. Nothing is written before the confirmation.
  *
+ * Task 1582: ``replace`` (server-mode textarea, opt-in — the injury notes
+ * only) turns the editor into a « replace » editor: the current text is shown
+ * read-only (« Current text ») above an EMPTY « New note » editor, saving
+ * REPLACES the text (the old one stays in the note history), « Reuse current
+ * text » copies it in for a small edit, an empty editor never saves (clearing
+ * stays the explicit « Clear »). Every other field is unchanged.
+ *
  * Input types: textarea | text | email | tel | date | select | segmented |
  * date_na (a date + « N/A » box, value "na" or YYYY-MM-DD) | tags (CSV of the
  * chosen option keys: removable chips + a search box suggesting a few options).
@@ -82,6 +89,8 @@ export class ScAutosaveField extends Component {
         // A history sheet opened from a link next to the label (sc_app_ui).
         historySheet: { type: String, optional: true },
         historyLabel: { type: String, optional: true },
+        // Task 1582: the « replace » editor (server-mode textarea only).
+        replace: { type: Boolean, optional: true },
         draftKey: { type: String, optional: true },
         // server mode
         model: { type: String, optional: true },
@@ -94,7 +103,10 @@ export class ScAutosaveField extends Component {
     setup() {
         this.inputRef = useRef("input");
         this.state = useState({
-            value: asText(this.props.value),
+            // Task 1582: in replace mode ``value`` is the NEW text being
+            // written (empty on edit) and ``current`` the text the server holds.
+            value: this.props.replace ? "" : asText(this.props.value),
+            current: asText(this.props.value),
             status: "idle", // idle | dirty | draft | saving | saved | queued | error | conflict
             restored: false,
             conflict: null,
@@ -132,8 +144,13 @@ export class ScAutosaveField extends Component {
             ) {
                 return;
             }
-            this.state.value = asText(also[this.props.field].value);
-            this.lastSaved = this.state.value;
+            const value = asText(also[this.props.field].value);
+            if (this.isReplace) {
+                this.state.current = value;
+            } else {
+                this.state.value = value;
+            }
+            this.lastSaved = value;
             this.writeDate = detail.result.write_date;
         };
         if (this.isServer) {
@@ -152,6 +169,19 @@ export class ScAutosaveField extends Component {
 
     get isServer() {
         return this.props.mode === "server";
+    }
+
+    /** Task 1582: the opt-in « replace » editor (server-mode textarea). */
+    get isReplace() {
+        return Boolean(this.props.replace) && this.isServer && this.type === "textarea";
+    }
+
+    /** « Clear » is offered while there is something to clear. */
+    get canClear() {
+        if (!this.props.clearable || this.props.disabled) {
+            return false;
+        }
+        return Boolean(this.isReplace ? this.state.current : this.state.value);
     }
 
     get type() {
@@ -275,6 +305,12 @@ export class ScAutosaveField extends Component {
             return;
         }
         clearTimeout(this.timer);
+        if (this.isReplace && (norm(this.state.value) === "" || this.state.value === this.lastSaved)) {
+            // Task 1582: an empty « New note » never saves (never clears),
+            // and the untouched current text is not a change.
+            this.state.status = "idle";
+            return;
+        }
         if (this.isServer) {
             this.save();
         } else {
@@ -286,7 +322,25 @@ export class ScAutosaveField extends Component {
     clear() {
         this.state.value = "";
         this.state.status = "dirty";
+        if (this.isReplace) {
+            // The explicit clear bypasses the « empty never saves » rule.
+            this.save();
+            return;
+        }
         this.commit();
+    }
+
+    /** Task 1582: « Reuse current text » — a small edit of the current text. */
+    reuseCurrent() {
+        this.state.value = this.state.current;
+        const el = this.inputRef.el;
+        if (el) {
+            // The textarea gets the value on the next render (t-model).
+            el.value = this.state.current;
+            el.focus();
+            el.setSelectionRange(0, 0);
+            el.scrollTop = 0;
+        }
     }
 
     onChange() {
@@ -444,6 +498,12 @@ export class ScAutosaveField extends Component {
                 this.state.value = asText(result.value);
             }
             this.lastSaved = result.value !== undefined ? asText(result.value) : this.state.value;
+            if (this.isReplace) {
+                // Task 1582: the saved text becomes the current one; the
+                // editor is empty again for the next replacement.
+                this.state.current = this.lastSaved;
+                this.state.value = "";
+            }
             this.state.message = result.message || "";
             if (result.hint !== undefined) {
                 this.state.hint = result.hint || "";
@@ -493,7 +553,7 @@ export class ScAutosaveField extends Component {
     /** « Cancel »: back to the value the server holds, nothing saved. */
     cancelIdentity() {
         this.state.identity = null;
-        this.state.value = this.lastSaved;
+        this.state.value = this.isReplace ? "" : this.lastSaved;
         this.state.status = "idle";
         removeDraft(this.key);
     }
@@ -507,9 +567,15 @@ export class ScAutosaveField extends Component {
 
     takeTheirs() {
         const conflict = this.state.conflict;
-        this.state.value = asText(conflict.current_value);
+        const theirs = asText(conflict.current_value);
+        if (this.isReplace) {
+            this.state.current = theirs;
+            this.state.value = "";
+        } else {
+            this.state.value = theirs;
+        }
         this.writeDate = conflict.current_write_date;
-        this.lastSaved = this.state.value;
+        this.lastSaved = theirs;
         this.state.conflict = null;
         removeDraft(this.key);
         this.state.status = "saved";
