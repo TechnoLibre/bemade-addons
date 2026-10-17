@@ -13,6 +13,11 @@
  * The chip's text becomes the count and its tone follows it
  * (data-sc-live-tone-on when > 0, data-sc-live-tone-off at 0), exactly like
  * the first server render.
+ *
+ * Task 1592 (the app bar's activity clock badge):
+ *   data-sc-live-eager="1"      first fetch at once (the count is NOT
+ *                               rendered server-side on every page)
+ *   data-sc-live-hide-zero="1"  the chip is hidden while the count is 0
  */
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
 
@@ -31,7 +36,7 @@ class LiveCount {
             }
         };
         document.addEventListener("visibilitychange", this.onVisibility);
-        this.schedule();
+        this.schedule(el.dataset.scLiveEager ? 0 : this.interval);
     }
 
     schedule(delay = this.interval) {
@@ -64,6 +69,9 @@ class LiveCount {
         const text = String(count);
         if (el.textContent !== text) {
             el.textContent = text;
+        }
+        if (el.dataset.scLiveHideZero) {
+            el.hidden = count <= 0;
         }
         const on = el.dataset.scLiveToneOn;
         const off = el.dataset.scLiveToneOff;

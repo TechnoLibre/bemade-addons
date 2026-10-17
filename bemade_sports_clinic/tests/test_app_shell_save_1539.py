@@ -64,11 +64,12 @@ class TestAppShellSave1539(AppShellCommon):
         record.invalidate_recordset()
         return fields.Datetime.to_string(record.write_date)
 
-    def _save(self, record, field, value, write_date=None):
+    def _save(self, record, field, value, write_date=None, **extra):
         return self.url_open('/my/app/save/%s/%s' % (record._name, record.id), data={
             'field': field, 'value': value,
             'write_date': write_date or self._wd(record),
             'csrf_token': self._csrf(),
+            **extra,
         }, allow_redirects=False)
 
     def _history_count(self, injury):
@@ -187,7 +188,11 @@ class TestAppShellSave1539(AppShellCommon):
     # -- UC-R4 -----------------------------------------------------------
     def test_coach_rename_and_blank_refused(self):
         self._login_coach()
+        # Task 1600: correcting an existing name asks for a confirmation
+        # first (428, nothing written), then saves with confirm=1.
         resp = self._save(self.player, 'first_name', 'Patrick')
+        self.assertEqual(resp.status_code, 428, resp.text)
+        resp = self._save(self.player, 'first_name', 'Patrick', confirm='1')
         self.assertEqual(resp.status_code, 200, resp.text)
         self.player.invalidate_recordset()
         self.assertEqual(self.player.first_name, 'Patrick')

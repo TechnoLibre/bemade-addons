@@ -18,7 +18,7 @@
 #
 {
     'name': 'Sports Clinic Management',
-    'version': "19.0.1.46.1",
+    'version': "19.0.1.72.0",
     'summary': 'Comprehensive sports medicine clinic management with portal access and activity tracking.',
     'description': """
 Sports Clinic Management System
@@ -82,14 +82,19 @@ does not do:
 Portal app shell (preview)
 --------------------------
 A new Fit Crew app shell for the portal (brand colours and type, phone
-bottom tabs, laptop left rail, dark theme by default, per-user navigation
-mode and theme) behind the system switch Settings > Sports Clinic Portal >
-New Portal App (``bemade_sports_clinic.app_shell_enabled``). Switch off
-(the default) leaves today's portal unchanged. Menus, sections and fields
-are shown from a declarative, multi-role registry
-(``models/sc_app_roles.py``): a user holds a set of roles and every entry
-declares the roles it includes and excludes; security stays in the access
-rules.
+bottom tabs, laptop left rail, dark theme by default, per-user theme)
+behind the system switch Settings > Sports Clinic Portal > New Portal App
+(``bemade_sports_clinic.app_shell_enabled``). Switch off (the default)
+leaves today's portal unchanged. Menus, sections and fields are shown from
+a declarative, multi-role registry (``models/sc_app_roles.py``): a user
+holds a set of roles and every entry declares the roles it includes and
+excludes; security stays in the access rules. Back navigation and the
+breadcrumb trail come from one parent registry (``models/sc_app_nav.py``):
+back returns to the in-app page you came from (else the page's declared
+parent); phones show back + context, laptops the full trail. Every history
+(team announcement, training recommendation, injury notes) opens the same
+way: a « History » link, a sheet fetched again on every open, one entry
+format.
 
 P1b adds the team page on the shell (dashboard, players and activities
 tabs), a device draft for the team announcement (« Publier » unchanged), the
@@ -148,6 +153,7 @@ sign-in kiosk uses the brand tokens and self-hosted Teko / DM Sans fonts
         "security/team_digest_rules.xml",
         "security/sports_quick_note_rules.xml",
         "security/sports_clinic_attendance_rules.xml",
+        "security/training_history_rules.xml",
         # Task 1401: personal /my/teams order, own-rows-only rule.
         "security/sports_team_user_rank_rules.xml",
         "data/sports_clinic_data.xml",
@@ -309,7 +315,11 @@ sign-in kiosk uses the brand tokens and self-hosted Teko / DM Sans fonts
             "bemade_sports_clinic/static/src/scss/sc_p2.scss",
             "bemade_sports_clinic/static/src/js/sc_fetch.js",
             "bemade_sports_clinic/static/src/js/sc_draft_store.js",
+            # Task 1585: tap-to-call / tap-to-email hrefs.
+            "bemade_sports_clinic/static/src/js/sc_contact_href.js",
             "bemade_sports_clinic/static/src/js/sc_app_ui.js",
+            "bemade_sports_clinic/static/src/js/sc_forms.js",
+            "bemade_sports_clinic/static/src/js/sc_app_nav.js",
             "bemade_sports_clinic/static/src/js/sc_sw_register.js",
             "bemade_sports_clinic/static/src/js/sc_autosave_field.js",
             "bemade_sports_clinic/static/src/js/sc_autosave_field.xml",

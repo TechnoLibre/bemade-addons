@@ -36,6 +36,13 @@ $sc-laptop: 992px;
         position: sticky;
         top: calc(var(--sc-appbar-height) + env(safe-area-inset-top, 0px));
         z-index: 10;
+
+        // Owner review 2026-10-11: the active page tab is Mauve (the brand
+        // secondary), not the green accent of the other toggles.
+        > a[aria-pressed="true"] {
+            background: var(--sc-secondary);
+            color: #ffffff;
+        }
     }
 
     .o_sc_section_sub {
@@ -58,6 +65,14 @@ $sc-laptop: 992px;
         color: var(--sc-accent);
         cursor: pointer;
         min-height: 32px;
+    }
+
+    .o_sc_section_more.o_sc_link_btn {
+        font-family: var(--sc-font-text);
+        font-size: var(--sc-text-sm);
+        letter-spacing: 0;
+        text-transform: none;
+        padding: 0;
     }
 
     .o_sc_btn_sm {
@@ -86,6 +101,21 @@ $sc-laptop: 992px;
     // Announcement
     .o_sc_announcement {
         border-left: 4px solid var(--sc-secondary);
+    }
+
+    .o_sc_announcement_none {
+        border-left-color: var(--sc-line);
+    }
+
+    .o_sc_card_icons {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: auto;
+
+        .o_sc_inline_form {
+            display: inline-flex;
+        }
     }
 
     .o_sc_announcement_expired {
@@ -323,6 +353,33 @@ $sc-laptop: 992px;
         }
     }
 
+    // Task 1581: the shared history entry / sheet body (sc_history_entry).
+    .o_sc_history_fragment {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-3);
+    }
+
+    .o_sc_history_meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .o_sc_history_body {
+        margin: 4px 0 0;
+    }
+
+    .o_sc_history_cleared {
+        margin: 4px 0 0;
+        font-style: italic;
+    }
+
+    .o_sc_history_entry[data-sc-history-state="archived"] .o_sc_history_body {
+        color: var(--sc-fg-2);
+    }
+
     // Toast
     .o_sc_toast {
         position: fixed;
@@ -436,6 +493,12 @@ $sc-laptop: 992px;
 
         .btn {
             min-height: 36px;
+        }
+
+        .list-group-item-action:hover,
+        .list-group-item-action:focus {
+            background: var(--sc-hover);
+            color: var(--sc-fg);
         }
 
         .btn-close {

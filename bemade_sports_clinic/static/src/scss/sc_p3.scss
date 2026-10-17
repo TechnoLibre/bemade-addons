@@ -236,6 +236,33 @@ $sc-p3-laptop: 1024px;
     }
 }
 
+// Task 1585: tap-to-call / tap-to-email links (player and emergency
+// contact phones / emails, bookings, the event page's staff and
+// organization). An empty value (no href) reads as plain text.
+.o_sc_app {
+    a.o_sc_contact_link[href] {
+        color: var(--sc-accent);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .o_sc_contact_sub {
+        margin-left: 6px;
+    }
+
+    .o_sc_contact_person {
+        display: block;
+    }
+
+    .o_sc_row_contacts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 12px;
+        font-size: var(--sc-text-sm);
+    }
+}
+
 @keyframes o_sc_pulse {
     0%,
     100% {
@@ -249,5 +276,58 @@ $sc-p3-laptop: 1024px;
 @media (prefers-reduced-motion: reduce) {
     .o_sc_app .o_sc_live i {
         animation: none;
+    }
+}
+
+// Task 1592 — the activity clock: the app bar's clock + overdue badge, and
+// the clock chip of player / team / event rows and injury cards.
+.o_sc_app {
+    .o_sc_appbar_clock {
+        position: relative;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .o_sc_appbar_badge {
+        position: absolute;
+        top: 4px;
+        right: 2px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: var(--sc-radius-pill);
+        background: var(--sc-bad);
+        color: var(--sc-tone-fg);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+        pointer-events: none;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .o_sc_activity_clock {
+        gap: 4px;
+        text-decoration: none;
+
+        &.o_sc_chip_ghost {
+            color: var(--sc-fg);
+        }
+
+        &:hover,
+        &:focus-visible {
+            text-decoration: none;
+            filter: brightness(1.1);
+        }
+    }
+
+    .o_sc_row_trailing .o_sc_activity_clock .o_sc_icon,
+    .o_sc_activity_clock .o_sc_icon {
+        width: 14px;
+        height: 14px;
+        color: currentColor;
     }
 }

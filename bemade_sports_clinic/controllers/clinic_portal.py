@@ -47,6 +47,7 @@ All three end on the dossier of the resolved patient. Every
 import hashlib
 import json
 import logging
+from datetime import date
 from urllib.parse import quote
 
 from psycopg2 import IntegrityError
@@ -784,7 +785,14 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         else:
             return self._clinic_redirect(event, 'error=no_team',
                                          anchor='attendance-%s' % attendance.id)
-        row, patient = attendance.action_create_patient(team)
+        try:
+            # Task 1600: the exact-duplicate refusal (same name + date of
+            # birth as another file) — nothing is created.
+            with request.env.cr.savepoint():
+                row, patient = attendance.action_create_patient(team)
+        except ValidationError:
+            return self._clinic_redirect(event, 'error=duplicate_identity',
+                                         anchor='attendance-%s' % attendance.id)
         return self._clinic_redirect(event, 'success=signin_patient_created',
                                      patient_id=patient.id, anchor='clinic-dossier')
 
@@ -978,6 +986,7 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'identity_confirmed': env._("Identity confirmed."),
             'injury_updated': env._("Injury updated."),
             'injury_created': env._("Injury created."),
+            'injury_undone': env._("Injury creation undone."),
             'player_updated': env._("Player updated."),
             'note_updated': env._("Treatment note updated."),
             'signin_linked': env._("Sign-in linked to the patient's file."),
@@ -1001,10 +1010,14 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'unregistered_row': env._(
                 "This sign-in is not registered yet — link it to a file, create the player, or remove it."),
             'no_team': env._("Pick the team the new player belongs to."),
+            'duplicate_identity': env._("Another player already has this name and date of birth."),
             'invalid_status_combo': env._(
                 "Invalid status combination: a player who can play a match can also practice."),
             'not_author': env._("You can only edit your own treatment notes."),
             'invalid_date': env._("Please enter a valid date."),
+            'injury_visibility': env._("Please choose whether coaches can see this injury."),
+            'injury_diagnosis': env._("Please enter a diagnosis."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
         }.get(kw.get('error'))
         return {'success': success, 'error': error}
 
@@ -1042,22 +1055,31 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         editable = values['editable_note_ids']
         for note in values['treatment_notes']:
             if note.id in editable:
-                note_props[note.id] = self._sc_field_props(
-                    note, 'note', env._("Note"), 'textarea')
-        injury_rows = []
-        stage_labels = values['injury_stage_labels']
-        for injury in values['active_injuries']:
-            injury_rows.append({
-                'id': injury.id,
-                'title': injury.diagnosis or env._("Unnamed injury"),
-                'subtitle': ' · '.join(part for part in (
-                    stage_labels.get(injury.stage, injury.stage),
-                    format_date(env, injury.injury_date) if injury.injury_date and not injury.injury_date_na else '',
-                ) if part),
-                'hidden': injury.hidden_from_coaches,
-                'fragment_url': '/my/injury/%s/form/fragment?clinic_id=%s&patient=%s' % (
-                    injury.id, event.id, selected.id),
-            })
+                note_props[note.id] = self._sc_note_edit_props(note)
+        # Task 1590: the dossier's injuries are the player page's inline
+        # cards (pencil edit, field-by-field saving): the current ones
+        # (active AND unverified, so a just-created report shows), newest
+        # first; ?created=<id> opens the new one in edit mode with its
+        # « Undo », ?injury=<id> opens one read-only.
+        is_tp = values['is_treatment_prof']
+        tp_view = self._sc_injury_tp_view(is_tp)
+        created_id = self._int_or_none(kw.get('created')) or 0
+        opened_id = self._int_or_none(kw.get('injury')) or 0
+        current = request.env['sports.patient.injury']
+        if selected:
+            current = selected.injury_ids.filtered(
+                lambda i: i.stage in ('active', 'unverified')).sorted(lambda i: (
+                    -(i.injury_date or date.min).toordinal(), -i.id))
+        # Task 1592: the cards' activity clocks (one query), opening the
+        # player page's Activities tab (an injury has no activities section
+        # of its own — task 1409), in the clinic context.
+        injury_clocks = self._sc_activity_clocks(current, lambda i: (
+            '/my/player?player_id=%s%s&tab=activities' % (i.patient_id.id, values['dossier_ctx_qs'])))
+        injury_rows = [
+            self._sc_injury_card_row(
+                injury, values['dossier_ctx_qs'], is_tp, tp_view,
+                opened_id=opened_id, created_id=created_id, clocks=injury_clocks)
+            for injury in current]
         staff = event_sudo.assigned_staff_ids
         return {
             'sc_clinic_tabs': tabs,
@@ -1072,6 +1094,8 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_status_options': self._sc_status_options(),
             'sc_note_props': note_props,
             'sc_injury_rows': injury_rows,
+            'sc_is_tp_view': tp_view,
+            'team_context_id': event.team_ids.id if len(event.team_ids) == 1 else False,
             'sc_note_injury_choices': [
                 (inj.id, inj.diagnosis or inj.display_name) for inj in values['active_injuries']],
             'sc_note_draft_prefix': (
@@ -1081,6 +1105,7 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'sc_resolve_teams': self._creatable_teams(event),
             'sc_resolve_groups': self._addable_patients(event),
             'sc_flash': self._sc_clinic_flash(kw),
+            **self._sc_injury_card_options(),
         }
 
     # ------------------------------------------------------------------

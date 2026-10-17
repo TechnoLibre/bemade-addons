@@ -5,9 +5,12 @@
  * - segmented page tabs (data-sc-tabs): switch panels in place, keep ?tab=
  *   in the address bar; without JS each tab is a plain link;
  * - sheets: [data-sc-sheet-open="<dialog id>"] opens the <dialog>, lazy body
- *   (data-sc-lazy-url) fetched once through sc_fetch;
+ *   (data-sc-lazy-url) fetched once through sc_fetch — on EVERY open with
+ *   data-sc-lazy-fresh (the histories, task 1581); a [data-sc-sheet-refetch]
+ *   link inside a sheet reloads its body from its href (filter chips);
  * - lazy rows: <details data-sc-lazy-url> fetch their body on first open;
- * - the status toast (sc_fetch errors, offline / back online);
+ * - the status toast (sc_fetch errors, offline / back online; task 1583:
+ *   the pending session notification of a POST round-trip, on load);
  * - the device draft store: foreign drafts purged on load, every draft
  *   cleared on « Déconnexion »;
  * - task 1539: the toast may carry ONE action (« Annuler » after an instant
@@ -19,6 +22,7 @@
  */
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
+import { scSetDisplay } from "@bemade_sports_clinic/js/sc_contact_href";
 import {
     clearAllDrafts,
     purgeForeignDrafts,
@@ -31,15 +35,28 @@ function app() {
 
 // ---------------------------------------------------------------- toast
 let toastTimer = null;
-function showToast(message, actionLabel, action) {
+function showToast(message, actionLabel, action, duration, options) {
     const root = app();
     const toast = root && root.querySelector(".o_sc_toast");
     if (!toast) {
         return;
     }
+    const { title, tone } = options || {};
+    const parts = [];
+    if (title) {
+        const strong = document.createElement("strong");
+        strong.className = "o_sc_toast_title";
+        strong.textContent = title;
+        parts.push(strong);
+    }
     const text = document.createElement("span");
     text.textContent = message;
-    const parts = [text];
+    parts.push(text);
+    if (tone) {
+        toast.dataset.scToastTone = tone;
+    } else {
+        delete toast.dataset.scToastTone;
+    }
     if (actionLabel && action) {
         const button = document.createElement("button");
         button.type = "button";
@@ -57,12 +74,195 @@ function showToast(message, actionLabel, action) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
         toast.hidden = true;
-    }, actionLabel ? 8000 : 4000);
+    }, duration || (actionLabel ? 8000 : 4000));
 }
 
 document.addEventListener("sc:toast", (ev) => {
     const detail = ev.detail || {};
     showToast(detail.message || "", detail.actionLabel, detail.action);
+});
+
+// Task 1583: the pending session notification of a POST round-trip
+// (« Add to Team »…), rendered on the toast host by sc_app_layout — shown
+// once on load, whatever the page. Errors stay longer.
+function showSessionNotification() {
+    const root = app();
+    const toast = root && root.querySelector(".o_sc_toast[data-sc-notify]");
+    if (!toast) {
+        return;
+    }
+    const message = toast.dataset.scNotify;
+    const tone = toast.dataset.scNotifyTone || "success";
+    const title = toast.dataset.scNotifyTitle || "";
+    delete toast.dataset.scNotify;
+    delete toast.dataset.scNotifyTitle;
+    delete toast.dataset.scNotifyTone;
+    showToast(message, null, null, tone === "error" ? 10000 : 6000, { title, tone });
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", showSessionNotification);
+} else {
+    showSessionNotification();
+}
+
+// A save updates the page in place (owner review 2026-10-10):
+// * the read views of inline-edit cards ([data-sc-display="model:id:field"]);
+//   a tap-to-call / tap-to-email link's href follows (task 1585);
+// * the player's status pill (a status save answers the new stage);
+// * the player's heading (an Identity save answers it).
+document.addEventListener("sc:saved", (ev) => {
+    const { model, recordId, field, result } = ev.detail || {};
+    if (!result) {
+        return;
+    }
+    // Task 1594: a holder flagged data-sc-display-hide-empty (the hero's
+    // « Actual return » chip) shows only while its value is set.
+    const show = (el, display) => {
+        scSetDisplay(el, display);
+        const holder = el.closest("[data-sc-display-hide-empty]");
+        if (holder) {
+            holder.hidden = !display;
+        }
+    };
+    if (result.display !== undefined) {
+        for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${field}"]`)) {
+            show(el, result.display);
+        }
+    }
+    for (const [name, shown] of Object.entries(result.also || {})) {
+        for (const el of document.querySelectorAll(`[data-sc-display="${model}:${recordId}:${name}"]`)) {
+            show(el, shown.display);
+        }
+    }
+    const card = ev.target && ev.target.closest && ev.target.closest("[data-sc-edit-card]");
+    for (const opened of document.querySelectorAll("[data-sc-edit-card][data-sc-edit-open]")) {
+        opened.dataset.scEditChanged = "1";
+    }
+    if (card) {
+        card.dataset.scEditChanged = "1";
+    }
+    if (model !== "sports.patient") {
+        return;
+    }
+    const stage = result.stage;
+    if (stage) {
+        for (const chip of document.querySelectorAll(`[data-sc-stage-chip="${recordId}"]`)) {
+            chip.className = `o_sc_chip o_sc_chip_${stage.tone || "ghost"}`;
+            chip.textContent = stage.label || "";
+        }
+    }
+    const heading = result.heading;
+    if (heading) {
+        for (const el of document.querySelectorAll("[data-sc-heading]")) {
+            const key = el.dataset.scHeading;
+            if (key === "title" || key === "list_name") {
+                el.textContent = heading[key] || "";
+            } else if (key === "position_suffix") {
+                el.textContent = heading.position ? ` · ${heading.position}` : "";
+            } else if (key === "context") {
+                const team = el.dataset.scHeadingTeam || "";
+                el.textContent = [team, heading.position].filter(Boolean).join(" · ");
+            }
+        }
+    }
+});
+
+// A just-created injury (inline « Add Injury », owner decision 2026-10-11):
+// « Injury created · Undo » for the undo window (the server enforces it
+// too), and the address loses ?created= so a reload opens the injury
+// without offering the undo again.
+const SC_UNDO_CREATE_MS = 2 * 60 * 1000;
+function offerUndoCreate() {
+    const card = document.querySelector(".o_sc_app [data-sc-created-injury]");
+    const form = card && card.querySelector('form[data-sc-form="injury.undo"]');
+    if (!form) {
+        return;
+    }
+    showToast(form.dataset.scToastMessage, form.dataset.scToastAction, () => form.submit(), SC_UNDO_CREATE_MS);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("created")) {
+        url.searchParams.set("injury", url.searchParams.get("created"));
+        url.searchParams.delete("created");
+        window.history.replaceState(window.history.state, "", url.toString());
+    }
+    card.scrollIntoView({ block: "start" });
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", offerUndoCreate);
+} else {
+    offerUndoCreate();
+}
+
+// A link to « …#<details id> » opens that inline card (e.g. Overview's
+// « Add Injury » → the Injuries tab's card), owner review 2026-10-10.
+function openHashedDetails() {
+    const id = window.location.hash.slice(1);
+    const details = id && /^[\w-]+$/.test(id) && document.getElementById(id);
+    if (details && details.tagName === "DETAILS" && details.closest(".o_sc_app")) {
+        details.open = true;
+        details.scrollIntoView({ block: "start" });
+    }
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", openHashedDetails);
+} else {
+    openHashedDetails();
+}
+window.addEventListener("hashchange", openHashedDetails);
+
+// Inline-edit cards: ONE pencil per card toggles its edit view; « Done »
+// closes it (a card whose read view is server-built reloads after a change).
+function setCardEditing(card, editing) {
+    const edit = card.querySelector('[data-sc-edit-view="edit"]');
+    const read = card.querySelector('[data-sc-edit-view="read"]');
+    if (!edit) {
+        return;
+    }
+    edit.hidden = !editing;
+    if (read) {
+        read.hidden = editing;
+    }
+    if (editing) {
+        card.dataset.scEditOpen = "1";
+    } else {
+        delete card.dataset.scEditOpen;
+    }
+    const toggle = card.querySelector("[data-sc-edit-toggle]");
+    if (toggle) {
+        toggle.setAttribute("aria-expanded", editing ? "true" : "false");
+    }
+    if (editing) {
+        const first = edit.querySelector("input, textarea, select");
+        if (first) {
+            first.focus({ preventScroll: true });
+        }
+    }
+}
+
+document.addEventListener("sc:edit-open", (ev) => {
+    const card = ev.target.closest && ev.target.closest("[data-sc-edit-card]");
+    if (card && !card.dataset.scEditOpen) {
+        setCardEditing(card, true);
+    }
+});
+
+document.addEventListener("click", (ev) => {
+    const toggle = ev.target.closest && ev.target.closest("[data-sc-edit-toggle]");
+    const done = !toggle && ev.target.closest && ev.target.closest("[data-sc-edit-done]");
+    const card = (toggle || done) && (toggle || done).closest("[data-sc-edit-card]");
+    if (!card) {
+        return;
+    }
+    ev.preventDefault();
+    if (toggle) {
+        setCardEditing(card, !card.dataset.scEditOpen);
+        return;
+    }
+    if (card.dataset.scEditReload && card.dataset.scEditChanged) {
+        window.location.reload();
+        return;
+    }
+    setCardEditing(card, false);
 });
 document.addEventListener("sc:fetch-error", (ev) => {
     const error = ev.detail || {};
@@ -84,7 +284,8 @@ async function loadLazy(container, url, target) {
     try {
         const html = await scFetch(url, { as: "html" });
         target.innerHTML = html;
-        if (!target.querySelector("li, a, tr")) {
+        // A fragment with its own empty state (task 1581 histories) keeps it.
+        if (!target.querySelector("li, a, tr, .o_sc_empty")) {
             const empty = document.createElement("p");
             empty.className = "o_sc_empty";
             empty.textContent = _t("Nothing to show.");
@@ -116,7 +317,40 @@ document.addEventListener(
     true
 );
 
+// Task 1593: a player row's « Details » control ([data-sc-row-expand] =
+// the id of the detail region under the row) shows / hides that region and
+// fetches its body on first open. A button, not a <details>: the row's main
+// link stays one stretched link and the detail spans the row's full width.
+document.addEventListener("click", (ev) => {
+    const toggle = ev.target.closest && ev.target.closest("[data-sc-row-expand]");
+    if (!toggle || !toggle.closest(".o_sc_app")) {
+        return;
+    }
+    const region = document.getElementById(toggle.dataset.scRowExpand);
+    if (!region) {
+        return;
+    }
+    ev.preventDefault();
+    const open = region.hidden;
+    region.hidden = !open;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.closest(".o_sc_player_row")?.classList.toggle("o_sc_row_open", open);
+    if (open && region.dataset.scLazyUrl) {
+        loadLazy(region, region.dataset.scLazyUrl, region.querySelector(".o_sc_lazy_body"));
+    }
+});
+
 // --------------------------------------------------------------- sheets
+function refetchSheet(dialog, url) {
+    const body = dialog.querySelector(".o_sc_sheet_body");
+    dialog.dataset.scLoaded = "0";
+    const loading = document.createElement("p");
+    loading.className = "o_sc_empty o_sc_lazy_loading";
+    loading.textContent = _t("Loading…");
+    body.replaceChildren(loading);
+    return loadLazy(dialog, url, body);
+}
+
 function openSheet(id) {
     const dialog = document.getElementById(id);
     if (!dialog || typeof dialog.showModal !== "function") {
@@ -126,6 +360,12 @@ function openSheet(id) {
         dialog.showModal();
     }
     if (dialog.dataset.scLazyUrl) {
+        if (dialog.dataset.scLazyFresh === "1") {
+            // A history that can change on this page: fetched on every open
+            // (task 1581: every history of the shell).
+            refetchSheet(dialog, dialog.dataset.scLazyUrl);
+            return;
+        }
         loadLazy(dialog, dialog.dataset.scLazyUrl, dialog.querySelector(".o_sc_sheet_body"));
     }
 }
@@ -139,6 +379,14 @@ document.addEventListener("click", (ev) => {
     if (opener) {
         ev.preventDefault();
         openSheet(opener.dataset.scSheetOpen);
+        return;
+    }
+    // Task 1581: filters INSIDE a lazy sheet (the injury notes' scope
+    // chips) re-fetch its body from their href, the sheet stays open.
+    const refetch = ev.target.closest("dialog.o_sc_sheet [data-sc-sheet-refetch]");
+    if (refetch && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) {
+        ev.preventDefault();
+        refetchSheet(refetch.closest("dialog"), refetch.getAttribute("href"));
         return;
     }
     const closer = ev.target.closest("[data-sc-sheet-close]");

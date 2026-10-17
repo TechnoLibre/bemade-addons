@@ -41,6 +41,18 @@ Registries
   role server-side (field ``groups=`` / ACL / record rule) — the tests assert
   it. **The registry decides what is SHOWN, never what is ALLOWED**; security
   stays in ACLs and record rules.
+
+System administrators (task 1598)
+---------------------------------
+``base.group_system`` is not a role (it maps to no shell entry on its own),
+but the legacy pages granted a system admin the therapist ACTIONS paired
+with an ``_is_tp_or_system()``-style server value (add a player directly,
+edit the announcement, remove a player…). A key flagged ``'system': True``
+is therefore also visible to a system admin (``can(..., is_system=True)``),
+whatever their roles — a coach who is also a system admin gets « Add »,
+not nothing. ``exclude`` still wins. Plain coaches are unaffected: the
+flag only ever widens for ``is_system``. Only flag ACTION keys whose
+template gate is a server value that is already True for a system admin.
 """
 from odoo.tools.translate import LazyTranslate
 
@@ -114,23 +126,27 @@ def _bookings_enabled(ctx):
 # Navigation
 # ---------------------------------------------------------------------------
 NAV_REGISTRY = (
-    # « Équipes » is the app home (/my/home); /my/teams is its full list.
-    _nav('teams', _lt('Teams'), 'teams', '/my/home', STAFF, 10, TAB_RAIL),
+    # « Équipes » opens the full teams list; the dashboard (/my/home) is the
+    # login landing page, reached from the logo (owner review 2026-10-10).
+    # Owner review 2026-10-10: phone tabs = Teams, Players, Notepad,
+    # Activities, More; Clinic / Events / Timesheets live in « More » on the
+    # phone and stay always visible on the laptop rail, above « More ».
+    _nav('teams', _lt('Teams'), 'teams', '/my/teams', STAFF, 10, TAB_RAIL),
     _nav('players', _lt('Players'), 'players', '/my/players', STAFF, 20, TAB_RAIL),
-    _nav('clinic', _lt('Clinic'), 'clinic', '/my/clinics', TP, 30, TAB_RAIL),
+    _nav('notepad', _lt('Notepad'), 'note', '/my/notepad', TP, 30, TAB_RAIL,
+         subtitle=_lt('Your quick notes')),
     _nav('activities', _lt('Activities'), 'activities', '/my/activities', STAFF, 40,
          TAB_RAIL),
-    _nav('bookings', _lt('Bookings'), 'bookings', '/my/bookings', EVERYONE, 50,
+    _nav('clinic', _lt('Clinic'), 'clinic', '/my/clinics', TP, 50, RAIL_PLUS),
+    _nav('events', _lt('Events and calendar'), 'calendar', '/my/events', STAFF, 60,
+         RAIL_PLUS, subtitle=_lt('Games, practices, clinics')),
+    _nav('timesheets', _lt('Timesheets'), 'timesheet', '/my/sc/timesheets', TP, 70,
+         RAIL_PLUS, subtitle=_lt('Event coverage')),
+    _nav('bookings', _lt('Bookings'), 'bookings', '/my/bookings', EVERYONE, 80,
          RAIL_PLUS, requires=_bookings_enabled,
          subtitle=_lt('Your appointments')),
     _nav('more', _lt('More'), 'more', '/my/app/more', EVERYONE, 90, TAB_RAIL),
     # « Plus » only.
-    _nav('events', _lt('Events and calendar'), 'calendar', '/my/events', STAFF, 110,
-         PLUS_ONLY, subtitle=_lt('Games, practices, clinics')),
-    _nav('notepad', _lt('Notepad'), 'note', '/my/notepad', TP, 120, PLUS_ONLY,
-         subtitle=_lt('Your quick notes')),
-    _nav('timesheets', _lt('Timesheets'), 'timesheet', '/my/sc/timesheets', TP, 130,
-         PLUS_ONLY, subtitle=_lt('Event coverage')),
     _nav('digests', _lt('Daily summaries'), 'summary', '/my/teams', STAFF, 140,
          PLUS_ONLY, subtitle=_lt('History per team, from the team page')),
     # Internal users (e.g. an internal lead therapist on the sideline) keep a
@@ -167,11 +183,11 @@ VISIBILITY_REGISTRY = {
     #                             refuses users who may add directly)
     #   team.activities         + can_view_activities (mail.activity ACLs)
     #   team.pending_removals   + can_remove_on_team (_may_remove_from_team)
-    'team.announcement.edit': {'include': TP},
-    'team.add_player': {'include': TP},
+    'team.announcement.edit': {'include': TP, 'system': True},
+    'team.add_player': {'include': TP, 'system': True},
     'team.request_add': {'include': STAFF},
     'team.activities': {'include': STAFF},
-    'team.pending_removals': {'include': TP},
+    'team.pending_removals': {'include': TP, 'system': True},
     # Task 1539 (P2) — players, injuries, notes, documents, activities. Same
     # rule: each key is ALSO gated in the template by the controller's
     # existing server-side value (the legacy page's ``is_treatment_prof`` /
@@ -184,10 +200,12 @@ VISIBILITY_REGISTRY = {
     'patient.status.edit': {'include': TP},
     'patient.training.edit': {'include': TP},
     'patient.edit.tp_fields': {'include': TP},
-    'patient.contacts.tab': {'include': TP},
+    # Owner decision 2026-10-10: coaches see and edit emergency contacts too
+    # (their ACL / record rules already allowed it; deleting stays TP).
+    'patient.contacts.tab': {'include': STAFF},
     'patient.notes.tab': {'include': TP},
     'patient.activities.tab': {'include': STAFF},
-    'patient.remove': {'include': TP},
+    'patient.remove': {'include': TP, 'system': True},
     'patient.request_removal': {'include': STAFF},
     'injury.stage.edit': {'include': TP},
     'injury.visibility.edit': {'include': TP},
@@ -198,6 +216,8 @@ VISIBILITY_REGISTRY = {
     'documents.delete': {'include': TP},
     'notes.add': {'include': TP},
     'activities.reassign': {'include': STAFF},
+    # Task 1592 — the app bar's activity clock (+ its overdue count route).
+    'app.activity_clock': {'include': STAFF},
 }
 
 
@@ -221,7 +241,12 @@ def visible_nav(roles, placement, ctx=None):
     return sorted(entries, key=lambda entry: entry['sequence'])
 
 
-def can(key, roles):
+def can(key, roles, is_system=False):
     """``sc_can`` — may this role set SEE ``key``? Unknown keys raise (typos
-    must fail loudly, not silently hide a section)."""
-    return is_visible(VISIBILITY_REGISTRY[key], roles)
+    must fail loudly, not silently hide a section). ``is_system`` (the viewer
+    is in ``base.group_system``) also opens the keys flagged ``system``
+    (task 1598), unless one of the roles is excluded."""
+    spec = VISIBILITY_REGISTRY[key]
+    if is_system and spec.get('system'):
+        return not frozenset(roles or ()) & frozenset(spec.get('exclude') or ())
+    return is_visible(spec, roles)
