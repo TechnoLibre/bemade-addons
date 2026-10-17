@@ -438,6 +438,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # the current user can't directly read those records (e.g. a
         # coach seeing a co-team's therapist on a multi-team event).
         events_sudo_by_id = {ev.id: ev for ev in events.sudo()}
+        # Task 1605: each assigned person's calendar colour (handed out on
+        # first sight, then stable), resolved with sudo like the names.
+        colors = events.sudo().assigned_staff_ids._sc_calendar_colors()
         for ev in events:
             ev_sudo = events_sudo_by_id.get(ev.id, ev)
             # date_start / date_end are stored as naive UTC. Emit ISO 8601
@@ -454,6 +457,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'extendedProps': {
                     'teams': ev_sudo.team_ids.mapped('name'),
                     'assigned': ev_sudo.assigned_staff_ids.mapped('name'),
+                    'staff': [{'id': staff.id, 'name': staff.name, 'color': colors.get(staff.id)}
+                              for staff in ev_sudo.assigned_staff_ids],
                     'event_type': ev.event_type or '',
                     # 'Arrive by' time for therapists: emit explicit-UTC ISO so
                     # the popover localizes it the same way as start/end.
@@ -1518,6 +1523,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 'params': params,
                 'locale': self._sc_calendar_locale(),
                 'detailKeys': [],
+                # Task 1605: therapist colour dots + the legend under the
+                # calendar (bookings does not opt in).
+                'staffColors': True,
             }),
             sc_event_segments=[(key, labels[key], urls[key]) for key in SC_EVENT_SEGMENTS],
         )

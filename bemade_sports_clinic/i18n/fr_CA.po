@@ -3712,6 +3712,11 @@ msgid "By"
 msgstr "Par"
 
 #. module: bemade_sports_clinic
+#: model:ir.model.fields,field_description:bemade_sports_clinic.field_res_users__sc_calendar_color
+msgid "Calendar Colour"
+msgstr "Couleur du calendrier"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event__calendar_label
 msgid "Calendar Label"
 msgstr "Libellé du calendrier"
@@ -4076,6 +4081,15 @@ msgstr "Score du tableau de bord (entraîneur)"
 #: code:addons/bemade_sports_clinic/controllers/team_management_portal.py:0
 msgid "Coach requests player addition"
 msgstr "L'entraîneur demande l'ajout d'un joueur"
+
+#. module: bemade_sports_clinic
+#: model:ir.model.fields,help:bemade_sports_clinic.field_res_users__sc_calendar_color
+msgid ""
+"Colour of this person's events on the portal calendar (#rrggbb). Chosen "
+"automatically; change it to override."
+msgstr ""
+"Couleur des événements de cette personne dans le calendrier du portail "
+"(#rrggbb). Choisie automatiquement; modifiez-la pour la remplacer."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.activity_list_table
@@ -9061,6 +9075,11 @@ msgid "Please verify this injury and set the appropriate status."
 msgstr "Veuillez vérifier cette blessure et définir le statut approprié."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_users_form_inherit
+msgid "Portal Calendar"
+msgstr "Calendrier du portail"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_res_users__players_sort_mode
 msgid "Portal Players Sort"
 msgstr "Tri des joueurs (portail)"
@@ -10389,6 +10408,12 @@ msgid "Show Player Position on Dashboard"
 msgstr "Afficher la position du joueur au tableau de bord"
 
 #. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_calendar.js:0
+msgid "Show all therapists"
+msgstr "Afficher tous les thérapeutes"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_calendar
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_events_list
 msgid "Show cancelled events"
@@ -11332,6 +11357,13 @@ msgstr ""
 "Le degré de sévérité de la blessure (gardé pour une utilisation future)"
 
 #. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/models/res_users.py:0
+msgid "The calendar colour must be a hexadecimal colour like #ef5350."
+msgstr ""
+"La couleur du calendrier doit être une couleur hexadécimale comme #ef5350."
+
+#. module: bemade_sports_clinic
 #. odoo-javascript
 #: code:addons/bemade_sports_clinic/static/src/js/sc_calendar.js:0
 msgid "The calendar could not be loaded."
@@ -11696,6 +11728,8 @@ msgstr ""
 "Borne : le patient s'est inscrit lui-même sur l'iPad de la clinique."
 
 #. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_calendar.js:0
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_clinic_attendance__therapist_ids
 msgid "Therapists"
 msgstr "Thérapeutes"
@@ -12361,8 +12395,10 @@ msgstr ""
 "Impossible d'ouvrir la page d'ajout/association de joueur pour le moment."
 
 #. module: bemade_sports_clinic
+#. odoo-javascript
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
+#: code:addons/bemade_sports_clinic/static/src/js/sc_calendar.js:0
 msgid "Unassigned"
 msgstr "Non assigné"
 
@@ -13845,6 +13881,12 @@ msgstr "Sécurité"
 
 msgid "See all"
 msgstr "Tout voir"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_calendar.js:0
+msgid "Show only %s"
+msgstr "Afficher seulement %s"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_res_config_settings_bemade_sports_clinic
