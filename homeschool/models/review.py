@@ -47,6 +47,15 @@ class Review(models.Model):
         for rec in self:
             rec.name = "%s — %s" % (labels.get(rec.kind, rec.kind), rec.iso_week or rec.date)
 
+    @api.depends("kind", "iso_week", "date")
+    @api.depends_context("lang")
+    def _compute_display_name(self):
+        """The stored ``name`` keeps the English kind label (stable for the exports and
+        search); what people see is the kind in their own language: « Six semaines — 2026-W41 »."""
+        labels = dict(self._fields["kind"]._description_selection(self.env))
+        for rec in self:
+            rec.display_name = "%s — %s" % (labels.get(rec.kind, rec.kind), rec.iso_week or rec.date) if rec.kind else rec.name
+
     @api.depends("date", "student_id", "company_id")
     def _compute_gaps(self):
         Day = self.env["homeschool.day"]
