@@ -444,16 +444,11 @@
                                 <t t-set="editable" t-value="True"/>
                             </t>
                             <dl class="o_sc_kv" data-sc-edit-view="read">
-                                <t t-if="sc_can('patient.allergies')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Allergies</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'allergies'"/></t>
                                 <t t-if="sc_can('patient.internal_notes')" t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Team Notes</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'team_info_notes'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Last consultation</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'last_consultation_date'"/></t>
                                 <t t-call="bemade_sports_clinic.sc_display_row"><t t-set="label">Actual return date</t><t t-set="record" t-value="player"/><t t-set="field" t-value="'return_date'"/></t>
                             </dl>
                             <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
-                                <t t-if="sc_can('patient.allergies')">
-                                    <t t-set="lbl">Allergies</t>
-                                    <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'allergies', lbl, 'textarea', clearable=True)"/></t>
-                                </t>
                                 <t t-if="sc_can('patient.internal_notes')">
                                     <t t-set="lbl">Team Notes</t>
                                     <t t-call="bemade_sports_clinic.sc_field_autosave"><t t-set="props" t-value="sc_field_props(player, 'team_info_notes', lbl, 'textarea', clearable=True)"/></t>
@@ -651,45 +646,18 @@
                         <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'upload'"/></t>
                         <span>Upload Document</span>
                     </summary>
-                    <form action="/my/patient/document/upload" method="post" enctype="multipart/form-data" class="o_sc_form">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="patient_id" t-att-value="player.id"/>
-                        <input type="hidden" name="return_url" t-att-value="documents_tab_return"/>
-                        <div class="o_sc_field">
-                            <label for="sc_doc_name" class="o_sc_field_label">Name</label>
-                            <input type="text" id="sc_doc_name" name="document_name" class="o_sc_input" placeholder="Document name"/>
-                        </div>
-                        <div class="o_sc_field">
-                            <label for="sc_doc_category" class="o_sc_field_label">Category</label>
-                            <select id="sc_doc_category" name="category" class="o_sc_input o_sc_select">
-                                <t t-foreach="categories" t-as="cat">
-                                    <option t-att-value="cat[0]" t-out="cat[1]"/>
-                                </t>
-                            </select>
-                        </div>
-                        <div class="o_sc_field">
-                            <label for="sc_doc_injury" class="o_sc_field_label">Link to Injury (optional)</label>
-                            <select id="sc_doc_injury" name="injury_id" class="o_sc_input o_sc_select"
-                                    t-att-data-sc-fragment="sc_fragment_key(player, 'doc-injury-choices')">
-                                <option value="">-- None --</option>
-                                <t t-foreach="sc_injury_choices" t-as="choice">
-                                    <option t-att-value="choice[0]" t-out="choice[1]"/>
-                                </t>
-                            </select>
-                        </div>
-                        <div class="o_sc_field">
-                            <label for="sc_doc_description" class="o_sc_field_label">Description</label>
-                            <textarea id="sc_doc_description" name="description" class="o_sc_input o_sc_textarea" rows="2"/>
-                        </div>
-                        <div class="o_sc_field">
-                            <label for="sc_doc_file" class="o_sc_field_label">File</label>
-                            <input type="file" id="sc_doc_file" name="attachment" class="o_sc_input" required="required"/>
-                            <small class="o_sc_hint">Max size 10MB</small>
-                        </div>
-                        <div class="o_sc_form_actions">
-                            <button type="submit" class="o_sc_btn o_sc_btn_primary">Upload</button>
-                        </div>
-                    </form>
+                    <!-- Review fixes 2026-10-18 b: the injury card's picker. -->
+                    <t t-call="bemade_sports_clinic.sc_document_upload_form">
+                        <t t-set="upload_prefix" t-value="'sc_pdocs'"/>
+                        <t t-set="upload_form_key" t-value="'player.documents.upload'"/>
+                        <t t-set="upload_patient_id" t-value="player.id"/>
+                        <t t-set="upload_injury" t-value="False"/>
+                        <t t-set="upload_injury_choices" t-value="sc_injury_choices"/>
+                        <t t-set="upload_injury_fragment" t-value="sc_fragment_key(player, 'doc-injury-choices')"/>
+                        <t t-set="upload_return_url" t-value="documents_tab_return"/>
+                        <t t-set="upload_category_options" t-value="sc_document_category_options"/>
+                        <t t-set="upload_cancel" t-value="False"/>
+                    </t>
                 </details>
                 <div t-if="sc_document_rows" class="o_sc_list" data-sc-section="player.documents">
                     <t t-foreach="sc_document_rows" t-as="drow">
@@ -862,6 +830,92 @@
          Fragments (task 1611): the card item (card), its summary, the
          Details read view (read), the Notes read view (notes) and each
          document's text (sports.injury.document:<id>:row). -->
+    <!-- Review fixes 2026-10-18 b: ONE document picker for the player
+         Documents tab and the injury card's « Add documents » sheet (task
+         1616's multi-file picker): several files, added up (duplicates
+         ignored), a « × » per file, 10 MB each, all or nothing
+         (sc_injury_card.js). Each chosen file gets its own row with a name,
+         a category and a description, pre-filled from the shared
+         « Category » / « Description » when the file is added (the row
+         prototype below is cloned; its disabled inputs never post).
+         Variables: upload_prefix (ids), upload_form_key (data-sc-form),
+         upload_patient_id, upload_return_url, upload_injury (a fixed injury,
+         hidden) or upload_injury_choices (+ upload_injury_fragment: an
+         optional injury select), upload_category_options, upload_cancel
+         (a « Cancel » closing the sheet). -->
+    <template id="sc_document_upload_form" name="App shell: document upload picker">
+        <form action="/my/patient/document/upload" method="post" enctype="multipart/form-data"
+              class="o_sc_form o_sc_doc_upload" t-att-data-sc-form="upload_form_key"
+              data-sc-doc-upload="1" data-sc-max-bytes="10485760">
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+            <input type="hidden" name="patient_id" t-att-value="upload_patient_id"/>
+            <input t-if="upload_injury" type="hidden" name="injury_id" t-att-value="upload_injury.id"/>
+            <input type="hidden" name="return_url" t-att-value="upload_return_url"/>
+            <div class="o_sc_field">
+                <label t-att-for="'%s_files' % upload_prefix" class="o_sc_field_label">Files</label>
+                <label class="o_sc_dropzone" data-sc-dropzone="1">
+                    <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'upload'"/></t>
+                    <span class="o_sc_dropzone_text">Choose files or drop them here</span>
+                    <input type="file" t-att-id="'%s_files' % upload_prefix" name="attachment"
+                           class="o_sc_dropzone_input" multiple="multiple" required="required"/>
+                </label>
+                <ul class="o_sc_file_list" data-sc-file-list="1" hidden="hidden"/>
+                <small class="o_sc_hint">Several files at once — 10 MB maximum each</small>
+                <p class="o_sc_field_error" data-sc-file-error="1" role="alert" hidden="hidden">Files over 10 MB cannot be uploaded. Remove them to continue.</p>
+            </div>
+            <div t-if="not upload_injury" class="o_sc_field">
+                <label t-att-for="'%s_injury' % upload_prefix" class="o_sc_field_label">Link to Injury (optional)</label>
+                <select t-att-id="'%s_injury' % upload_prefix" name="injury_id" class="o_sc_input o_sc_select"
+                        t-att-data-sc-fragment="upload_injury_fragment or None">
+                    <option value="">-- None --</option>
+                    <t t-foreach="upload_injury_choices or []" t-as="choice">
+                        <option t-att-value="choice[0]" t-out="choice[1]"/>
+                    </t>
+                </select>
+            </div>
+            <div class="o_sc_field">
+                <label t-att-for="'%s_category' % upload_prefix" class="o_sc_field_label">Category</label>
+                <select t-att-id="'%s_category' % upload_prefix" name="category" class="o_sc_input o_sc_select"
+                        data-sc-doc-shared="category">
+                    <t t-foreach="upload_category_options" t-as="cat">
+                        <option t-att-value="cat[0]" t-att-selected="'selected' if cat[0] == 'other' else None" t-out="cat[1]"/>
+                    </t>
+                </select>
+            </div>
+            <div class="o_sc_field">
+                <label t-att-for="'%s_description' % upload_prefix" class="o_sc_field_label">Description</label>
+                <textarea t-att-id="'%s_description' % upload_prefix" name="description" class="o_sc_input o_sc_textarea"
+                          rows="2" data-sc-doc-shared="description"/>
+                <small class="o_sc_hint">Applied to each file you add; change a file below to change only that one.</small>
+            </div>
+            <!-- One chosen file's own values (cloned by the JS). -->
+            <div class="o_sc_file_fields" data-sc-file-proto="1" hidden="hidden">
+                <input type="hidden" name="doc_file" disabled="disabled"/>
+                <label class="o_sc_field o_sc_file_field">
+                    <span class="o_sc_field_label">Name</span>
+                    <input type="text" name="doc_name" class="o_sc_input" maxlength="255" disabled="disabled"/>
+                </label>
+                <label class="o_sc_field o_sc_file_field">
+                    <span class="o_sc_field_label">Category</span>
+                    <select name="doc_category" class="o_sc_input o_sc_select" disabled="disabled">
+                        <t t-foreach="upload_category_options" t-as="cat">
+                            <option t-att-value="cat[0]" t-out="cat[1]"/>
+                        </t>
+                    </select>
+                </label>
+                <label class="o_sc_field o_sc_file_field o_sc_file_field_wide">
+                    <span class="o_sc_field_label">Description</span>
+                    <textarea name="doc_description" class="o_sc_input o_sc_textarea" rows="1" disabled="disabled"/>
+                </label>
+            </div>
+            <div class="o_sc_form_actions">
+                <button t-if="upload_cancel" type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-close="1">Cancel</button>
+                <button type="submit" class="o_sc_btn o_sc_btn_primary"
+                        t-att-data-sc-action="'%s' % upload_form_key">Upload</button>
+            </div>
+        </form>
+    </template>
+
     <template id="sc_injury_card" name="App shell: inline injury card">
         <t t-set="injury" t-value="row['injury']"/>
         <details t-att-id="'%s%s' % (card_id_prefix or 'injury-', row['id'])" class="o_sc_expand o_sc_edit_card o_sc_injury_item"
@@ -1103,47 +1157,21 @@
                         </div>
                         <p t-else="" class="o_sc_empty">No documents uploaded</p>
                         <!-- Several files at once (each 10 MB at most; all or
-                             nothing), one category / description for all of
-                             them — each document can be re-filed afterwards. -->
+                             nothing), each with its own name / category /
+                             description (review fixes 2026-10-18 b). -->
                         <t t-if="sc_card_upload" t-call="bemade_sports_clinic.sc_sheet">
                             <t t-set="sheet_id" t-value="'sc_injury_%s_documents_add' % injury.id"/>
                             <t t-set="title">Add documents</t>
                             <t t-set="lazy_url" t-value="False"/>
-                            <form action="/my/patient/document/upload" method="post" enctype="multipart/form-data"
-                                  class="o_sc_form" data-sc-form="injury.documents.upload" data-sc-max-bytes="10485760">
-                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <input type="hidden" name="patient_id" t-att-value="injury.sudo().patient_id.id"/>
-                                <input type="hidden" name="injury_id" t-att-value="injury.id"/>
-                                <input type="hidden" name="return_url" t-att-value="row['card_url']"/>
-                                <div class="o_sc_field">
-                                    <label t-att-for="'sc_idocs_%s_files' % injury.id" class="o_sc_field_label">Files</label>
-                                    <label class="o_sc_dropzone" data-sc-dropzone="1">
-                                        <t t-call="bemade_sports_clinic.sc_icon"><t t-set="icon" t-value="'upload'"/></t>
-                                        <span class="o_sc_dropzone_text">Choose files or drop them here</span>
-                                        <input type="file" t-att-id="'sc_idocs_%s_files' % injury.id" name="attachment"
-                                               class="o_sc_dropzone_input" multiple="multiple" required="required"/>
-                                    </label>
-                                    <ul class="o_sc_file_list" data-sc-file-list="1" hidden="hidden"/>
-                                    <small class="o_sc_hint">Several files at once — 10 MB maximum each</small>
-                                    <p class="o_sc_field_error" data-sc-file-error="1" role="alert" hidden="hidden">Files over 10 MB cannot be uploaded. Remove them to continue.</p>
-                                </div>
-                                <div class="o_sc_field">
-                                    <label t-att-for="'sc_idocs_%s_category' % injury.id" class="o_sc_field_label">Category</label>
-                                    <select t-att-id="'sc_idocs_%s_category' % injury.id" name="category" class="o_sc_input o_sc_select">
-                                        <t t-foreach="sc_document_category_options" t-as="cat">
-                                            <option t-att-value="cat[0]" t-att-selected="'selected' if cat[0] == 'other' else None" t-out="cat[1]"/>
-                                        </t>
-                                    </select>
-                                </div>
-                                <div class="o_sc_field">
-                                    <label t-att-for="'sc_idocs_%s_description' % injury.id" class="o_sc_field_label">Description</label>
-                                    <textarea t-att-id="'sc_idocs_%s_description' % injury.id" name="description" class="o_sc_input o_sc_textarea" rows="2"/>
-                                </div>
-                                <div class="o_sc_form_actions">
-                                    <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-sheet-close="1">Cancel</button>
-                                    <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="injury.documents.upload">Upload</button>
-                                </div>
-                            </form>
+                            <t t-call="bemade_sports_clinic.sc_document_upload_form">
+                                <t t-set="upload_prefix" t-value="'sc_idocs_%s' % injury.id"/>
+                                <t t-set="upload_form_key" t-value="'injury.documents.upload'"/>
+                                <t t-set="upload_patient_id" t-value="injury.sudo().patient_id.id"/>
+                                <t t-set="upload_injury" t-value="injury"/>
+                                <t t-set="upload_return_url" t-value="row['card_url']"/>
+                                <t t-set="upload_category_options" t-value="sc_document_category_options"/>
+                                <t t-set="upload_cancel" t-value="True"/>
+                            </t>
                         </t>
                     </section>
                 </div>

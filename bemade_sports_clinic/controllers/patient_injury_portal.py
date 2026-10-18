@@ -1271,6 +1271,13 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             if injury_id not in patient.sudo().injury_ids.ids:
                 return _redirect('error=invalid_injury')
 
+        # Review fixes 2026-10-18 b: each file's OWN name / category /
+        # description (the shared picker's rows), as parallel lists keyed by
+        # position; the shared single values stay the fallback.
+        per_file = self._sc_document_rows(files, post)
+        if per_file is None:
+            return _redirect('error=invalid_category')
+
         try:
             payloads = [(f.filename, f.read()) for f in files]
             too_large = [name for name, content in payloads if len(content) > self.SC_DOCUMENT_MAX_BYTES]
@@ -1281,13 +1288,13 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             vals_list = [{
                 'patient_id': patient.id,
                 'injury_id': injury_id,
-                'name': single_name or name,
-                'description': post.get('description', ''),
-                'category': post.get('category') or 'other',
+                'name': row['name'] or single_name or name,
+                'description': row['description'],
+                'category': row['category'],
                 'file_content': base64.b64encode(content),
                 'file_name': self._sanitize_filename(name),
                 'created_by_id': request.env.user.id,
-            } for name, content in payloads]
+            } for (name, content), row in zip(payloads, per_file)]
             with request.env.cr.savepoint():
                 request.env['sports.injury.document'].sudo().create(vals_list)
         except Exception as e:
@@ -1298,6 +1305,49 @@ class PatientInjuryPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         return _redirect('success=document_uploaded')
 
     SC_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+
+    @staticmethod
+    def _sc_document_rows(files, post):
+        """Review fixes 2026-10-18 b — one ``{name, category, description}``
+        per uploaded file, or None when a category is not one of the
+        document's (the whole upload is refused).
+
+        The picker posts, per chosen file, ``doc_file`` (its file name),
+        ``doc_name``, ``doc_category`` and ``doc_description``: position i
+        is file i when the lists line up and the names match; otherwise a
+        file takes the first unused row with its file name; a file without
+        a row takes the shared ``category`` / ``description`` (the form
+        before this change, or a browser that could not rebuild the file
+        input). An empty name means « the file name »."""
+        form = request.httprequest.form
+        keys = form.getlist('doc_file')
+        names = form.getlist('doc_name')
+        categories = form.getlist('doc_category')
+        descriptions = form.getlist('doc_description')
+        valid = set(request.env['sports.injury.document']._fields['category'].get_values(request.env))
+        shared_category = post.get('category') or 'other'
+        shared = {'name': '', 'category': shared_category, 'description': post.get('description', '') or ''}
+        rows = [{
+            'key': key,
+            'name': (names[i] if i < len(names) else '').strip(),
+            'category': (categories[i] if i < len(categories) else '') or shared_category,
+            'description': (descriptions[i] if i < len(descriptions) else '') or '',
+        } for i, key in enumerate(keys)]
+        if len(rows) == len(files) and all(row['key'] == f.filename for row, f in zip(rows, files)):
+            matched = rows
+        else:
+            unused = list(rows)
+            matched = []
+            for f in files:
+                row = next((r for r in unused if r['key'] == f.filename), None)
+                if row is not None:
+                    unused.remove(row)
+                matched.append(row or shared)
+        out = [{'name': row['name'][:255], 'category': row['category'], 'description': row['description']}
+               for row in matched]
+        if shared_category not in valid or any(row['category'] not in valid for row in out):
+            return None
+        return out
 
     @http.route(['/my/injury/document/delete/<int:document_id>'], type='http', auth='user',
                 website=True, methods=['POST'], csrf=True)

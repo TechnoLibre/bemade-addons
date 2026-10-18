@@ -20,10 +20,47 @@
     .o_sc_account_pair {
         display: flex;
         flex-wrap: wrap;
+        // Review fixes 2026-10-18 b: no stretching — a taller neighbour (the
+        // country's « not allowed » note, a wrapped label) used to stretch
+        // the province box, and its select (flex: 1 in a field column) grew
+        // to ~2× the input height.
+        align-items: flex-start;
         gap: var(--sc-space-3);
 
         > .o_sc_field {
             flex: 1 1 220px;
+        }
+    }
+
+    // Every input / select of the account page keeps the app's input
+    // height (phone and laptop): never grown by its field column.
+    .o_sc_account .o_sc_field > .o_sc_input {
+        flex: 0 0 auto;
+    }
+
+    .o_sc_account select.o_sc_input {
+        height: auto;
+        min-height: var(--sc-tap);
+        line-height: normal;
+    }
+
+    // Review fixes 2026-10-18 b: the cards' read views and own actions.
+    .o_sc_account_address_lines {
+        margin: 0;
+        font-style: normal;
+
+        > span {
+            display: block;
+        }
+    }
+
+    .o_sc_account [data-sc-edit-view="edit"] {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-3);
+
+        &[hidden] {
+            display: none;
         }
     }
 

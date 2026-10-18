@@ -4,12 +4,19 @@
  * - button[data-sc-injury-done] (« Done » at the bottom of an open card):
  *   closes the card's open edit groups (Details / Notes / a document) and
  *   the card itself; the read fragments refresh at once (task 1611);
- * - form[data-sc-form="injury.documents.upload"] (the « Add documents »
- *   sheet): several files at once — the chosen files are listed with their
- *   size and a « × » each; choosing / dropping again ADDS to the list
- *   (review fixes 2026-10-18; duplicates ignored), a file over the limit (data-sc-max-bytes) is flagged and blocks
- *   the upload (the server refuses it too: all or nothing); on a laptop the
- *   drop zone ([data-sc-dropzone]) takes dropped files.
+ * - form[data-sc-doc-upload] (the document picker — the injury card's
+ *   « Add documents » sheet AND the player Documents tab, one template:
+ *   bemade_sports_clinic.sc_document_upload_form): several files at once —
+ *   the chosen files are listed with their size and a « × » each; choosing /
+ *   dropping again ADDS to the list (review fixes 2026-10-18; duplicates
+ *   ignored), a file over the limit (data-sc-max-bytes) is flagged and
+ *   blocks the upload (the server refuses it too: all or nothing); on a
+ *   laptop the drop zone ([data-sc-dropzone]) takes dropped files. Review
+ *   fixes 2026-10-18 b: each file's row has its own name / category /
+ *   description (a clone of [data-sc-file-proto]), pre-filled from the
+ *   shared « Category » / « Description » when the file is added; the rows
+ *   post as parallel lists (doc_file / doc_name / doc_category /
+ *   doc_description) in the input's file order.
  */
 import { _t } from "@web/core/l10n/translation";
 
@@ -76,6 +83,8 @@ function formatSize(bytes) {
 // before. The same file twice (name + size + last modified) is ignored; each
 // row has a « × » to drop that file.
 const selections = new WeakMap();
+// Review fixes 2026-10-18 b: each chosen file's own values (File → values).
+const fileValues = new WeakMap();
 
 function fileKey(file) {
     return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
@@ -105,15 +114,29 @@ function syncInput(form) {
     }
 }
 
+/** The shared « Category » / « Description » values right now. */
+function sharedValues(form) {
+    const category = form.querySelector('[data-sc-doc-shared="category"]');
+    const description = form.querySelector('[data-sc-doc-shared="description"]');
+    return {
+        category: category ? category.value : "",
+        description: description ? description.value : "",
+    };
+}
+
 /** Add ``files`` to the form's selection (duplicates ignored). */
 export function addFiles(form, files) {
     const list = selection(form);
     const known = new Set(list.map(fileKey));
+    const shared = sharedValues(form);
     for (const file of files) {
         const key = fileKey(file);
         if (!known.has(key)) {
             known.add(key);
             list.push(file);
+            // Pre-filled once, when the file is added: a later change of
+            // the shared fields never rewrites a row.
+            fileValues.set(file, { name: file.name, ...shared });
         }
     }
     syncInput(form);
@@ -159,7 +182,14 @@ function checkFiles(form) {
                 remove.setAttribute("aria-label", label);
                 remove.title = label;
                 remove.textContent = "×";
-                item.append(name, size, remove);
+                const head = document.createElement("div");
+                head.className = "o_sc_file_head";
+                head.append(name, size, remove);
+                item.append(head);
+                const row = fileRow(form, file);
+                if (row) {
+                    item.append(row);
+                }
                 return item;
             })
         );
@@ -180,8 +210,48 @@ function checkFiles(form) {
     return ok;
 }
 
+/** A file's own fields (a clone of the form's row prototype). */
+function fileRow(form, file) {
+    const proto = form.querySelector("[data-sc-file-proto]");
+    if (!proto) {
+        return null;
+    }
+    if (!fileValues.has(file)) {
+        fileValues.set(file, { name: file.name, ...sharedValues(form) });
+    }
+    const values = fileValues.get(file);
+    const row = proto.cloneNode(true);
+    row.hidden = false;
+    delete row.dataset.scFileProto;
+    row.dataset.scFileRow = "1";
+    for (const field of row.querySelectorAll("[name]")) {
+        field.disabled = false;
+    }
+    row.querySelector('[name="doc_file"]').value = file.name;
+    const bind = (name, key) => {
+        const field = row.querySelector(`[name="${name}"]`);
+        if (!field) {
+            return;
+        }
+        if (field.tagName === "SELECT" && ![...field.options].some((o) => o.value === values[key])) {
+            values[key] = field.value;
+        }
+        field.value = values[key] || "";
+        field.addEventListener("input", () => {
+            values[key] = field.value;
+        });
+        field.addEventListener("change", () => {
+            values[key] = field.value;
+        });
+    };
+    bind("doc_name", "name");
+    bind("doc_category", "category");
+    bind("doc_description", "description");
+    return row;
+}
+
 function uploadForm(node) {
-    const form = node && node.closest && node.closest('form[data-sc-form="injury.documents.upload"]');
+    const form = node && node.closest && node.closest("form[data-sc-doc-upload]");
     return form && inShell(form) ? form : null;
 }
 

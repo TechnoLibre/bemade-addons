@@ -50,7 +50,7 @@ function typeAndLeave(input, value) {
 
 // -------------------------------------------- player page (Info tab)
 const IDENTITY = '[data-sc-edit-card="identity"]';
-const MEDICAL = '[data-sc-edit-card="medical"]';
+const HEADER = '[data-sc-edit-card="player-header"]';
 
 tours.add("sc_1611_player_fragments", {
     steps: () => [
@@ -116,25 +116,33 @@ tours.add("sc_1611_player_fragments", {
             },
         },
         {
-            content: "Open the medical card",
-            trigger: `${MEDICAL} button[data-sc-edit-toggle]`,
+            // Review fixes 2026-10-18 b: the allergies are edited in the
+            // player header only (its pencil), no longer in the Medical card.
+            content: "Open the header pencil",
+            trigger: `${HEADER} button[data-sc-edit-toggle]`,
             run: "click",
         },
         {
             content: "Fill the allergies and leave the field",
-            trigger: `${MEDICAL} [data-sc-edit-view="edit"]:not([hidden]) .o_sc_autosave[data-sc-field="allergies"] textarea`,
+            trigger: `${HEADER} [data-sc-edit-view="edit"]:not([hidden]) .o_sc_autosave[data-sc-field="allergies"] textarea`,
             run() {
                 typeAndLeave(this.anchor, "Synthetic pollen");
             },
         },
         {
-            content: "The hero's allergies banner appears",
-            trigger: '[data-sc-section="player.allergies"] .o_sc_banner:contains("Synthetic pollen")',
-            run: assertNoReload,
+            content: "The hero's allergies banner is refreshed (read view, behind the open edit view)",
+            trigger: ".o_sc_app",
+            async run() {
+                await waitFor(() => {
+                    const banner = document.querySelector('[data-sc-section="player.allergies"] .o_sc_banner');
+                    return banner && banner.textContent.includes("Synthetic pollen");
+                }, "banner shown");
+                assertNoReload();
+            },
         },
         {
             content: "Clear the allergies",
-            trigger: `${MEDICAL} .o_sc_autosave[data-sc-field="allergies"] .o_sc_clear_btn`,
+            trigger: `${HEADER} .o_sc_autosave[data-sc-field="allergies"] .o_sc_clear_btn`,
             run: "click",
         },
         {

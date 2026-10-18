@@ -10,11 +10,13 @@ Acceptance criteria covered here:
 * UC-A1 Shell on, coach / therapist / internal therapist: ``/my/account``
   renders in the shell (no website header), back + crumb to Paramètres,
   title « My account », the core address form fields (name, email, phone,
-  company / VAT, street, street2, zip, city, country, state) prefilled, the
+  street, street2, zip, city, country, state — no company / VAT since
+  review fixes 2026-10-18 b) prefilled, the
   core hidden inputs (csrf, address_type, required_fields) and the core
   submit contract (``form.address_autoformat`` posting to
   ``/my/address/submit`` inside ``.o_customer_address_fill`` with
-  ``#errors`` and ``#save_address``), callback back to the page.
+  ``#errors``; each card has its own « Save », review fixes 2026-10-18 b),
+  callback back to the page.
 * UC-A2 A valid save through the core route updates the partner and sends
   the browser back to ``/my/account?sc_saved=1``, which shows the
   « saved » toast. An explicit ``redirect`` is kept (core behaviour).
@@ -126,9 +128,13 @@ class TestAccountShell1620(AccountShellCommon):
             self.assertEqual(form[0].get('data-submit-url'), '/my/address/submit')
             self.assertEqual(form[0].get('action'), '/my/address/submit')
             self.assertEqual(form[0].get('method'), 'post')
-            self.assertTrue(form[0].xpath('.//button[@id="save_address"]'))
+            # Review fixes 2026-10-18 b: each card saves itself (no core
+            # #save_address); no company name / VAT.
+            self.assertFalse(form[0].xpath('.//button[@id="save_address"]'))
+            self.assertEqual(len(form[0].xpath('.//button[@data-sc-account-save]')), 2)
             names = set(form[0].xpath('.//input/@name | .//select/@name'))
-            for name in ('name', 'email', 'phone', 'company_name', 'vat', 'street', 'street2',
+            self.assertFalse({'company_name', 'vat'} & names)
+            for name in ('name', 'email', 'phone', 'street', 'street2',
                          'zip', 'city', 'country_id', 'state_id', 'csrf_token',
                          'address_type', 'use_delivery_as_billing', 'partner_id',
                          'callback', 'required_fields'):
@@ -376,8 +382,13 @@ class TestAccountSecurityFrench1620(AppShellCommon):
         text = self._fr('/my/account')
         for term in ('Mon compte', 'Paramètres', 'Coordonnées', 'Votre nom', 'Courriel',
                      'Téléphone', 'Adresse', 'Ville', 'Code postal', 'Pays',
-                     'Province / État', 'Entreprise', 'Enregistrer'):
+                     'Province / État', 'Enregistrer', 'Annuler',
+                     # Review fixes 2026-10-18 b: no « Entreprise » card; the
+                     # cards' own messages.
+                     'Vos coordonnées ont été enregistrées.',
+                     "Certains de ces champs sont dans l'autre carte : complétez-la d'abord."):
             self.assertIn(term, text, term)
+        self.assertNotIn('Entreprise', text)
         text = self._fr('/my/security')
         for term in ('Sécurité', 'Changer le mot de passe', 'Mot de passe actuel',
                      'Nouveau mot de passe', 'Confirmer le nouveau mot de passe',

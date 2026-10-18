@@ -67,7 +67,9 @@ class TestAppShellI18n1539(TestAppShellI18n1538):
                      'Historique des notes', 'Oui, supprimer la blessure', 'Supprimer'):
             self.assertIn(term, text, term)
         text = self._fr_text('/my/injury/documents?injury_id=%s' % self.injury.id)
-        for term in ('Téléverser un document', 'Taille max 10 Mo', 'Téléverser'):
+        # Review fixes 2026-10-18 b: the shared multi-file picker's hints.
+        for term in ('Téléverser un document', 'Plusieurs fichiers à la fois — 10 Mo maximum chacun',
+                     'Appliquée à chaque fichier ajouté', 'Téléverser'):
             self.assertIn(term, text, term)
 
     def test_activities_in_french(self):

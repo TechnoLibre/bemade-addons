@@ -1165,6 +1165,6 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         card = AppShellMixin._sc_injury_card_flash(kw)
         if kw.get('success') in ('documents_uploaded', 'injury_updated', 'document_deleted'):
             success = card['success']
-        if kw.get('error') == 'file_too_large':
+        if kw.get('error') in ('file_too_large', 'invalid_category'):
             error = card['error']
         return {'success': success, 'error': error}

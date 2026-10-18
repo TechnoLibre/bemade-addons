@@ -4,10 +4,11 @@ only.
 
 Acceptance criteria covered here (laptop 1366 px and phone 360 px):
 
-* UC-T1 Paramètres → Mon compte: the core validation's error shows in the
-  shell (#errors + the field flagged); a new phone saves through the core
-  form JS and comes back with the « saved » toast; back → Paramètres; no
-  horizontal overflow.
+* UC-T1 Paramètres → Mon compte (review fixes 2026-10-18 b: pencil cards):
+  read cards; the province select as tall as the inputs; Cancel restores;
+  the core validation's error shows in the card being edited (field
+  flagged); a new phone, then a new city, save in place (read view, toast,
+  no reload); back → Paramètres; no horizontal overflow.
 * UC-T2 Paramètres → Sécurité: the core « show password » eye; a wrong
   current password comes back with its error; the right one changes it
   (success banner, the new password works); the delete-account sheet opens
@@ -31,6 +32,9 @@ class _Tours1620:
         self.assertTrue(''.join(c for c in self.coach.partner_id.phone if c.isdigit())
                         .endswith('5145550177'), self.coach.partner_id.phone)
         self.assertEqual(self.coach.partner_id.email, 'pc.coach@example.com')
+        # Review fixes 2026-10-18 b: the address card saved too, the contact
+        # card's values kept.
+        self.assertEqual(self.coach.partner_id.city, 'Synthetic City')
 
     def test_security(self):
         self._switch(True)

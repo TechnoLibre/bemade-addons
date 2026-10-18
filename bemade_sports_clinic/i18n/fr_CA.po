@@ -1489,7 +1489,7 @@ msgstr "<option value=\"\">-- Note générale --</option>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "<option value=\"\">-- None --</option>"
 msgstr "<option value=\"\">-- Aucun --</option>"
 
@@ -3813,8 +3813,9 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_org_staff_promote_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_player_removal_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_account_card_actions
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -3869,8 +3870,8 @@ msgstr "Changements capturés (vue interne)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Category"
 msgstr "Catégorie"
 
@@ -3906,15 +3907,6 @@ msgstr "Modifications appliquées."
 msgid ""
 "Changes over the last %(hours)s h / Changements des dernières %(hours)s h."
 msgstr ""
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid ""
-"Changing the VAT number is not allowed once documents have been issued for "
-"your account. Please contact us for this change."
-msgstr ""
-"Le numéro de taxe ne peut plus être modifié une fois que des documents ont "
-"été émis pour votre compte. Communiquez avec nous pour ce changement."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
@@ -4154,16 +4146,6 @@ msgid ""
 msgstr ""
 "Couleur des événements de cette personne dans le calendrier du portail "
 "(#rrggbb). Choisie automatiquement; modifiez-la pour la remplacer."
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid "Company"
-msgstr "Entreprise"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid "Company name"
-msgstr "Nom de l'entreprise"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.activity_list_table
@@ -4995,12 +4977,12 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form_calendar_popup
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Description"
 msgstr "Description"
 
@@ -5216,7 +5198,6 @@ msgstr "Le fichier du document ne peut pas excéder 10 MB."
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "Document name"
 msgstr "Nom du document"
 
@@ -5927,7 +5908,6 @@ msgstr "Feedback (optionnel):"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_documents
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 msgid "File"
 msgstr "Fichier"
 
@@ -7102,8 +7082,8 @@ msgstr "Lier cette note (facultatif)"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_add_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Link to Injury (optional)"
 msgstr "Lien vers la blessure (optionnel)"
 
@@ -7473,6 +7453,7 @@ msgstr "S/O"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_contact_fields
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Name"
 msgstr "Nom"
 
@@ -7787,20 +7768,6 @@ msgstr "Province / État"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Street and number"
 msgstr "Rue et numéro"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid "The VAT number can only be updated on the company account."
-msgstr ""
-"Le numéro de taxe ne peut être modifié que sur le compte de l'entreprise."
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid ""
-"The company name and VAT number can only be updated on your main account."
-msgstr ""
-"Le nom de l'entreprise et le numéro de taxe ne peuvent être modifiés que sur"
-" votre compte principal."
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -10407,7 +10374,7 @@ msgstr "Sam"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_contact_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_sheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_account_card_actions
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -14643,12 +14610,6 @@ msgstr ""
 "                                </select>"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
-msgid "<small class=\"o_sc_hint\">Max size 10MB</small>"
-msgstr "<small class=\"o_sc_hint\">Taille max 10 Mo</small>"
-
-#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_edit
 msgid "<span class=\"o_sc_field_label\">Injury status</span>"
 msgstr "<span class=\"o_sc_field_label\">Statut de la blessure</span>"
@@ -15168,8 +15129,7 @@ msgstr "Annuler"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_documents
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Upload"
 msgstr "Téléverser"
 
@@ -15769,12 +15729,12 @@ msgid "%(size)s — over 10 MB"
 msgstr "%(size)s — plus de 10 Mo"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "<small class=\"o_sc_hint\">Several files at once — 10 MB maximum each</small>"
 msgstr "<small class=\"o_sc_hint\">Plusieurs fichiers à la fois — 10 Mo maximum chacun</small>"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "<span class=\"o_sc_dropzone_text\">Choose files or drop them here</span>"
 msgstr "<span class=\"o_sc_dropzone_text\">Choisissez des fichiers ou déposez-les ici</span>"
 
@@ -15784,12 +15744,12 @@ msgid "Add documents"
 msgstr "Ajouter des documents"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Files"
 msgstr "Fichiers"
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Files over 10 MB cannot be uploaded. Remove them to continue."
 msgstr "Les fichiers de plus de 10 Mo ne peuvent pas être téléversés. Retirez-les pour continuer."
 
@@ -15816,3 +15776,54 @@ msgstr "Personnel assigné"
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 msgid "No organization"
 msgstr "Aucune organisation"
+
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
+msgid ""
+"<small class=\"o_sc_hint\">Applied to each file you add; change a file below"
+" to change only that one.</small>"
+msgstr ""
+"<small class=\"o_sc_hint\">Appliquée à chaque fichier ajouté; modifiez un "
+"fichier ci-dessous pour ne changer que celui-là.</small>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
+msgid "<span class=\"o_sc_field_label\">Category</span>"
+msgstr "<span class=\"o_sc_field_label\">Catégorie</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
+msgid "<span class=\"o_sc_field_label\">Description</span>"
+msgstr "<span class=\"o_sc_field_label\">Description</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
+msgid "<span class=\"o_sc_field_label\">Name</span>"
+msgstr "<span class=\"o_sc_field_label\">Nom</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "No address yet."
+msgstr "Aucune adresse pour l'instant."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "One of the selected teams does not exist any more."
+msgstr "Une des équipes choisies n'existe plus."
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell.py:0
+msgid "Please choose a valid category."
+msgstr "Veuillez choisir une catégorie valide."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid ""
+"<span hidden=\"hidden\" data-sc-account-msg=\"saved\">Your details have been saved.</span>\n"
+"                    <span hidden=\"hidden\" data-sc-account-msg=\"other\">Some of these fields are in the other card: complete it first.</span>"
+msgstr ""
+"<span hidden=\"hidden\" data-sc-account-msg=\"saved\">Vos coordonnées ont été enregistrées.</span>\n"
+"                    <span hidden=\"hidden\" data-sc-account-msg=\"other\">Certains de ces champs sont dans l'autre carte : complétez-la d'abord.</span>"

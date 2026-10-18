@@ -143,6 +143,13 @@ tours.add("sc_1616_documents_upload", {
             trigger: `${ADD_SHEET}[open] .o_sc_dropzone`,
             run() {
                 window.__sc1616NoReload = "1";
+                // Review fixes 2026-10-18 b: the shared category / description
+                // pre-fill each file's row WHEN it is added — set them first.
+                const form = this.anchor.closest("form");
+                const category = form.querySelector('select[name="category"]');
+                category.value = "medical_imaging";
+                category.dispatchEvent(new Event("change", { bubbles: true }));
+                form.querySelector('textarea[name="description"]').value = "Synthetic batch";
                 setFiles(this.anchor.querySelector('input[type="file"][multiple]'), [
                     new File(["synthetic"], "Synthetic small.pdf", { type: "application/pdf" }),
                     new File([new Uint8Array(10 * 1024 * 1024 + 1)], "Synthetic big.pdf", {
@@ -189,10 +196,13 @@ tours.add("sc_1616_documents_upload", {
                 );
                 assert(input.files.length === 3, `input holds ${input.files.length} files`);
                 assert(sheet.querySelectorAll("[data-sc-file-list] li button[data-sc-file-remove]").length === 3, "×");
-                const category = sheet.querySelector('select[name="category"]');
-                category.value = "medical_imaging";
-                category.dispatchEvent(new Event("change", { bubbles: true }));
-                sheet.querySelector('textarea[name="description"]').value = "Synthetic batch";
+                // Each row carries the shared values it was added with.
+                const rows = [...sheet.querySelectorAll("[data-sc-file-list] [data-sc-file-row]")];
+                assert(rows.length === 3, `rows: ${rows.length}`);
+                for (const row of rows) {
+                    assert(row.querySelector('[name="doc_category"]').value === "medical_imaging", "row category");
+                    assert(row.querySelector('[name="doc_description"]').value === "Synthetic batch", "row text");
+                }
             },
         },
         {

@@ -4,7 +4,8 @@ from odoo.tools import format_datetime, html2plaintext, plaintext2html
 from odoo.exceptions import UserError, AccessError
 from datetime import datetime, timedelta
 from .access_control_mixin import AccessControlMixin
-from .app_shell import AppShellMixin, sc_now_ms, sc_refresh_patterns
+from .app_shell import (AppShellMixin, sc_event_team_choices, sc_event_team_ids_check, sc_now_ms,
+                        sc_refresh_patterns)
 import json
 import logging
 import pytz
@@ -842,7 +843,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # (otherwise reading team.name at render raises AccessError -> 403).
         # Task 1577: explicit scope (all teams for a clinic admin, staffed
         # teams otherwise) instead of a bare search([]) left to the rules.
-        teams = (self._get_accessible_teams() | event.sudo().team_ids).sudo()
+        # Review fixes 2026-10-18 b (#1608, owner decision): every team.
+        teams = sc_event_team_choices(event.sudo())
         organizations = teams.mapped('parent_id').filtered(lambda p: p).sorted('name')
         treatment_professionals = self._get_treatment_professionals()
         venues = http.request.env['res.partner'].search([('is_venue', '=', True)])
@@ -940,8 +942,12 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # runs the sports.team record rules — a TP editing (e.g. adding a
             # therapist to) an event that involves a team they can't read
             # would trip a raw AccessError for a no-op (dev-review 2026-07-04).
+            team_command = None
             if team_ids_list is not None and set(team_ids_list) != set(event.sudo().team_ids.ids):
-                update_vals['team_ids'] = [(6, 0, team_ids_list)]
+                # Review fixes 2026-10-18 b (#1608): any existing team, written
+                # under sudo below (the event computes read the teams).
+                team_ids_list = sc_event_team_ids_check(team_ids_list, event.sudo().team_ids.ids)
+                team_command = [(6, 0, team_ids_list)]
             if 'venue_id' in post and post['venue_id']:
                 update_vals['venue_id'] = int(post['venue_id'])
             if 'event_type' in post:
@@ -999,6 +1005,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             with http.request.env.cr.savepoint():
                 # Update the event
                 event.write(update_vals)
+                if team_command is not None:
+                    event.sudo().write({'team_ids': team_command})
 
                 # assigned_staff_ids is an m2m to res.users; portal users can't read
                 # other users, so write it under sudo to avoid an AccessError when the
@@ -1033,9 +1041,9 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             raise AccessError(_("You don't have permission to create events."))
 
         # Options for form
-        # Task 1577: _get_accessible_teams covers system / clinic admins (all
-        # teams, staffed first) and everyone else (staffed teams).
-        teams = self._get_accessible_teams()
+        # Review fixes 2026-10-18 b (#1608, owner decision): every user who
+        # may create events gets EVERY team (was: their staffed teams).
+        teams = sc_event_team_choices()
         organizations = teams.mapped('parent_id').filtered(lambda p: p).sorted('name')
         treatment_professionals = self._get_treatment_professionals()
         venues = http.request.env['res.partner'].search([('is_venue', '=', True)])
@@ -1110,6 +1118,7 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
                 team_ids_list = [int(post['team_id'])]
             if not team_ids_list:
                 raise UserError(_('At least one team is required.'))
+            team_ids_list = sc_event_team_ids_check(team_ids_list)
             create_vals['team_ids'] = [(6, 0, team_ids_list)]
 
             # Optional simple fields
@@ -1174,8 +1183,13 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             # Task 1600: the create and the staff assignment are one unit — a
             # refused step leaves no half-created event behind.
             with http.request.env.cr.savepoint():
-                # Task creation is handled by the model's create() default logic
-                event = http.request.env['sports.event'].create(create_vals)
+                # Task creation is handled by the model's create() default logic.
+                # Review fixes 2026-10-18 b (#1608): the teams may be any team
+                # (checked above), which the event's computes read — so the
+                # create runs under sudo (same uid: create_uid / chatter
+                # author stay the user; the constraints still run). The event
+                # rules already let every therapist read every event.
+                event = http.request.env['sports.event'].sudo().create(create_vals).sudo(False)
 
                 # assigned_staff_ids is an m2m to res.users; portal users can't read
                 # other users, so writing it non-sudo raises AccessError when the
@@ -1563,7 +1577,8 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # page offered them: the user's teams plus the event's current ones).
         edit_options = {}
         if values['can_edit']:
-            teams = (self._get_accessible_teams() | event_sudo.team_ids).sudo()
+            # Review fixes 2026-10-18 b (#1608): every team.
+            teams = sc_event_team_choices(event_sudo)
             edit_options = {
                 'types': list(env['sports.event']._fields['event_type']._description_selection(env)),
                 'venues': self._sc_event_venue_options(event_sudo),

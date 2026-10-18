@@ -132,11 +132,13 @@ class TestEventFormPickers1608(Pickers1608Common):
         self.assertIn(str(self.tp.id), staff_keys)
         self.assertGreaterEqual(len(staff_keys), 1)
 
-    def test_tp_offered_their_teams(self):
+    def test_tp_offered_every_team(self):
+        # Review fixes 2026-10-18 b (owner decision): every team for every
+        # user who may create events (was: the teams they staff).
         self._switch(True)
         self._login_tp()  # staffs PC Team A only
         keys = [opt[0] for opt in self._pickers(self._form())['teams']['options']]
-        self.assertEqual(keys, [str(self.team_a.id)])
+        self.assertEqual(sorted(keys), sorted(str(i) for i in self.env['sports.team'].search([]).ids))
 
     # -- UC-3 ------------------------------------------------------------
     def test_submit_csv_creates_event(self):
@@ -176,12 +178,13 @@ class TestEventFormPickers1608(Pickers1608Common):
 
     @mute_logger('odoo.http')
     def test_unoffered_ids_are_not_prefilled(self):
-        # A TP who staffs Team A only: a flashed Team C (not offered) is dropped,
-        # as the checkbox list did.
+        # A flashed id that is not offered (review fixes 2026-10-18 b: every
+        # team is offered now, so an unknown one) is dropped, as the checkbox
+        # list did.
         self._switch(True)
         self._login_tp()
         self._post('/my/event/create/submit', {
-            'name': '', 'team_ids': '%s,%s' % (self.team_a.id, self.team_c.id),
+            'name': '', 'team_ids': '%s,999999' % self.team_a.id,
             'date_start': '2026-05-04T18:00', 'date_end': '2026-05-04T20:00',
         })
         form = self._form()

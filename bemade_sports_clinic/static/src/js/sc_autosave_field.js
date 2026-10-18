@@ -189,7 +189,8 @@ export class ScAutosaveField extends Component {
             const detail = ev.detail || {};
             // Review fixes 2026-10-18: a TWIN island of the same field (the
             // player header's edit mode and the Medical card both edit the
-            // allergies / the actual return date) follows the other's save.
+            // actual return date; since review-fixes-1018b the allergies live
+            // only in the header) follows the other's save.
             if (
                 detail.source &&
                 detail.source !== this &&

@@ -392,6 +392,29 @@ def _csv_ids(value):
         raise ValidationError(_("Invalid value.")) from None
 
 
+def sc_event_team_choices(event_sudo=None):
+    """Review fixes 2026-10-18 b (#1608, owner decision): the teams an event
+    form offers to a user who may create / edit events — EVERY team (an
+    archived one would drop out of the search if ``sports.team`` ever gets
+    an ``active`` flag), plus the event's current ones. sudo: listing only —
+    the user's READ access to teams (record rules) is unchanged."""
+    teams = request.env['sports.team'].sudo().search([], order='name')
+    if event_sudo:
+        teams |= event_sudo.sudo().team_ids
+    return teams
+
+
+def sc_event_team_ids_check(ids, current_ids=()):
+    """The posted team ids of an event form, checked: each one is a team the
+    form offers (``sc_event_team_choices``) or already on the event. The
+    one-organization rule stays the model's (``_check_team_ids``)."""
+    ids = list(dict.fromkeys(ids or ()))
+    known = set(request.env['sports.team'].sudo().search([('id', 'in', ids)]).ids) | set(current_ids or ())
+    if any(team_id not in known for team_id in ids):
+        raise ValidationError(_("One of the selected teams does not exist any more."))
+    return ids
+
+
 def _event_check(ctrl, event):
     """/my/event/<id>/save's rule: therapists (portal or internal) and
     system admins only; record rules still apply to the write."""
@@ -437,11 +460,15 @@ def _event_write(ctrl, event, field, value):
         text = (value or '').strip()
         event.write({'description': plaintext2html(text) if text else False})
     elif field == 'team_ids':
-        ids = _csv_ids(value)
+        current = event.sudo().team_ids.ids
+        ids = sc_event_team_ids_check(_csv_ids(value), current)
         # Only when it changed (the save route's rule: an unchanged m2m still
         # runs the team record rules).
-        if set(ids) != set(event.sudo().team_ids.ids):
-            event.write({'team_ids': [Command.set(ids)]})
+        if set(ids) != set(current):
+            # Review fixes 2026-10-18 b (#1608): any team (checked above), so
+            # sudo — the team's partner / organization are read by the
+            # event's computes; the one-organization constraint still runs.
+            event.sudo().write({'team_ids': [Command.set(ids)]})
     elif field == 'assigned_staff_ids':
         # sudo: portal users cannot read other users (the save route's rule;
         # access enforced by the check).
@@ -1542,6 +1569,7 @@ class AppShellMixin:
                 if files else env._("The file is too large (10 MB maximum).")),
             'upload_failed': env._("The upload failed."),
             'invalid_injury': env._("The selected injury does not belong to this patient."),
+            'invalid_category': env._("Please choose a valid category."),
             'permission_denied': env._("You do not have permission to do this."),
         }.get(kw.get('error'))
         return {'success': success, 'error': error}

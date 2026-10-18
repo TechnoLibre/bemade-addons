@@ -198,8 +198,12 @@ class TestEventOrgTeamFilter1597(Org1597Common):
 
     # -- UC-4 ------------------------------------------------------------
     def test_default_org_single_org_user(self):
+        # Review fixes 2026-10-18 b: every team is offered, so the form opens
+        # on an organization only when every team belongs to that one.
         self._switch(True)
         self._login_tp()  # staffs PC Team A only
+        self.assertEqual(self._selected_org(self._form()), [])
+        self.env['sports.team'].search([]).write({'parent_id': self.org.id})
         self.assertEqual(self._selected_org(self._form()), [str(self.org.id)])
 
     def test_no_default_org_when_teams_span_orgs(self):

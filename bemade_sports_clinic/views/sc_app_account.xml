@@ -7,10 +7,12 @@
 
     Mon compte: .o_customer_address_fill > #errors + form.address_autoformat
       (data-submit-url → the core /my/address/submit, its validation and
-      error JSON), #save_address, each input in its own box with its label
+      error JSON; review fixes 2026-10-18 b: posted per card by
+      sc_account.js, no #save_address), each input in its own box with its label
       (the core address JS shows / hides / reorders the box: zip and city
       are siblings), the core hidden inputs. Same fields and conditions as
-      portal.address_form_fields (company / VAT on the billing address).
+      portal.address_form_fields, minus company / VAT (review fixes
+      2026-10-18 b: not shown, not posted, never changed).
     Sécurité: .o_portal_security_body (core PortalSecurity interaction:
       « Log out from all devices », API keys), the auth_totp_portal hooks
       (#totp_wizard_view data island DIRECTLY followed by the 2FA block —
@@ -36,144 +38,169 @@
         </div>
     </template>
 
+    <!-- Review fixes 2026-10-18 b: the « Save » / « Cancel » and the error
+         box INSIDE an account card's edit view (sc_account.js). -->
+    <template id="sc_account_card_actions" name="Sports Clinic App: account card actions">
+        <div class="o_sc_account_errors" data-sc-account-errors="1" role="alert" aria-live="polite"/>
+        <div class="o_sc_form_actions">
+            <button type="button" class="o_sc_btn o_sc_btn_ghost" data-sc-account-cancel="1">Cancel</button>
+            <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-account-save="1">Save</button>
+        </div>
+    </template>
+
+    <!-- Review fixes 2026-10-18 b: two edit cards (read view + pencil, like
+         the rest of the app) — « Contact details » and « Address » — each
+         with its own « Save » / « Cancel »; no « Company » card (company
+         name / VAT are not posted, so the core never touches them); no
+         page-level save. ONE core form still wraps both cards: a card's save
+         posts the form with the OTHER card's last saved values
+         (sc_account.js), so the core /my/address/submit validation (the
+         whole address is mandatory) passes and its errors show in the card
+         being edited. The read views are read fragments (task 1611). -->
     <template id="sc_app_account" name="Sports Clinic App: my account">
         <t t-call="bemade_sports_clinic.sc_app_layout">
             <t t-set="sc_title">My account</t>
             <t t-set="sc_active_nav" t-value="False"/>
             <div class="o_customer_address_fill o_sc_account" data-sc-section="account">
-                <div id="errors" class="o_sc_account_errors" role="alert" aria-live="polite"/>
-                <form action="/my/address/submit" method="post" name="address_form"
+                <!-- The core address JS looks it up; the cards show the errors. -->
+                <div id="errors" class="o_sc_account_errors" hidden="hidden"/>
+                <form action="/my/address/submit" method="post" name="address_form" novalidate="novalidate"
                       class="address_autoformat o_sc_form o_sc_account_form" data-sc-form="account"
+                      data-sc-account-form="1"
                       t-att-data-company-country-code="res_company.country_id.code"
                       data-submit-url="/my/address/submit">
+                    <span hidden="hidden" data-sc-account-msg="saved">Your details have been saved.</span>
+                    <span hidden="hidden" data-sc-account-msg="other">Some of these fields are in the other card: complete it first.</span>
 
-                    <section class="o_sc_card o_sc_form" data-sc-section="account.contact">
-                        <t t-call="bemade_sports_clinic.sc_section_header"><t t-set="title">Contact details</t></t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_name'"/>
-                            <t t-set="fname" t-value="'name'"/>
-                            <t t-set="label">Your name</t>
-                            <t t-set="value" t-value="partner_sudo.name"/>
-                            <t t-set="autocomplete" t-value="'name'"/>
+                    <section class="o_sc_card o_sc_edit_card" data-sc-edit-card="account-contact"
+                             data-sc-section="account.contact">
+                        <t t-call="bemade_sports_clinic.sc_edit_card_head">
+                            <t t-set="title">Contact details</t>
+                            <t t-set="editable" t-value="True"/>
                         </t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_email'"/>
-                            <t t-set="fname" t-value="'email'"/>
-                            <t t-set="label">Email</t>
-                            <t t-set="value" t-value="partner_sudo.email"/>
-                            <t t-set="input_type" t-value="'email'"/>
-                            <t t-set="autocomplete" t-value="'email'"/>
-                        </t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_phone'"/>
-                            <t t-set="fname" t-value="'phone'"/>
-                            <t t-set="label">Phone</t>
-                            <t t-set="value" t-value="partner_sudo.phone"/>
-                            <t t-set="input_type" t-value="'tel'"/>
-                            <t t-set="autocomplete" t-value="'tel'"/>
-                        </t>
-                    </section>
-
-                    <!-- As portal.address_form_fields « b2b_fields »: the
-                         billing address carries the company name and VAT. -->
-                    <section t-if="is_used_as_billing" class="o_sc_card o_sc_form" data-sc-section="account.company">
-                        <t t-set="vat_warning" t-value="current_partner.vat and not current_partner.can_edit_vat()"/>
-                        <t t-call="bemade_sports_clinic.sc_section_header"><t t-set="title">Company</t></t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_company_name'"/>
-                            <t t-set="fname" t-value="'company_name'"/>
-                            <t t-set="label">Company name</t>
-                            <t t-set="value" t-value="current_partner.commercial_company_name"/>
-                            <t t-set="optional" t-value="True"/>
-                            <t t-set="readonly" t-value="not is_main_address"/>
-                            <t t-set="autocomplete" t-value="'organization'"/>
-                        </t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_vat'"/>
-                            <t t-set="fname" t-value="'vat'"/>
-                            <t t-set="label" t-value="vat_label"/>
-                            <t t-set="value" t-value="current_partner.vat"/>
-                            <t t-set="optional" t-value="True"/>
-                            <t t-set="readonly" t-value="not is_commercial_address or vat_warning"/>
-                            <t t-set="autocomplete" t-value="'off'"/>
-                            <p t-if="not is_commercial_address and commercial_partner.is_company and is_main_address"
-                               class="o_sc_meta">The VAT number can only be updated on the company account.</p>
-                            <p t-elif="vat_warning and is_main_address" class="o_sc_meta">
-                                Changing the VAT number is not allowed once documents have been issued for your account. Please contact us for this change.
-                            </p>
-                        </t>
-                        <p t-if="not (is_commercial_address or is_main_address)" class="o_sc_meta">
-                            The company name and VAT number can only be updated on your main account.
-                        </p>
-                    </section>
-
-                    <section class="o_sc_card o_sc_form" data-sc-section="account.address">
-                        <t t-call="bemade_sports_clinic.sc_section_header"><t t-set="title">Address</t></t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_street'"/>
-                            <t t-set="fname" t-value="'street'"/>
-                            <t t-set="label">Street and number</t>
-                            <t t-set="value" t-value="partner_sudo.street"/>
-                            <t t-set="autocomplete" t-value="'address-line1'"/>
-                        </t>
-                        <t t-call="bemade_sports_clinic.sc_account_input">
-                            <t t-set="fid" t-value="'o_street2'"/>
-                            <t t-set="fname" t-value="'street2'"/>
-                            <t t-set="label">Apartment, suite, etc.</t>
-                            <t t-set="value" t-value="partner_sudo.street2"/>
-                            <t t-set="optional" t-value="True"/>
-                            <t t-set="autocomplete" t-value="'address-line2'"/>
-                        </t>
-                        <!-- Zip and city: siblings (the core JS reorders them
-                             per country). -->
-                        <div class="o_sc_account_pair">
-                            <t t-if="zip_before_city" t-call="bemade_sports_clinic.sc_account_input">
-                                <t t-set="fid" t-value="'o_zip'"/>
-                                <t t-set="fname" t-value="'zip'"/>
-                                <t t-set="label">Zip code</t>
-                                <t t-set="value" t-value="partner_sudo.zip"/>
-                                <t t-set="autocomplete" t-value="'postal-code'"/>
+                        <dl class="o_sc_kv" data-sc-edit-view="read"
+                            t-att-data-sc-fragment="sc_fragment_key(partner_sudo, 'account-contact')">
+                            <dt>Name</dt>
+                            <dd t-out="partner_sudo.name or '—'"/>
+                            <dt>Email</dt>
+                            <dd t-out="partner_sudo.email or '—'"/>
+                            <dt>Phone</dt>
+                            <dd t-out="partner_sudo.phone or '—'"/>
+                        </dl>
+                        <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                            <t t-call="bemade_sports_clinic.sc_account_input">
+                                <t t-set="fid" t-value="'o_name'"/>
+                                <t t-set="fname" t-value="'name'"/>
+                                <t t-set="label">Your name</t>
+                                <t t-set="value" t-value="partner_sudo.name"/>
+                                <t t-set="autocomplete" t-value="'name'"/>
                             </t>
                             <t t-call="bemade_sports_clinic.sc_account_input">
-                                <t t-set="fid" t-value="'o_city'"/>
-                                <t t-set="fname" t-value="'city'"/>
-                                <t t-set="label">City</t>
-                                <t t-set="value" t-value="partner_sudo.city"/>
-                                <t t-set="autocomplete" t-value="'address-level2'"/>
+                                <t t-set="fid" t-value="'o_email'"/>
+                                <t t-set="fname" t-value="'email'"/>
+                                <t t-set="label">Email</t>
+                                <t t-set="value" t-value="partner_sudo.email"/>
+                                <t t-set="input_type" t-value="'email'"/>
+                                <t t-set="autocomplete" t-value="'email'"/>
                             </t>
-                            <t t-if="not zip_before_city" t-call="bemade_sports_clinic.sc_account_input">
-                                <t t-set="fid" t-value="'o_zip'"/>
-                                <t t-set="fname" t-value="'zip'"/>
-                                <t t-set="label">Zip code</t>
-                                <t t-set="value" t-value="partner_sudo.zip"/>
-                                <t t-set="autocomplete" t-value="'postal-code'"/>
+                            <t t-call="bemade_sports_clinic.sc_account_input">
+                                <t t-set="fid" t-value="'o_phone'"/>
+                                <t t-set="fname" t-value="'phone'"/>
+                                <t t-set="label">Phone</t>
+                                <t t-set="value" t-value="partner_sudo.phone"/>
+                                <t t-set="input_type" t-value="'tel'"/>
+                                <t t-set="autocomplete" t-value="'tel'"/>
                             </t>
+                            <t t-call="bemade_sports_clinic.sc_account_card_actions"/>
                         </div>
-                        <div class="o_sc_account_pair">
-                            <div id="div_country" class="o_sc_field o_sc_account_field">
-                                <label class="o_sc_field_label" for="o_country_id">Country</label>
-                                <select id="o_country_id" name="country_id" autocomplete="country"
-                                        t-attf-class="o_sc_input o_sc_select #{'o_sc_account_locked' if not can_edit_country else ''}"
-                                        t-att-aria-readonly="'true' if not can_edit_country else None">
-                                    <option value="">Country…</option>
-                                    <option t-foreach="countries" t-as="c" t-att-value="c.id"
-                                            t-att-selected="c.id == (country.id if country else partner_sudo.country_id.id)"
-                                            t-att-code="c.code" t-out="c.name"/>
-                                </select>
-                                <p t-if="not can_edit_country" class="o_sc_meta">
-                                    Changing the country is not allowed once documents have been issued for your account. Please contact us for this change.
-                                </p>
+                    </section>
+
+                    <section class="o_sc_card o_sc_edit_card" data-sc-edit-card="account-address"
+                             data-sc-section="account.address">
+                        <t t-call="bemade_sports_clinic.sc_edit_card_head">
+                            <t t-set="title">Address</t>
+                            <t t-set="editable" t-value="True"/>
+                        </t>
+                        <div class="o_sc_account_address" data-sc-edit-view="read"
+                             t-att-data-sc-fragment="sc_fragment_key(partner_sudo, 'account-address')">
+                            <t t-set="sc_zip_city" t-value="' '.join(p for p in ((partner_sudo.zip, partner_sudo.city) if zip_before_city else (partner_sudo.city, partner_sudo.zip)) if p)"/>
+                            <t t-set="sc_region" t-value="', '.join(p for p in (partner_sudo.state_id.name, partner_sudo.country_id.name) if p)"/>
+                            <address t-if="partner_sudo.street or partner_sudo.street2 or sc_zip_city or sc_region" class="o_sc_account_address_lines">
+                                <span t-if="partner_sudo.street" t-out="partner_sudo.street"/>
+                                <span t-if="partner_sudo.street2" t-out="partner_sudo.street2"/>
+                                <span t-if="sc_zip_city" t-out="sc_zip_city"/>
+                                <span t-if="sc_region" t-out="sc_region"/>
+                            </address>
+                            <p t-else="" class="o_sc_meta">No address yet.</p>
+                        </div>
+                        <div class="o_sc_fields" data-sc-edit-view="edit" hidden="hidden">
+                            <t t-call="bemade_sports_clinic.sc_account_input">
+                                <t t-set="fid" t-value="'o_street'"/>
+                                <t t-set="fname" t-value="'street'"/>
+                                <t t-set="label">Street and number</t>
+                                <t t-set="value" t-value="partner_sudo.street"/>
+                                <t t-set="autocomplete" t-value="'address-line1'"/>
+                            </t>
+                            <t t-call="bemade_sports_clinic.sc_account_input">
+                                <t t-set="fid" t-value="'o_street2'"/>
+                                <t t-set="fname" t-value="'street2'"/>
+                                <t t-set="label">Apartment, suite, etc.</t>
+                                <t t-set="value" t-value="partner_sudo.street2"/>
+                                <t t-set="optional" t-value="True"/>
+                                <t t-set="autocomplete" t-value="'address-line2'"/>
+                            </t>
+                            <!-- Zip and city: siblings (the core JS reorders them
+                                 per country). -->
+                            <div class="o_sc_account_pair">
+                                <t t-if="zip_before_city" t-call="bemade_sports_clinic.sc_account_input">
+                                    <t t-set="fid" t-value="'o_zip'"/>
+                                    <t t-set="fname" t-value="'zip'"/>
+                                    <t t-set="label">Zip code</t>
+                                    <t t-set="value" t-value="partner_sudo.zip"/>
+                                    <t t-set="autocomplete" t-value="'postal-code'"/>
+                                </t>
+                                <t t-call="bemade_sports_clinic.sc_account_input">
+                                    <t t-set="fid" t-value="'o_city'"/>
+                                    <t t-set="fname" t-value="'city'"/>
+                                    <t t-set="label">City</t>
+                                    <t t-set="value" t-value="partner_sudo.city"/>
+                                    <t t-set="autocomplete" t-value="'address-level2'"/>
+                                </t>
+                                <t t-if="not zip_before_city" t-call="bemade_sports_clinic.sc_account_input">
+                                    <t t-set="fid" t-value="'o_zip'"/>
+                                    <t t-set="fname" t-value="'zip'"/>
+                                    <t t-set="label">Zip code</t>
+                                    <t t-set="value" t-value="partner_sudo.zip"/>
+                                    <t t-set="autocomplete" t-value="'postal-code'"/>
+                                </t>
                             </div>
-                            <div id="div_state" class="o_sc_field o_sc_account_field"
-                                 t-att-style="not country_states and 'display: none' or None">
-                                <label class="o_sc_field_label label-optional" for="o_state_id">State / Province</label>
-                                <select id="o_state_id" name="state_id" class="o_sc_input o_sc_select" autocomplete="address-level1">
-                                    <option value="">State / Province…</option>
-                                    <option t-foreach="country_states" t-as="s" t-att-value="s.id"
-                                            t-att-selected="s.id == (int(state_id) if state_id else partner_sudo.state_id.id)"
-                                            t-out="s.name"/>
-                                </select>
+                            <div class="o_sc_account_pair">
+                                <div id="div_country" class="o_sc_field o_sc_account_field">
+                                    <label class="o_sc_field_label" for="o_country_id">Country</label>
+                                    <select id="o_country_id" name="country_id" autocomplete="country"
+                                            t-attf-class="o_sc_input o_sc_select #{'o_sc_account_locked' if not can_edit_country else ''}"
+                                            t-att-aria-readonly="'true' if not can_edit_country else None">
+                                        <option value="">Country…</option>
+                                        <option t-foreach="countries" t-as="c" t-att-value="c.id"
+                                                t-att-selected="c.id == (country.id if country else partner_sudo.country_id.id)"
+                                                t-att-code="c.code" t-out="c.name"/>
+                                    </select>
+                                    <p t-if="not can_edit_country" class="o_sc_meta">
+                                        Changing the country is not allowed once documents have been issued for your account. Please contact us for this change.
+                                    </p>
+                                </div>
+                                <div id="div_state" class="o_sc_field o_sc_account_field"
+                                     t-att-style="not country_states and 'display: none' or None">
+                                    <label class="o_sc_field_label label-optional" for="o_state_id">State / Province</label>
+                                    <select id="o_state_id" name="state_id" class="o_sc_input o_sc_select" autocomplete="address-level1">
+                                        <option value="">State / Province…</option>
+                                        <option t-foreach="country_states" t-as="s" t-att-value="s.id"
+                                                t-att-selected="s.id == (int(state_id) if state_id else partner_sudo.state_id.id)"
+                                                t-out="s.name"/>
+                                    </select>
+                                </div>
                             </div>
+                            <t t-call="bemade_sports_clinic.sc_account_card_actions"/>
                         </div>
                     </section>
 
@@ -185,10 +212,6 @@
                     <input t-if="partner_id" type="hidden" name="partner_id" t-att-value="partner_id"/>
                     <input t-if="callback" type="hidden" name="callback" t-att-value="callback"/>
                     <input type="hidden" name="required_fields" t-att-value="'name,email'"/>
-
-                    <div class="o_sc_form_actions">
-                        <button id="save_address" type="submit" class="o_sc_btn o_sc_btn_primary">Save</button>
-                    </div>
                 </form>
             </div>
         </t>

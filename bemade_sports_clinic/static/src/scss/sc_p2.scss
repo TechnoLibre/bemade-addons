@@ -841,6 +841,65 @@ $sc-p2-laptop: 992px;
         color: var(--sc-bad);
         font-weight: 600;
     }
+
+    // Review fixes 2026-10-18 b: each chosen file is a small block — its
+    // head (name, size, « × ») then its own name / category / description
+    // (two columns when there is room, stacked on a phone).
+    .o_sc_doc_upload .o_sc_file_list {
+        gap: var(--sc-space-2);
+    }
+
+    .o_sc_doc_upload .o_sc_file {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--sc-space-2);
+        padding: var(--sc-space-2) var(--sc-space-3) var(--sc-space-3);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-md);
+    }
+
+    .o_sc_doc_upload .o_sc_file_too_large {
+        border-color: var(--sc-bad);
+    }
+
+    .o_sc_file_head {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-2);
+        min-width: 0;
+    }
+
+    .o_sc_file_fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--sc-space-2);
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .o_sc_file_field {
+        margin: 0;
+
+        .o_sc_field_label {
+            font-size: var(--sc-text-xs);
+        }
+    }
+
+    .o_sc_file_field_wide {
+        grid-column: 1 / -1;
+
+        .o_sc_textarea {
+            min-height: var(--sc-tap);
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .o_sc_file_fields {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
 }
 
 // Grouped lists (events, timesheets: « Group by », owner review 2026-10-11).
