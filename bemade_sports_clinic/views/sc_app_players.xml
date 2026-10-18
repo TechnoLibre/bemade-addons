@@ -882,10 +882,12 @@
                     </t>
                 </select>
             </div>
-            <!-- Review fixes 2026-10-18 (1018c): the shared values only while
-                 no file is listed (they pre-fill each file added); hidden once
-                 a file row exists, shown again when the list is emptied. -->
-            <div class="o_sc_doc_shared_group" data-sc-doc-shared-group="1">
+            <!-- Review fixes 2026-10-18 (1018c, owner): the shared values are
+                 never shown — filling them before picking a file was misleading,
+                 since each file row carries its own category / description. They
+                 stay as hidden defaults (« Autre », empty) that pre-fill each
+                 new row and keep the single-value POST backwards compatible. -->
+            <div class="o_sc_doc_shared_group" data-sc-doc-shared-group="1" hidden="hidden">
                 <div class="o_sc_field">
                     <label t-att-for="'%s_category' % upload_prefix" class="o_sc_field_label">Category</label>
                     <select t-att-id="'%s_category' % upload_prefix" name="category" class="o_sc_input o_sc_select"

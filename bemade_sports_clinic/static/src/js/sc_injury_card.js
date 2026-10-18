@@ -207,7 +207,8 @@ function checkFiles(form) {
     // added); once a file is listed each row carries its own values.
     const shared = form.querySelector("[data-sc-doc-shared-group]");
     if (shared) {
-        shared.hidden = files.length > 0;
+        // Owner 2026-10-18: never shown (hidden defaults only).
+        shared.hidden = true;
     }
     const text = form.querySelector(".o_sc_dropzone_text");
     if (text) {

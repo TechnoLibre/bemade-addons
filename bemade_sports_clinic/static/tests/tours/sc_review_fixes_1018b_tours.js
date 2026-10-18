@@ -65,11 +65,11 @@ tours.add("sc_1018b_player_documents", {
             run: "click",
         },
         {
-            content: "1018c: the shared fields show while empty, hide with a row, come back once emptied",
+            content: "1018c: the shared fields are never shown (empty list, a row, emptied again)",
             trigger: `${PANEL}[open] form[data-sc-doc-upload] .o_sc_dropzone`,
             run() {
                 const form = document.querySelector(FORM);
-                assert(sharedShown(), "shared fields hidden on an empty list");
+                assert(!sharedShown(), "shared fields shown on an empty list");
                 setFiles(form.querySelector('input[type="file"]'), [
                     new File(["synthetic x"], "Synthetic x.pdf", { type: "application/pdf", lastModified: 9 }),
                 ]);
@@ -77,7 +77,7 @@ tours.add("sc_1018b_player_documents", {
                 assert(!sharedShown(), "shared fields still shown with a file listed");
                 row("Synthetic x.pdf").querySelector("button[data-sc-file-remove]").click();
                 assert(rows().length === 0, "x not removed");
-                assert(sharedShown(), "shared fields not back on an empty list");
+                assert(!sharedShown(), "shared fields shown again on an emptied list");
             },
         },
         {

@@ -136,8 +136,8 @@ class TestDocPickerSharedGroup1018c(DocPicker1018bMixin, AppShellCommon):
             self.assertEqual(len(group), 1, form.get('data-sc-form'))
             self.assertEqual(sorted(group[0].xpath('.//*[@data-sc-doc-shared]/@data-sc-doc-shared')),
                              ['category', 'description'])
-            # Shown while the list is empty (the page renders it empty).
-            self.assertIsNone(group[0].get('hidden'))
+            # Owner 2026-10-18: never shown — hidden defaults only.
+            self.assertEqual(group[0].get('hidden'), 'hidden')
             # The per-file rows are NOT in the group.
             self.assertFalse(group[0].xpath('.//*[@data-sc-file-proto] | .//*[@data-sc-file-list]'))
 
