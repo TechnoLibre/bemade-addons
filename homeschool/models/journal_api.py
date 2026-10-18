@@ -97,8 +97,10 @@ class JournalAPI(models.AbstractModel):
         → what worked, ``Ce qui a mal été : …`` → what went badly, anything else → notes) or
         several ``- `` bullets at once (a whole day logged late). Today's entry grows in
         place; a past day's entry is never rewritten — the text goes to ``corrections`` as a
-        dated line. A day without an entry yet gets one holding the text (nothing to
-        correct). Returns ``{"journal_id", "day_id", "corrected"}``."""
+        dated line, unless that field is still empty (then it fills it). A day without an
+        entry yet gets one holding the text (nothing to correct). ``corrected`` is true when
+        at least one line went to ``corrections``. Returns
+        ``{"journal_id", "day_id", "corrected"}``."""
         student = self._student(student_id)
         d = self._date(date)
         text = (text or "").strip()
@@ -112,10 +114,11 @@ class JournalAPI(models.AbstractModel):
         entry = Journal.search([("day_id", "=", day.id)], limit=1)
         corrected = False
         if entry:
-            corrected = entry._is_past()
+            before = entry.corrections or ""
             for field_name, value in vals.items():
                 if value:
                     entry.append_note(field_name, value)
+            corrected = (entry.corrections or "") != before
         else:
             entry = Journal.create(dict(vals, day_id=day.id))
         return {"journal_id": entry.id, "day_id": day.id, "corrected": corrected}
@@ -410,19 +413,24 @@ class JournalAPI(models.AbstractModel):
         ``hours_rows`` (the rows ``hours.csv`` would hold for the day, the ``journee`` marker
         included), ``adult_missing`` (blocks with minutes but no adult-present minutes),
         ``journal_entry`` (an entry exists) and ``done`` = rows exist, nothing missing, an
-        entry exists. ``day_id`` is ``None`` when the day does not exist yet."""
+        entry exists. ``empty`` = the day exists with no hour-bearing block and no entry
+        (``journal_state`` ``empty``): nothing to close, so ``done`` is true and the
+        household tool never reports it INCOMPLETE. ``day_id`` is ``None`` when the day does
+        not exist yet."""
         student = self._student(student_id)
         d = self._date(date)
         day = self.env["homeschool.day"].search([("student_id", "=", student.id), ("date", "=", d)], limit=1)
         if not day:
-            return {"day_id": None, "hours_rows": 0, "adult_missing": 0, "journal_entry": False, "done": False}
+            return {"day_id": None, "hours_rows": 0, "adult_missing": 0, "journal_entry": False, "empty": False, "done": False}
         hours_rows = len(self.env["homeschool.exporter"]._hours_rows(day))
         adult_missing = len(day.block_ids.filtered("adult_missing"))
         journal_entry = bool(day.journal_ids)
+        empty = day.journal_state == "empty"
         return {
             "day_id": day.id,
             "hours_rows": hours_rows,
             "adult_missing": adult_missing,
             "journal_entry": journal_entry,
-            "done": bool(hours_rows and not adult_missing and journal_entry),
+            "empty": empty,
+            "done": bool(empty or (hours_rows and not adult_missing and journal_entry)),
         }
