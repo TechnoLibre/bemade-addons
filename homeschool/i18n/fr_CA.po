@@ -1058,6 +1058,11 @@ msgid "Duration Hours"
 msgstr "Durée (heures)"
 
 #. module: homeschool
+#: model:ir.model.fields.selection,name:homeschool.selection__homeschool_day__journal_state__empty
+msgid "Empty"
+msgstr "Vide"
+
+#. module: homeschool
 #: model:ir.model.fields,help:homeschool.field_homeschool_block_template__student_id
 msgid "Empty = default grid for every student of the family."
 msgstr "Vide = grille par défaut pour tous les élèves de la famille."
@@ -1077,6 +1082,12 @@ msgstr "Anglais"
 #: model:ir.model.fields.selection,name:homeschool.selection__homeschool_item__priorite__enrichissement
 msgid "Enrichment"
 msgstr "Enrichissement"
+
+#. module: homeschool
+#. odoo-python
+#: code:addons/homeschool/wizards/close_day_wizard.py:0
+msgid "Enter the minutes (total and with an adult), or click « Skip this block »."
+msgstr "Inscris les minutes (total et avec un adulte), ou clique « Sauter ce bloc »."
 
 #. module: homeschool
 #: model:ir.model.fields,field_description:homeschool.field_homeschool_reading_book__entry_ids
@@ -2031,6 +2042,12 @@ msgstr "Notes (journée)"
 #: model:ir.model.fields,field_description:homeschool.field_homeschool_review__notes_html
 msgid "Notes Html"
 msgstr "Notes (HTML)"
+
+#. module: homeschool
+#. odoo-python
+#: code:addons/homeschool/wizards/close_day_wizard.py:0
+msgid "Nothing to close: no incomplete day."
+msgstr "Rien à fermer : aucune journée incomplète."
 
 #. module: homeschool
 #. odoo-python

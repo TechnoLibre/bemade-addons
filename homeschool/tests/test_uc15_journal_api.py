@@ -32,8 +32,9 @@ Acceptance criteria
    ``indicateurs.csv`` row does (one value per indicator/student/date, updated in place);
    an unknown code or a missing value is a ``UserError``, never a silent skip.
 5. ``status(student_id, date)`` → ``{"hours_rows", "adult_missing", "journal_entry",
-   "done"}`` with the rule of ``journal.py status``: rows exist, no adult minutes missing,
-   a journal entry exists.
+   "empty", "done"}`` with the rule of ``journal.py status``: rows exist, no adult minutes
+   missing, a journal entry exists. An existing day with no hour-bearing block and no entry
+   is ``empty`` and counts as ``done`` (never reported INCOMPLETE).
 6. Managers only: portal users, resource users and plain internal users get
    ``AccessError`` on every method; a manager of another family gets ``AccessError`` on a
    student he cannot read; an unknown student id is a ``UserError``.
@@ -332,7 +333,7 @@ class TestJournalAPI(HomeschoolCase):
     # ------------------------------------------------------------------
     def test_status_transitions(self):
         d = "2026-03-09"
-        empty = {"hours_rows": 0, "adult_missing": 0, "journal_entry": False, "done": False}
+        empty = {"hours_rows": 0, "adult_missing": 0, "journal_entry": False, "empty": False, "done": False}
         self.assertEqual({k: self.api.status(self.student.id, d)[k] for k in empty}, empty)
         self.assertIsNone(self.api.status(self.student.id, d)["day_id"])
         self.api.log_hours(self.student.id, d, "bloc-fle", "Segment 1 French", "FLE", 45, None)
@@ -358,6 +359,24 @@ class TestJournalAPI(HomeschoolCase):
         self.api.log_note(self.student.id, alone, "nothing recorded")
         s = self.api.status(self.student.id, alone)
         self.assertEqual((s["hours_rows"], s["journal_entry"], s["done"]), (0, True, False))
+
+    def test_status_of_an_empty_day_is_not_incomplete(self):
+        """A past day that exists with no hour-bearing block and no journal entry (opened by
+        mistake, nothing planned) is ``empty``: ``done`` is true so the household's
+        ``journal.py status`` never reports it INCOMPLETE; a day that does not exist keeps
+        ``done`` false."""
+        d = self.today - timedelta(days=1)
+        day = self.make_day(d)
+        self.make_block(day, "Opening", 10, 1, kind="opening")
+        s = self.api.status(self.student.id, fields.Date.to_string(d))
+        self.assertEqual((s["day_id"], s["hours_rows"], s["journal_entry"], s["empty"], s["done"]), (day.id, 0, False, True, True))
+        self.assertEqual(day.journal_state, "empty")
+        # one hour-bearing block planned: the day is no longer empty
+        self.make_block(day, "Segment", 45, 2, subject_id=self.fle.id)
+        s = self.api.status(self.student.id, fields.Date.to_string(d))
+        self.assertEqual((s["empty"], s["done"]), (False, False))
+        missing = self.api.status(self.student.id, fields.Date.to_string(d - timedelta(days=1)))
+        self.assertEqual((missing["day_id"], missing["empty"], missing["done"]), (None, False, False))
 
     # ------------------------------------------------------------------
     # 6. access

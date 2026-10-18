@@ -13,7 +13,7 @@ Acceptance criteria
 from datetime import date
 
 from odoo import fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.misc import mute_logger
 
 from .common import HomeschoolCase
@@ -85,3 +85,21 @@ class TestI18n(HomeschoolCase):
         self.assertEqual(day.with_context(lang="en_US").display_name, "Mon 2 Mar")
         self.assertEqual(day.with_context(lang="fr_CA").display_name, "lun. 2 mars")
         self.assertEqual(self.fr["homeschool.day"].browse(day.id).display_name, "lun. 2 mars")
+
+    def test_close_day_messages(self):
+        """« Fermer la journée »: the blank-minutes refusal, the menu's « nothing to close »
+        and the « empty » day state, in French."""
+        self.assertEqual(dict(self.fr["homeschool.day"]._fields["journal_state"]._description_selection(self.fr))["empty"], "Vide")
+        today = fields.Date.context_today(self.Day)
+        day = self.make_day(today)
+        self.make_block(day, "Segment", 45, 1, subject_id=self.math.id)
+        Wizard = self.fr["homeschool.close.day.wizard"]
+        wiz = Wizard.create({"day_id": day.id})
+        with self.assertRaises(UserError) as cm:
+            wiz.action_next()
+        self.assertEqual(str(cm.exception), "Inscris les minutes (total et avec un adulte), ou clique « Sauter ce bloc ».")
+        day.unlink()
+        self.Day.search([("student_id", "=", self.student.id)]).unlink()
+        with self.assertRaises(UserError) as cm:
+            Wizard.action_open_today()
+        self.assertEqual(str(cm.exception), "Rien à fermer : aucune journée incomplète.")
