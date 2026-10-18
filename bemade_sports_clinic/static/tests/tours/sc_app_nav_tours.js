@@ -49,7 +49,7 @@ tours.add("sc_1579_back_came_from", {
         },
         {
             content: "Player page: back's href is the declared parent (the players list)",
-            trigger: '.o_sc_app[data-sc-top="0"] a.o_sc_back[href="/my/players"]',
+            trigger: '.o_sc_app[data-sc-top="0"] a.o_sc_back[href$="/my/players"]',
             run() {
                 phoneChrome();
                 document.querySelector("a.o_sc_back").click();
@@ -206,7 +206,7 @@ tours.add("sc_1579_laptop_trail", {
         },
         {
             content: "Team page: its trail is « Teams »",
-            trigger: 'nav.o_sc_crumbs ol li a[href="/my/teams"]',
+            trigger: 'nav.o_sc_crumbs ol li a[href$="/my/teams"]',
             run() {
                 assert(window.location.pathname === "/my/team", window.location.href);
             },

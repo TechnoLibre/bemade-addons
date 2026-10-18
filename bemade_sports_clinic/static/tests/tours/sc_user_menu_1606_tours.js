@@ -134,9 +134,9 @@ function menuSteps(where) {
             run() {
                 assert(document.querySelector(`${popup} a[href$="/my/app/settings"][aria-current="page"]`),
                     "« Paramètres » not marked current");
-                assert(document.querySelector('main a[href="/my/account"]'), "« Mon compte » missing");
-                assert(document.querySelector('main a[href="/my/security"]'), "« Sécurité » missing");
-                assert(!document.querySelector('main a[href="/my/home?classic=1"]'), "classic portal link still shown");
+                assert(document.querySelector('main a[href$="/my/account"]'), "« Mon compte » missing");
+                assert(document.querySelector('main a[href$="/my/security"]'), "« Sécurité » missing");
+                assert(!document.querySelector('main a[href$="/my/home?classic=1"]'), "classic portal link still shown");
             },
         },
         {

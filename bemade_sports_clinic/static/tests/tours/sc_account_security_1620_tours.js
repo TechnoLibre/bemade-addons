@@ -93,7 +93,7 @@ tours.add("sc_1620_account", {
     steps: () => [
         {
             content: "Paramètres → Mon compte",
-            trigger: '#sc_account a[href="/my/account"]',
+            trigger: '#sc_account a[href$="/my/account"]',
             run(helpers) {
                 reloadIfRestored();
                 return helpers.click();
@@ -236,7 +236,7 @@ tours.add("sc_1620_account", {
         },
         {
             content: "On Paramètres",
-            trigger: '#sc_account a[href="/my/security"]',
+            trigger: '#sc_account a[href$="/my/security"]',
         },
     ],
 });
@@ -268,7 +268,7 @@ tours.add("sc_1620_security", {
     steps: () => [
         {
             content: "Paramètres → Sécurité",
-            trigger: '#sc_account a[href="/my/security"]',
+            trigger: '#sc_account a[href$="/my/security"]',
             run(helpers) {
                 reloadIfRestored();
                 return helpers.click();
@@ -339,7 +339,7 @@ tours.add("sc_1620_security", {
         },
         {
             content: "On Paramètres",
-            trigger: '#sc_account a[href="/my/account"]',
+            trigger: '#sc_account a[href$="/my/account"]',
         },
     ],
 });
