@@ -328,6 +328,11 @@ PAGES = {page.key: page for page in (
     # (sc_app_nav.js), else the home.
     _static('sc_app_settings', '/my/app/settings', _lt('Settings'),
             parent=lambda v: ('sc_app_home', {})),
+    # Task 1620: the core « Mon compte » / « Sécurité » routes rendered in
+    # the shell — sub-pages of « Paramètres ». No path on purpose: they are
+    # never a return_url / « came from » target (test_app_shell_nav_1579).
+    Page('sc_app_account', parent=lambda v: ('sc_app_settings', {})),
+    Page('sc_app_security', parent=lambda v: ('sc_app_settings', {})),
     # -- teams ---------------------------------------------------------
     Page('sc_app_team', path=r'/my/team', from_url=_team_from,
          url=lambda v: '/my/team?team_id=%s%s' % (

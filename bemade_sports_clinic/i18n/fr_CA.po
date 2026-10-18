@@ -136,6 +136,18 @@ msgid "1 waiting"
 msgstr "1 en attente"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "1. Enter your password to confirm this is your account"
+msgstr ""
+"1. Entrez votre mot de passe pour confirmer qu'il s'agit bien de votre "
+"compte"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "2. Type your login to confirm:"
+msgstr "2. Tapez votre identifiant pour confirmer :"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
 msgid "<i class=\"fa fa-heartbeat me-1\" aria-hidden=\"true\"/>By status"
 msgstr "<i class=\"fa fa-heartbeat me-1\" aria-hidden=\"true\"/>Statut"
@@ -144,6 +156,16 @@ msgstr "<i class=\"fa fa-heartbeat me-1\" aria-hidden=\"true\"/>Statut"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
 msgid "<i class=\"fa fa-sort-numeric-asc me-1\" aria-hidden=\"true\"/>By number"
 msgstr "<i class=\"fa fa-sort-numeric-asc me-1\" aria-hidden=\"true\"/>Numéro"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "<option value=\"\">Country…</option>"
+msgstr "<option value=\"\">Pays…</option>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "<option value=\"\">State / Province…</option>"
+msgstr "<option value=\"\">Province / État…</option>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
@@ -3080,6 +3102,11 @@ msgid "Added By"
 msgstr "Ajouté par"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Added on"
+msgstr "Ajoutée le"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_activity_add_header
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_create_activity
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_edit_activity
@@ -3088,6 +3115,7 @@ msgstr "Informations supplémentaires ou instructions"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_player_injuries
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Address"
 msgstr "Adresse"
 
@@ -3386,6 +3414,11 @@ msgstr "Anonymisé (Loi 25)"
 #: code:addons/bemade_sports_clinic/models/res_partner.py:0
 msgid "Anonymized Contact %s"
 msgstr ""
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Apartment, suite, etc."
+msgstr "Appartement, bureau, etc."
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,help:bemade_sports_clinic.field_sports_patient_injury__note_history_ids
@@ -3781,6 +3814,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_player_removal_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -3851,6 +3885,11 @@ msgid "Change Items"
 msgstr "Éléments de changement"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Change password"
+msgstr "Changer le mot de passe"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_team_digest__change_count
 msgid "Changes"
 msgstr "Changements"
@@ -3867,6 +3906,24 @@ msgstr "Modifications appliquées."
 msgid ""
 "Changes over the last %(hours)s h / Changements des dernières %(hours)s h."
 msgstr ""
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid ""
+"Changing the VAT number is not allowed once documents have been issued for "
+"your account. Please contact us for this change."
+msgstr ""
+"Le numéro de taxe ne peut plus être modifié une fois que des documents ont "
+"été émis pour votre compte. Communiquez avec nous pour ce changement."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid ""
+"Changing the country is not allowed once documents have been issued for your"
+" account. Please contact us for this change."
+msgstr ""
+"Le pays ne peut plus être modifié une fois que des documents ont été émis "
+"pour votre compte. Communiquez avec nous pour ce changement."
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,help:bemade_sports_clinic.field_res_partner__is_venue
@@ -3891,6 +3948,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_venue_sheet
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "City"
 msgstr "Ville"
 
@@ -4059,6 +4117,7 @@ msgstr "Les cliniques sont réservées aux thérapeutes."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_my_team_players
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_sheet
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
 msgid "Close"
 msgstr "Fermer"
 
@@ -4097,6 +4156,16 @@ msgstr ""
 "(#rrggbb). Choisie automatiquement; modifiez-la pour la remplacer."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Company"
+msgstr "Entreprise"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Company name"
+msgstr "Nom de l'entreprise"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.activity_list_table
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_activity_detail
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_sheets
@@ -4124,6 +4193,11 @@ msgstr "Paramètres de configuration"
 #: code:addons/bemade_sports_clinic/static/src/js/sc_clinic_worklist.xml:0
 msgid "Confirm"
 msgstr "Confirmer"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Confirm the new password"
+msgstr "Confirmer le nouveau mot de passe"
 
 #. module: bemade_sports_clinic
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__sports_event__state__confirmed
@@ -4181,6 +4255,11 @@ msgid "Contact archived / no active user: nothing materialized."
 msgstr "Contact archivé / aucun utilisateur actif : rien de matérialisé."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Contact details"
+msgstr "Coordonnées"
+
+#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/controllers/team_staff_portal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_patient_view_form
@@ -4206,6 +4285,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__country_id
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Country"
 msgstr "Pays"
 
@@ -4478,6 +4558,11 @@ msgid "Created on"
 msgstr "Créé le"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Current password"
+msgstr "Mot de passe actuel"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_timesheet__customer_invoiced_complete
 msgid "Customer Invoiced Complete"
 msgstr "Facturation client complétée"
@@ -4486,6 +4571,34 @@ msgstr "Facturation client complétée"
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_invoicing_wizard__customer_sale_order_id
 msgid "Customer Quotation"
 msgstr "Soumission client"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Delete account"
+msgstr "Supprimer le compte"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Delete your account?"
+msgstr "Supprimer votre compte?"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Developer API keys"
+msgstr "Clés API de développeur"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Disable two-factor authentication"
+msgstr "Désactiver l'authentification à deux facteurs"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid ""
+"Disables your account: you can no longer sign in. This cannot be undone."
+msgstr ""
+"Désactive votre compte : vous ne pourrez plus vous connecter. Cette action "
+"est irréversible."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
@@ -4578,6 +4691,11 @@ msgid "Edit the note"
 msgstr "Modifier la note"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Enable two-factor authentication"
+msgstr "Activer l'authentification à deux facteurs"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 msgid "Event End"
 msgstr "Fin de l'événement"
@@ -4604,6 +4722,11 @@ msgstr "Événement créé."
 #: code:addons/bemade_sports_clinic/controllers/events_portal.py:0
 msgid "Event updated successfully!"
 msgstr "Événement mis à jour!"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Expiration date"
+msgstr "Date d'expiration"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_note_history_fragment
@@ -4876,8 +4999,10 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_event_view_form_calendar_popup
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
 msgid "Description"
-msgstr ""
+msgstr "Description"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_invoicing_wizard_form
@@ -5257,6 +5382,7 @@ msgstr "Admissible"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_contact_fields
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Email"
 msgstr "Courriel"
 
@@ -7005,6 +7131,11 @@ msgid "Live"
 msgstr "En direct"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Log out from all devices"
+msgstr "Se déconnecter de tous les appareils"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sports_team_view_form
 msgid "Manage at the organization"
 msgstr "Gérer à l'organisation"
@@ -7370,6 +7501,11 @@ msgid "Name of the sports event"
 msgstr "Nom de l'événement sportif"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "New API key"
+msgstr "Nouvelle clé API"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.activity_list_table
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_sheets
 msgid "New Due Date"
@@ -7402,6 +7538,11 @@ msgstr "Nouvel événement"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_card_injury_detail
 msgid "New injury"
 msgstr "Nouvelle blessure"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "New password"
+msgstr "Nouveau mot de passe"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
@@ -7600,10 +7741,66 @@ msgid "No changes"
 msgstr "Aucun changement"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Put my email and phone on a block list so I am never contacted again"
+msgstr ""
+"Inscrire mon courriel et mon téléphone sur une liste de blocage pour ne plus"
+" jamais être contacté"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Remove this device"
+msgstr "Retirer cet appareil"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Revoke all devices"
+msgstr "Révoquer tous les appareils"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Sessions"
+msgstr "Sessions"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_security_password
+msgid "Show password"
+msgstr "Afficher le mot de passe"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Signs you out everywhere you are signed in, this device included."
+msgstr "Vous déconnecte partout où vous êtes connecté, cet appareil compris."
+
+#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/models/sports_team_digest.py:0
 msgid "Snapshot of %(date)s%(tz)s — changes over the last %(hours)s h"
 msgstr "Instantané du %(date)s%(tz)s — changements des dernières %(hours)s h"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "State / Province"
+msgstr "Province / État"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Street and number"
+msgstr "Rue et numéro"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "The VAT number can only be updated on the company account."
+msgstr ""
+"Le numéro de taxe ne peut être modifié que sur le compte de l'entreprise."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid ""
+"The company name and VAT number can only be updated on your main account."
+msgstr ""
+"Le nom de l'entreprise et le numéro de taxe ne peuvent être modifiés que sur"
+" votre compte principal."
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -8710,6 +8907,7 @@ msgstr "Matériel personnel utilisé — %(name)s (%(date)s)"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_edit
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Phone"
 msgstr "Téléphone"
 
@@ -10209,6 +10407,7 @@ msgstr "Sam"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_contact_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_sheets
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -10259,6 +10458,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_injury_note_history__scope
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_staff_grant__scope
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_note_history
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
 msgid "Scope"
 msgstr "Portée"
 
@@ -12401,9 +12601,34 @@ msgstr ""
 " terminent ou sont annulés."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Trusted devices"
+msgstr "Appareils de confiance"
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_event_recurrence_wizard__by_tu
 msgid "Tue"
 msgstr "Mar"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Two-factor authentication"
+msgstr "Authentification à deux facteurs"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Two-factor authentication is enabled."
+msgstr "L'authentification à deux facteurs est activée."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid ""
+"Two-factor authentication is not enabled. With it, signing in also asks for "
+"a code from an app on your phone."
+msgstr ""
+"L'authentification à deux facteurs n'est pas activée. Avec elle, la "
+"connexion demande aussi un code fourni par une application sur votre "
+"téléphone."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_notepad
@@ -12424,6 +12649,11 @@ msgstr "Type d'exception de l'activité enregistrée."
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_patient_combo
 msgid "Type to filter…"
 msgstr "Filtrer…"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Type your login exactly as shown above."
+msgstr "Tapez votre identifiant exactement comme indiqué ci-dessus."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_detail
@@ -13058,6 +13288,11 @@ msgid "Write an announcement for all team staff…"
 msgstr "Rédiger une annonce pour tout le personnel de l'équipe…"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Wrong password."
+msgstr "Mot de passe erroné."
+
+#. module: bemade_sports_clinic
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__sports_patient__match_status__yes
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__sports_patient__practice_status__yes
 #: model:ir.model.fields.selection,name:bemade_sports_clinic.selection__sports_patient_injury__parental_consent__yes
@@ -13399,10 +13634,25 @@ msgid "Your Teams"
 msgstr "Vos équipes"
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid ""
+"Your account will be disabled: you will no longer be able to sign in. This "
+"cannot be undone."
+msgstr ""
+"Votre compte sera désactivé : vous ne pourrez plus vous connecter. Cette "
+"action est irréversible."
+
+#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/models/res_users.py:0
 msgid "Your daily team briefing / Votre sommaire quotidien d'équipe:"
 msgstr ""
+
+#. module: bemade_sports_clinic
+#. odoo-python
+#: code:addons/bemade_sports_clinic/controllers/app_shell_account.py:0
+msgid "Your details have been saved."
+msgstr "Vos coordonnées ont été enregistrées."
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.clinic_kiosk_form
@@ -13416,6 +13666,16 @@ msgstr "Votre prénom, votre nom et votre date de naissance servent uniquement �
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_created
 msgid "Your injury report has been successfully submitted."
 msgstr "Votre rapport de blessure a été soumise avec succès."
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Your name"
+msgstr "Votre nom"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
+msgid "Your password has been changed."
+msgstr "Votre mot de passe a été changé."
 
 #. module: bemade_sports_clinic
 #. odoo-python
@@ -13466,6 +13726,11 @@ msgstr "Code postal"
 #. module: bemade_sports_clinic
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__zip
 msgid "Zip"
+msgstr "Code postal"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "Zip code"
 msgstr "Code postal"
 
 #. module: bemade_sports_clinic
@@ -13822,6 +14087,7 @@ msgstr "Plus"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_settings
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "My account"
 msgstr "Mon compte"
 
@@ -13926,6 +14192,7 @@ msgstr "Rechercher un joueur"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_settings
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
 msgid "Security"
 msgstr "Sécurité"
 

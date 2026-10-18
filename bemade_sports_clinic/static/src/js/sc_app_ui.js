@@ -18,7 +18,8 @@
  *   [data-sc-draft-clear="<key prefix>"] drops those drafts on load (the
  *   landing page of a created injury / added note); a legacy #fragment
  *   (#notes, #contacts… from the POST round-trips) opens the matching tab
- *   (data-sc-tab or one of data-sc-tab-aliases).
+ *   (data-sc-tab or one of data-sc-tab-aliases);
+ * - task 1620: a sheet marked data-sc-sheet-open-on-load opens on load.
  */
 import { _t } from "@web/core/l10n/translation";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
@@ -448,6 +449,12 @@ function init() {
     const hash = (window.location.hash || "").slice(1).split("?")[0];
     if (hash && /^[\w-]+$/.test(hash)) {
         activateTab(root, hash);
+    }
+    // Task 1620: a sheet the server answered an error in (« Supprimer le
+    // compte » with a wrong password) opens again on load.
+    const reopen = root.querySelector("dialog.o_sc_sheet[data-sc-sheet-open-on-load]");
+    if (reopen) {
+        openSheet(reopen.id);
     }
 }
 if (document.readyState === "loading") {

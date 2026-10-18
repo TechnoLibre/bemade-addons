@@ -18,7 +18,7 @@
 #
 {
     'name': 'Sports Clinic Management',
-    'version': "19.0.1.86.0",
+    'version': "19.0.1.87.0",
     'summary': 'Comprehensive sports medicine clinic management with portal access and activity tracking.',
     'description': """
 Sports Clinic Management System
@@ -228,6 +228,7 @@ sign-in kiosk uses the brand tokens and self-hosted Teko / DM Sans fonts
         "views/sc_components.xml",
         "views/sc_app_layout.xml",
         "views/sc_app_pages.xml",
+        "views/sc_app_account.xml",
         # Task 1542: team page, install page, offline page.
         "views/sc_app_team.xml",
         # Task 1539: P2 — players, injuries, notes, documents, activities.
@@ -339,6 +340,8 @@ sign-in kiosk uses the brand tokens and self-hosted Teko / DM Sans fonts
             "bemade_sports_clinic/static/src/js/sc_activities.js",
             # Task 1540: P3 styles, the live clinic waiting list.
             "bemade_sports_clinic/static/src/scss/sc_p3.scss",
+            # Task 1620: « Mon compte » / « Sécurité » in the shell.
+            "bemade_sports_clinic/static/src/scss/sc_account.scss",
             "bemade_sports_clinic/static/src/js/sc_clinic_worklist.js",
             "bemade_sports_clinic/static/src/js/sc_clinic_worklist.xml",
             # Review 2026-09-29: live counters (the home's clinics-today chip).

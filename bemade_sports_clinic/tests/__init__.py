@@ -205,3 +205,5 @@ from . import test_timesheet_filters_open_tours_1617
 from . import test_back_arrow_tours_1618
 from . import test_review_fixes_1018
 from . import test_review_fixes_tours_1018
+from . import test_account_security_shell_1620
+from . import test_account_security_tours_1620
