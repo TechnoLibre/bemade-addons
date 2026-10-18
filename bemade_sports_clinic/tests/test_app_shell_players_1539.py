@@ -100,7 +100,8 @@ class TestAppShellPlayersList1539(PlayersCommon1539):
         self.assertFalse(tree.xpath('//*[@data-sc-action="players.create"]'))
         self._login_tp()
         _text, tree = self._get('/my/players')
-        action = tree.xpath('//header//a[@data-sc-action="players.create"]')
+        # Task 1607 (deliberate update): « + Ajouter » is in the list header.
+        action = tree.xpath('//div[contains(@class, "o_sc_list_header")]//a[@data-sc-action="players.create"]')
         self.assertEqual(action[0].get('href'), '/my/player/create')
 
     def test_filters_keep_their_params(self):

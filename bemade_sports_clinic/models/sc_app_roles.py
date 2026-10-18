@@ -199,6 +199,8 @@ VISIBILITY_REGISTRY = {
     'players.add_to_team': {'include': TP},
     'patient.status.edit': {'include': TP},
     'patient.training.edit': {'include': TP},
+    # Task 1603: « Retour prévu » in the player header.
+    'patient.return.edit': {'include': TP},
     'patient.edit.tp_fields': {'include': TP},
     # Owner decision 2026-10-10: coaches see and edit emergency contacts too
     # (their ACL / record rules already allowed it; deleting stays TP).
@@ -250,3 +252,34 @@ def can(key, roles, is_system=False):
     if is_system and spec.get('system'):
         return not frozenset(roles or ()) & frozenset(spec.get('exclude') or ())
     return is_visible(spec, roles)
+
+
+# ---------------------------------------------------------------------------
+# Role label (task 1606: the head of the user menu)
+# ---------------------------------------------------------------------------
+# Most significant first, per family: the menu shows the user's top
+# therapist-side role and top coach-side role (« Thérapeute · Entraîneur »
+# for a coach who is also a therapist). Reserved roles get a label when they
+# get a group.
+# Two parallel tuples (no string literal next to an _lt() call: babel's term
+# extractor would pick it up, see the placements above).
+_ROLE_LABEL_KEYS = ('clinic_admin', 'head_therapist', 'doctor', 'therapist',
+                    'head_coach', 'coach')
+_ROLE_LABEL_TERMS = (
+    _lt('Clinic administrator'), _lt('Head Therapist'), _lt('Doctor'), _lt('Therapist'),
+    _lt('Head Coach'), _lt('Coach'),
+)
+ROLE_LABELS = dict(zip(_ROLE_LABEL_KEYS, _ROLE_LABEL_TERMS))
+ROLE_LABEL_FAMILIES = (_ROLE_LABEL_KEYS[:4], _ROLE_LABEL_KEYS[4:])
+
+
+def role_label(roles):
+    """The role line of the user menu (translated), or '' for none."""
+    roles = frozenset(roles or ())
+    labels = []
+    for family in ROLE_LABEL_FAMILIES:
+        for role in family:
+            if role in roles:
+                labels.append(str(ROLE_LABELS[role]))
+                break
+    return ' · '.join(labels)

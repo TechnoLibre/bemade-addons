@@ -312,16 +312,32 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
 
     @staticmethod
     def _attendance_counts_line(counts):
-        """One translatable sentence for the counts (python-side on purpose:
-        a QWeb text node mixed with four t-esc's would extract as four
-        fragments no translator can act on)."""
-        line = _(
-            "%(expected)s expected · %(arrived)s arrived · %(seen)s seen · %(no_show)s no-show",
-            **counts)
+        """The counts, one translatable fragment per count (python-side on
+        purpose: QWeb text mixed with t-esc's extracts as fragments no
+        translator can act on). Task 1612: each count agrees in number —
+        Odoo has no plural forms, so 0, 1 and N are three msgids each
+        (fr_CA: « 0 vu », « 1 arrivé », « 2 arrivés »)."""
+        def part(count, zero, one, many):
+            if count == 0:
+                return zero
+            if count == 1:
+                return one
+            return many % count
+
+        parts = [
+            part(counts.get('expected', 0), _("0 expected"), _("1 expected"),
+                 _("%s expected")),
+            part(counts.get('arrived', 0), _("0 arrived"), _("1 arrived"),
+                 _("%s arrived")),
+            part(counts.get('seen', 0), _("0 seen"), _("1 seen"), _("%s seen")),
+            part(counts.get('no_show', 0), _("0 no-shows"), _("1 no-show"),
+                 _("%s no-shows")),
+        ]
         if counts.get('unregistered'):
             # #1418: appended only when there is something to say.
-            line += ' · ' + _("%(unregistered)s unregistered", **counts)
-        return line
+            parts.append(part(counts['unregistered'], '', _("1 unregistered"),
+                              _("%s unregistered")))
+        return ' · '.join(parts)
 
     # ------------------------------------------------------------------
     # portal home counter
@@ -1017,9 +1033,11 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'invalid_date': env._("Please enter a valid date."),
             'injury_visibility': env._("Please choose whether coaches can see this injury."),
             'injury_diagnosis': env._("Please enter a diagnosis."),
-            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its card."),
         }.get(kw.get('error'))
-        return {'success': success, 'error': error}
+        # Task 1616: the dossier's injury cards (documents, deletion).
+        card = AppShellMixin._sc_injury_card_flash(kw)
+        return {'success': success or card['success'], 'error': error or card['error']}
 
     def _sc_clinic_values(self, event, values, kw):
         """/my/clinic/<id> in the shell: phone = two tabs (waiting list ·
@@ -1075,10 +1093,14 @@ class ClinicPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         # of its own — task 1409), in the clinic context.
         injury_clocks = self._sc_activity_clocks(current, lambda i: (
             '/my/player?player_id=%s%s&tab=activities' % (i.patient_id.id, values['dossier_ctx_qs'])))
+        # Task 1616: the cards' Documents (one query) and their own address.
+        injury_documents = self._sc_injury_card_documents(current)
+        dossier_url = '/my/clinic/%s?patient=%s&tab=dossier' % (event.id, selected.id) if selected else None
         injury_rows = [
             self._sc_injury_card_row(
                 injury, values['dossier_ctx_qs'], is_tp, tp_view,
-                opened_id=opened_id, created_id=created_id, clocks=injury_clocks)
+                opened_id=opened_id, created_id=created_id, clocks=injury_clocks,
+                list_url=dossier_url, anchor_prefix='clinic-injury-', documents=injury_documents)
             for injury in current]
         staff = event_sudo.assigned_staff_ids
         return {

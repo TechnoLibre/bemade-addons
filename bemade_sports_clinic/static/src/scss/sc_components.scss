@@ -253,39 +253,6 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         }
     }
 
-    // App-bar primary action: a compact « + » on phones so the title keeps
-    // the room (the label squeezed « Shawinigan… » to « SH… »); icon +
-    // label from laptop width. The label stays the accessible name.
-    .o_sc_appbar_action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        flex: none;
-        min-width: var(--sc-tap);
-        min-height: var(--sc-tap);
-        padding: 0 10px;
-
-        .o_sc_icon {
-            width: 20px;
-            height: 20px;
-        }
-    }
-
-    .o_sc_appbar_action_label {
-        display: none;
-    }
-
-    @media (min-width: $sc-laptop) {
-        .o_sc_appbar_action {
-            padding: 0 14px;
-        }
-
-        .o_sc_appbar_action_label {
-            display: inline;
-        }
-    }
-
     @media (min-width: $sc-laptop) {
         .o_sc_main {
             margin-left: var(--sc-rail-width);
@@ -316,8 +283,10 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
             padding-right: var(--sc-space-5);
         }
 
-        // Laptop: the trail replaces the back chevron and the context line.
-        .o_sc_back,
+        // Laptop: the trail replaces the context line. Task 1618 (owner
+        // review 2026-10-18): the back chevron ALWAYS shows on a laptop
+        // sub-page, left of the title next to the trail (back = the
+        // previous in-app page, like the phone, else the parent).
         .o_sc_appbar_context {
             display: none;
         }
@@ -395,16 +364,49 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         }
     }
 
-    .o_sc_rail_me {
+    // Task 1606: the user menu. The rail footer (laptop) and the app-bar
+    // avatar (phone) each anchor their own popup.
+    .o_sc_user_menu {
+        position: relative;
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_rail {
         margin-top: auto;
+        border-top: 1px solid var(--sc-line);
+        padding-top: 6px;
+    }
+
+    .o_sc_rail_me {
+        appearance: none;
+        width: 100%;
+        border: 0;
+        background: transparent;
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 10px 12px;
-        border-top: 1px solid var(--sc-line);
+        min-height: var(--sc-tap);
+        border-radius: var(--sc-radius-sm);
+        font: inherit;
         font-size: var(--sc-text-sm);
         color: var(--sc-bar-fg-2);
+        text-align: left;
+        cursor: pointer;
         min-width: 0;
+
+        > .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            margin-left: auto;
+            flex: none;
+        }
+
+        &:hover,
+        &[aria-expanded="true"] {
+            background: var(--sc-hover);
+            color: var(--sc-bar-fg);
+        }
     }
 
     .o_sc_rail_me_name {
@@ -412,6 +414,142 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .o_sc_user_menu_bar {
+        flex: none;
+    }
+
+    .o_sc_appbar_me .o_sc_avatar {
+        width: 30px;
+        height: 30px;
+        font-size: var(--sc-text-xs);
+    }
+
+    .o_sc_appbar_me[aria-expanded="true"] .o_sc_avatar {
+        box-shadow: 0 0 0 2px var(--sc-bar-active);
+    }
+
+    .o_sc_user_menu_popup {
+        position: absolute;
+        z-index: 40;
+        min-width: 220px;
+        max-width: calc(100vw - 24px);
+        padding: 6px;
+        background: var(--sc-surface);
+        color: var(--sc-fg);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-md);
+        box-shadow: var(--sc-shadow);
+        text-transform: none;
+        letter-spacing: normal;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    // Laptop: opens upwards over the rail, as wide as the footer.
+    .o_sc_user_menu_rail .o_sc_user_menu_popup {
+        bottom: calc(100% + 6px);
+        left: 0;
+        right: 0;
+    }
+
+    // Phone: drops down from the avatar, right-aligned with the bar.
+    .o_sc_user_menu_bar .o_sc_user_menu_popup {
+        top: calc(100% + 6px);
+        right: 0;
+    }
+
+    .o_sc_user_menu_head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid var(--sc-line);
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_who {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .o_sc_user_menu_name,
+    .o_sc_user_menu_role {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_user_menu_name {
+        font-weight: 600;
+        font-size: var(--sc-text-sm);
+    }
+
+    .o_sc_user_menu_role {
+        font-size: var(--sc-text-xs);
+        color: var(--sc-fg-2);
+    }
+
+    .o_sc_user_menu_items {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .o_sc_user_menu_item {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-3);
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border-radius: var(--sc-radius-sm);
+        color: var(--sc-fg);
+        font-weight: 500;
+        text-decoration: none;
+
+        .o_sc_icon {
+            width: 18px;
+            height: 18px;
+            flex: none;
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: var(--sc-hover);
+            color: var(--sc-fg);
+        }
+
+        &[aria-current="page"] {
+            color: var(--sc-accent);
+        }
+    }
+
+    // Laptop: the rail footer holds the menu; no avatar in the app bar.
+    @media (min-width: $sc-laptop) {
+        .o_sc_user_menu_bar {
+            display: none;
+        }
+    }
+
+    // Narrow phones (360 px): logo + title + clock + search + avatar (task
+    // 1607: no page action in the bar any more) — slimmer icon buttons and
+    // gaps keep the title readable. The buttons stay 44 px tall.
+    @media (max-width: 399.98px) {
+        .o_sc_appbar {
+            gap: 4px;
+            padding-left: calc(var(--sc-space-2) + env(safe-area-inset-left, 0px));
+            padding-right: calc(var(--sc-space-2) + env(safe-area-inset-right, 0px));
+
+            .o_sc_icon_btn,
+            .o_sc_logo {
+                width: 40px;
+            }
+        }
     }
 
     .o_sc_avatar {
@@ -1096,6 +1234,168 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
         align-items: center;
         justify-content: space-between;
         gap: var(--sc-space-2);
+    }
+
+    // Task 1607: the list header — « + Ajouter » on the left, the sort menu
+    // on the right, ONE line directly above the list (same on phone and
+    // laptop; 44 px targets).
+    .o_sc_list_header {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-2);
+        min-height: var(--sc-tap);
+        min-width: 0;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    .o_sc_list_add.o_sc_btn_sm {
+        flex: none;
+        min-height: var(--sc-tap);
+        padding: 0 14px 0 10px;
+        gap: 6px;
+
+        .o_sc_icon {
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    .o_sc_list_add[aria-expanded="true"] {
+        box-shadow: inset 0 0 0 2px var(--sc-accent-fg);
+    }
+
+    .o_sc_list_header_count {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_sort_menu {
+        position: relative;
+        margin-left: auto;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .o_sc_sort_toggle {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-sm);
+        background: var(--sc-surface);
+        color: var(--sc-fg-2);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            flex: none;
+        }
+
+        &[aria-expanded="true"] {
+            border-color: var(--sc-accent);
+            color: var(--sc-fg);
+        }
+    }
+
+    .o_sc_sort_current {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_sc_menu_popup {
+        position: absolute;
+        z-index: 40;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 200px;
+        max-width: calc(100vw - 24px);
+        padding: 6px;
+        background: var(--sc-surface);
+        color: var(--sc-fg);
+        border: 1px solid var(--sc-line);
+        border-radius: var(--sc-radius-md);
+        box-shadow: var(--sc-shadow);
+        display: flex;
+        flex-direction: column;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .o_sc_menu_item {
+        display: flex;
+        align-items: center;
+        gap: var(--sc-space-2);
+        min-height: var(--sc-tap);
+        padding: 0 10px;
+        border-radius: var(--sc-radius-sm);
+        color: var(--sc-fg);
+        font-weight: 500;
+        text-decoration: none;
+        white-space: nowrap;
+
+        .o_sc_icon {
+            width: 16px;
+            height: 16px;
+            flex: none;
+            visibility: hidden;
+        }
+
+        &[aria-checked="true"] {
+            color: var(--sc-accent);
+            font-weight: 600;
+
+            .o_sc_icon {
+                visibility: visible;
+            }
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: var(--sc-hover);
+            text-decoration: none;
+        }
+    }
+
+    // The event page's timesheets section (task 1607): its read-fragment
+    // holders take no room while empty, nor does the section when all are.
+    .o_sc_event_timesheets {
+        > [data-sc-fragment]:empty {
+            display: none;
+        }
+
+        &:not(:has(> [data-sc-fragment]:not(:empty))) {
+            display: none;
+        }
+    }
+
+    // The inline add panel the header's « + Ajouter » opens: its own
+    // <summary> is hidden (the header is the one control) and, closed, it
+    // takes no room.
+    .o_sc_list_add_panel {
+        > summary {
+            display: none;
+        }
+
+        &:not([open]) {
+            display: none;
+        }
     }
 
     // On / off switch (owner review 2026-10-10). A link with role="switch" +

@@ -80,16 +80,18 @@ class TestNoteReplaceEditor1582(PlayerInlineCommon):
                 self.assertIs(props[fname].get('replace'), True)
                 self.assertEqual(props[fname]['inputType'], 'textarea')
                 self.assertEqual(props[fname]['placeholder'], PLACEHOLDER)
-                self.assertEqual(props[fname]['historySheet'], 'sc_note_history_sheet_%s' % scope)
+                # Task 1616: the injury page is the open card (per-injury ids).
+                self.assertEqual(props[fname]['historySheet'],
+                                 'sc_note_history_sheet_%s_%s' % (self.injury.id, scope))
                 self.assertEqual(props[fname]['historyLabel'], 'History')
                 # The current text is the value the editor shows read-only.
                 self.assertEqual(props[fname]['value'], 'T1582 synthetic %s v1' % scope)
-                sheet = self._sheet(tree, 'sc_note_history_sheet_%s' % scope)
+                sheet = self._sheet(tree, 'sc_note_history_sheet_%s_%s' % (self.injury.id, scope))
                 self.assertIsNotNone(sheet)
                 self.assertTrue(sheet.get('data-sc-lazy-url').endswith(
                     '/my/injury/%s/notes/history/fragment?scope=%s' % (self.injury.id, scope)))
         # The all-scopes sheet of the card header is kept (task 1581).
-        self.assertIsNotNone(self._sheet(tree, 'sc_note_history_sheet'))
+        self.assertIsNotNone(self._sheet(tree, 'sc_note_history_sheet_%s' % self.injury.id))
 
     def test_injury_page_coach_external_only(self):
         self._login_coach()
@@ -97,8 +99,8 @@ class TestNoteReplaceEditor1582(PlayerInlineCommon):
         props = _autosave_props(tree)
         self.assertIs(props['external_notes'].get('replace'), True)
         self.assertNotIn('internal_notes', props)
-        self.assertIsNotNone(self._sheet(tree, 'sc_note_history_sheet_external'))
-        self.assertIsNone(self._sheet(tree, 'sc_note_history_sheet_internal'))
+        self.assertIsNotNone(self._sheet(tree, 'sc_note_history_sheet_%s_external' % self.injury.id))
+        self.assertIsNone(self._sheet(tree, 'sc_note_history_sheet_%s_internal' % self.injury.id))
 
     def test_scoped_history_fragment(self):
         self._login_tp()

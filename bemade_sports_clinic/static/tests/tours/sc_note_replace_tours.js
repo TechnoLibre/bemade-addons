@@ -23,7 +23,8 @@ tours.add("sc_1582_note_replace", {
     steps: () => [
         {
             content: "Edit the notes card (pencil)",
-            trigger: '[data-sc-edit-card="injury-notes"] button[data-sc-edit-toggle]',
+            // Task 1616: the open injury card's Notes group.
+            trigger: 'details.o_sc_injury_item[open] [data-sc-edit-card="injury-notes"] button[data-sc-edit-toggle]',
             run: "click",
         },
         {
@@ -95,15 +96,15 @@ tours.add("sc_1582_note_replace", {
         },
         {
             content: "« History » next to the replace hint opens the external history",
-            trigger: `${FIELD} .o_sc_replace_hint [data-sc-sheet-open="sc_note_history_sheet_external"]`,
+            trigger: `${FIELD} .o_sc_replace_hint [data-sc-sheet-open^="sc_note_history_sheet_"][data-sc-sheet-open$="_external"]`,
             run: "click",
         },
         {
             content: "The scoped history lists the new text, external rows only",
-            trigger: `dialog#sc_note_history_sheet_external[open] li.o_sc_history_entry:contains(${NEW})`,
+            trigger: `dialog[id^="sc_note_history_sheet_"][id$="_external"][open] li.o_sc_history_entry:contains(${NEW})`,
             run() {
                 const rows = [
-                    ...document.querySelectorAll("dialog#sc_note_history_sheet_external[open] li.o_sc_history_entry"),
+                    ...document.querySelectorAll('dialog[id^="sc_note_history_sheet_"][id$="_external"][open] li.o_sc_history_entry'),
                 ];
                 assert(rows.every((li) => li.dataset.scScope === "external"), "a non-external row");
                 assert(

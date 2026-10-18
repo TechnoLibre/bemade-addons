@@ -252,7 +252,10 @@ class TestTrainingHistoryPortal1601(History1581Common):
             [('patient_id', '=', self.player.id)])
 
     def _training_props(self, tree):
-        for node in tree.xpath('//*[@data-sc-section="player.training"]//owl-component'):
+        # Review fixes 2026-10-18: the therapist's island is in the header's
+        # edit view (``player.training.edit``); the read view is static.
+        for node in tree.xpath('//*[@data-sc-section="player.training" or @data-sc-section="player.training.edit"]'
+                               '//owl-component'):
             props = json.loads(node.get('props'))
             if props.get('field') == 'training_recommendation':
                 return props

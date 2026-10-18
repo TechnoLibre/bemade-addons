@@ -599,14 +599,10 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             })
         active_filters = any(values.get(key) for key in (
             'team_id', 'organization_id', 'match_status', 'practice_status', 'jersey_number'))
-        # The sort switch flips the mode and keeps the active filters (the
-        # page resets: the order changes what page 1 holds).
-        toggle_args = {key: val for key, val in http.request.httprequest.args.items()
-                       if key != 'sort' and val}
-        toggle_args['sort'] = 'name' if values['players_sort_mode'] == 'status' else 'status'
+        # Task 1607: the sort menu (sc_sort_options) keeps the active filters
+        # and resets the page itself.
         return {
             'sc_player_rows': rows,
-            'sc_players_sort_toggle_url': '/my/players?' + urllib.parse.urlencode(toggle_args),
             'sc_can_create_player': is_tp_admin and self._is_treatment_professional(),
             'sc_filters_open': active_filters,
             'sc_players_count_label': env._("%(count)s player(s)", count=values['players_count']),
@@ -1008,10 +1004,15 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
         injury_clocks = self._sc_activity_clocks(
             values['injuries'], lambda i: '%s&tab=activities' % base_url)
 
+        # Task 1616: the cards' Documents (one query) and their own address
+        # (an upload / delete comes back to the card, open).
+        injury_documents = self._sc_injury_card_documents(values['injuries'])
+
         def _injury_row(injury):
             return self._sc_injury_card_row(
                 injury, ctx_qs, is_tp, tp_view, opened_id=opened_id, created_id=created_id,
-                clocks=injury_clocks)
+                clocks=injury_clocks, list_url='%s&tab=injuries' % base_url,
+                documents=injury_documents)
 
         # Owner review 2026-10-10: current injuries (active, unverified)
         # first, then resolved; each by injury date, newest first.
@@ -1157,6 +1158,13 @@ class TeamStaffPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'invalid_user': env._("You cannot assign this activity to that user."),
             'injury_visibility': env._("Please choose whether coaches can see this injury."),
             'injury_diagnosis': env._("Please enter a diagnosis."),
-            'undo_expired': env._("This injury can no longer be undone; delete it from its page."),
+            'undo_expired': env._("This injury can no longer be undone; delete it from its card."),
         }.get(kw.get('error'))
+        # Task 1616: the injury cards' messages (several documents, a file
+        # list over the limit, an old injury-page save).
+        card = AppShellMixin._sc_injury_card_flash(kw)
+        if kw.get('success') in ('documents_uploaded', 'injury_updated', 'document_deleted'):
+            success = card['success']
+        if kw.get('error') in ('file_too_large', 'invalid_category'):
+            error = card['error']
         return {'success': success, 'error': error}

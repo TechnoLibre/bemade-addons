@@ -4,7 +4,8 @@ Acceptance criteria:
 
 * UC-S1 The shell bookings list shows a date sort control (oldest first /
   newest first, the labels of appointment_portal_staff's
-  ``searchbar_sortings``); the active choice is marked ``aria-pressed``.
+  ``searchbar_sortings``); the active choice is marked ``aria-checked``
+  (task 1607: the list header's sort menu, ``role="menuitemradio"``).
   With no explicit choice the segment's default is active (upcoming:
   oldest first; past / all: newest first).
 * UC-S2 ``sortby`` is honoured both ways: ``date`` lists bookings oldest
@@ -15,6 +16,8 @@ Acceptance criteria:
   re-submits it. Without an explicit choice the segment links carry no
   ``sortby`` (each segment keeps its own default). The calendar segment
   link is unchanged.
+* UC-S4 (task 1607) The sort sits in the shell's list header, condensed to
+  the right, directly above the bookings list; the list has no « + Ajouter ».
 """
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
@@ -58,7 +61,7 @@ class TestBookingsSort(BookingsShellCommon):
 
     @staticmethod
     def _active_sort(tree):
-        return tree.xpath('//*[@data-sc-section="bookings.sort"]//a[@aria-pressed="true"]/@data-sc-sort')
+        return tree.xpath('//*[@data-sc-section="bookings.sort"]//a[@aria-checked="true"]/@data-sc-sort')
 
     @staticmethod
     def _segment_hrefs(tree):
@@ -141,3 +144,15 @@ class TestBookingsSort(BookingsShellCommon):
         self.assertFalse(tree.xpath('//form[@data-sc-section="bookings.filters"]//input[@name="sortby"]'))
         _text, tree = self._get(hrefs['past'])
         self.assertEqual(self._active_sort(tree), ['date_desc'])
+
+    def test_sort_in_the_list_header(self):
+        """UC-S4"""
+        _text, tree = self._get('/my/bookings')
+        headers = tree.xpath('//div[contains(@class, "o_sc_list_header")][@data-sc-section="bookings.header"]')
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertTrue(header.xpath('.//*[@data-sc-section="bookings.sort"]//a[@role="menuitemradio"]'))
+        self.assertFalse(header.xpath('.//*[contains(@class, "o_sc_list_add")]'))
+        following = header.getnext()
+        self.assertIsNotNone(following)
+        self.assertEqual(following.get('data-sc-section'), 'bookings.list')

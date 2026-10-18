@@ -16,15 +16,16 @@ Acceptance criteria covered here:
   country without provinces hides the province field. A province of another
   country than the player's is refused; a province picked while no country
   is set sets its country too.
-* UC-3 Actual return date (``return_date``): shown in the hero next to the
-  predicted return, for everyone, when set. Therapists edit it behind the
+* UC-3 Actual return date (``return_date``): shown in the header's read view
+  for everyone when set and the player is Play OK (review fixes 2026-10-18:
+  ONE return date — the predicted one while not Play OK). Therapists edit it behind the
   Medical Information card's pencil; coaches cannot (the legacy portal never
   let a coach write it; the save answers 403).
 * UC-4 Status label: users without the play-status selector (coaches) read
   the player's status label (Play OK / Practice OK / Injured) in the hero,
   as a ``data-sc-stage-chip`` (therapists keep the selector, UC-PS2); the
   inline injury cards keep their stage badge.
-* UC-5 French (fr_CA, by render): « Pays », « Retour réel : », « Date de
+* UC-5 French (fr_CA, by render): « Pays », « Retour réel », « Date de
   retour réelle », the coach's status label (« Matchs autorisés »: the stage
   labels come from the model's selection), and the foreign-province
   refusal « Cette province n'appartient pas au pays du joueur. ».
@@ -222,26 +223,37 @@ class TestPlayerCountryReturnStatus1594(PlayerInlineCommon):
         resp = self._save(self.player, 'return_date', 'not-a-date')
         self.assertEqual(resp.status_code, 400, resp.text)
 
+    def _hero_return(self, tree):
+        """The header read view's ONE return date (review fixes 2026-10-18)."""
+        nodes = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-section="player.return"]')
+        self.assertEqual(len(nodes), 1)
+        return nodes[0]
+
     def test_hero_shows_actual_return_for_everyone(self):
-        self.player.write({'predicted_return_date': '2026-10-30', 'return_date': '2026-11-02'})
+        # Play OK: the header's read view shows « Retour réel » (not the
+        # predicted return), for coaches and therapists.
+        self.player.write({'match_status': 'yes', 'practice_status': 'yes',
+                           'predicted_return_date': '2026-10-30', 'return_date': '2026-11-02'})
         for login in (self._login_coach, self._login_tp):
             login()
             _text, tree = self._get(self._url())
-            chip = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-section="player.return_date"]')
-            self.assertEqual(len(chip), 1)
-            self.assertIsNone(chip[0].get('hidden'))
-            shown = chip[0].xpath('.//*[@data-sc-display="sports.patient:%s:return_date"]' % self.player.id)
+            ret = self._hero_return(tree)
+            self.assertEqual(ret.get('data-sc-return-kind'), 'actual')
+            value = ret.xpath('.//*[contains(@class, "o_sc_field_value")]')
             # Formatted for humans (the save route's display string).
-            self.assertTrue(shown[0].text_content().strip())
-            self.assertNotIn('2026-11-02', chip[0].text_content())
+            self.assertTrue(value[0].text_content().strip())
+            self.assertNotIn('2026-11-02', ret.text_content())
+            self.assertIn('Actual return', ret.text_content())
 
-    def test_hero_return_chip_hidden_while_empty(self):
+    def test_hero_return_hidden_while_empty(self):
+        self.player.write({'match_status': 'yes', 'practice_status': 'yes', 'return_date': False})
         self._login_tp()
         _text, tree = self._get(self._url())
-        chip = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-section="player.return_date"]')
-        # Kept in the page (hidden) so a save on the Medical card shows it in place.
-        self.assertEqual(len(chip), 1)
-        self.assertEqual(chip[0].get('hidden'), 'hidden')
+        ret = self._hero_return(tree)
+        # The holder stays (a read fragment); no value line while empty,
+        # a muted « not set » line instead (review fixes 2026-10-18, 1018c).
+        self.assertFalse(ret.xpath('.//*[contains(@class, "o_sc_field_static")]'))
+        self.assertEqual(ret.text_content().strip(), 'Actual return: not set')
 
     # -- UC-4 ------------------------------------------------------------
     def test_coach_reads_status_label(self):
@@ -259,11 +271,16 @@ class TestPlayerCountryReturnStatus1594(PlayerInlineCommon):
             self.assertIn('o_sc_chip_%s' % tone, chip[0].get('class'))
             self.assertEqual(chip[0].text_content().strip(), label)
 
-    def test_therapist_keeps_selector_without_label(self):
+    def test_therapist_reads_label_edits_with_selector(self):
+        # Review fixes 2026-10-18: the therapist's header read view shows the
+        # status label too; the selector is in the header's edit view.
         self._login_tp()
         _text, tree = self._get(self._url())
-        self.assertFalse(tree.xpath('//*[@data-sc-stage-chip]'))
-        self.assertEqual(len(self._props(tree, 'sc_status')), 1)
+        read = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-edit-view="read"]')[0]
+        self.assertEqual(len(read.xpath('.//*[@data-sc-stage-chip]')), 1)
+        self.assertFalse(read.xpath('.//owl-component'))
+        edit = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-edit-view="edit"]')[0]
+        self.assertEqual(len(self._props(edit, 'sc_status', scope='.//*')), 1)
 
     def test_injury_cards_carry_stage_badge(self):
         injury = self.env['sports.patient.injury'].create({
@@ -322,7 +339,8 @@ class TestPlayerCountryI18n1594(TestAppShellI18n1538):
         self._switch(True)
         self._login_tp()
         text = self._fr(self._url()).replace('&#39;', "'")
-        for term in ('Pays', 'Retour réel :', 'Date de retour réelle'):
+        # Review fixes 2026-10-18: « Retour réel » in the header read view.
+        for term in ('Pays', 'Retour réel', 'Date de retour réelle'):
             self.assertIn(term, text, term)
         self.assertNotIn('Actual return', text)
 

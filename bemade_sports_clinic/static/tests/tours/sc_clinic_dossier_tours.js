@@ -35,8 +35,8 @@ function onClinicDossier() {
 function addSteps(diagnosis) {
     return [
         {
-            content: "Open « Add Injury » on the patient file",
-            trigger: `${ADD} > summary`,
+            content: "Open « Add Injury » on the patient file (the list header's « + Ajouter »)",
+            trigger: '.o_sc_list_header button.o_sc_list_add[aria-controls="sc_clinic_injury_add"]',
             run: "click",
         },
         {
@@ -71,6 +71,13 @@ tours.add("sc_1590_clinic_injury_edit", {
     steps: () => [
         ...addSteps(DIAG_EDIT),
         {
+            // Task 1616: one pencil per group — the new injury opens its
+            // Details; the notes are the Notes group's.
+            content: "The Notes pencil",
+            trigger: `${NEW_CARD} [data-sc-edit-card="injury-notes"] button[data-sc-edit-toggle]`,
+            run: "click",
+        },
+        {
             content: "Write the quick note",
             trigger: `${NEW_CARD} ${NOTE} textarea[data-sc-replace="new"]`,
             run: `edit ${QUICK_NOTE}`,
@@ -93,14 +100,13 @@ tours.add("sc_1590_clinic_injury_edit", {
             },
         },
         {
-            content: "« Done » (the card changed: the page reloads)",
-            trigger: `${NEW_CARD} [data-sc-edit-done]`,
+            content: "« Done » of the Notes (task 1611: no reload)",
+            trigger: `${NEW_CARD} [data-sc-edit-card="injury-notes"] [data-sc-edit-done]`,
             run: "click",
-            expectUnloadPage: true,
         },
         {
             content: "Same clinic, same patient, file tab; the card reads the note",
-            trigger: `[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] [data-sc-edit-view="read"]:not([hidden])`,
+            trigger: `[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] [data-sc-edit-card="injury-notes"] [data-sc-edit-view="read"]:not([hidden])`,
             run() {
                 onClinicDossier();
                 assert(this.anchor.textContent.includes(QUICK_NOTE), "the read view misses the note");
@@ -108,13 +114,18 @@ tours.add("sc_1590_clinic_injury_edit", {
             },
         },
         {
-            content: "The pencil opens the edit view again",
-            trigger: '[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] button[data-sc-edit-toggle]',
+            content: "« Done » of the Details (opened by the create)",
+            trigger: `${NEW_CARD} [data-sc-edit-card="injury-details"][data-sc-edit-open] [data-sc-edit-done]`,
+            run: "click",
+        },
+        {
+            content: "The Details pencil opens its edit view again",
+            trigger: '[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] [data-sc-edit-card="injury-details"]:not([data-sc-edit-open]) button[data-sc-edit-toggle]',
             run: "click",
         },
         {
             content: "Edit view shown, no legacy form anywhere",
-            trigger: '[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] [data-sc-edit-view="edit"]:not([hidden]) .o_sc_autosave[data-sc-field="stage"]',
+            trigger: '[data-sc-section="clinic.dossier.injuries"] .o_sc_injury_item[open] [data-sc-edit-card="injury-details"] [data-sc-edit-view="edit"]:not([hidden]) .o_sc_autosave[data-sc-field="stage"]',
             run() {
                 assert(!document.querySelector('form[action*="/my/injury/save"]'), "a legacy injury form");
             },

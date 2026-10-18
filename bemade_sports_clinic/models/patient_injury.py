@@ -297,17 +297,27 @@ class PatientInjury(models.Model):
             raise AccessError(_("Only treatment professionals can verify injuries."))
             
         self.write({'stage': 'active'})
-        message = _("Injury verified by %s") % self.env.user.name
-        self.message_post(body=message)
-        # Close any open verification activities for this injury. Task 1409:
-        # they live on the patient and are keyed by the technical injury_id
-        # link (whatever their res_model).
+        self._after_verify()
+        return True
+
+    def _after_verify(self):
+        """What verifying an injury does besides the stage (task 1612: the
+        « Verify » button AND the app's status selector call it): log
+        « Injury verified by … » and close the open verification To-Dos."""
+        for injury in self:
+            injury.message_post(body=_("Injury verified by %s") % self.env.user.name)
+        self._close_verify_activities()
+
+    def _close_verify_activities(self):
+        """Close the open verification To-Dos about the injuries in self.
+        Task 1409: they live on the patient and are keyed by the technical
+        injury_id link (whatever their res_model). Task 1604: called on ANY
+        transition out of « unverified » (see ``write``), not only a verify."""
         verif_acts = self.env['mail.activity'].sudo().search(
             self._verify_activity_domain() + [('active', '=', True)]
         )
         if verif_acts:
             verif_acts.action_done()
-        return True
 
     def _activity_summary_prefix(self):
         """User-visible context prefix for an activity about this injury
@@ -328,15 +338,34 @@ class PatientInjury(models.Model):
             ('summary', 'ilike', VERIFY_INJURY_SUMMARY),
         ]
         
-    def action_resolve_injury(self):
-        """Mark an injury as resolved."""
+    @api.model
+    def _sc_clear_resolved_predicted_dates(self):
+        """Review fixes 2026-10-18 (post-migrate 19.0.1.86.0): null the
+        predicted resolution date of every already-RESOLVED injury, in SQL —
+        no tracking, no chatter, no digest bump (a data cleanup, not a
+        change anyone made). Unresolved injuries are left alone (even those
+        carrying a resolution date). Returns the number of rows cleared."""
+        self.env.flush_all()
+        self.env.cr.execute("""
+            UPDATE sports_patient_injury
+               SET predicted_resolution_date = NULL
+             WHERE stage = 'resolved'
+               AND predicted_resolution_date IS NOT NULL
+        """)
+        count = self.env.cr.rowcount
+        self.invalidate_model(['predicted_resolution_date'])
+        return count
+
+    def action_resolve_injury(self, resolution_date=None):
+        """Mark an injury as resolved, on ``resolution_date`` (task 1604: the
+        app's « Résoudre » confirms a date) or today."""
         self.ensure_one()
         if self.stage == "resolved":
             return True
-            
+
         self.write({
             'stage': 'resolved',
-            'resolution_date': fields.Date.context_today(self)
+            'resolution_date': resolution_date or fields.Date.context_today(self)
         })
         message = _("Injury marked as resolved by %s") % self.env.user.name
         self.message_post(body=message)
@@ -442,7 +471,24 @@ class PatientInjury(models.Model):
         if not self.env.context.get('skip_note_history'):
             note_history_vals = self._prepare_note_history_vals(vals)
 
+        # Task 1604 (from 1612): whatever moves an injury out of
+        # « unverified » (verify, the app's status selector straight to
+        # « Resolved », the backend) closes its « Verify injury » To-Do.
+        leaving_unverified = self.browse()
+        if vals.get('stage') and vals['stage'] != 'unverified':
+            leaving_unverified = self.filtered(lambda i: i.stage == 'unverified')
+
+        # Review fixes 2026-10-18 (injury dates rule): resolving an injury —
+        # whatever the path (app stage save, quick « Résoudre »,
+        # action_resolve_injury, the backend) — clears its predicted
+        # resolution date: once resolved only the real date matters.
+        if vals.get('stage') == 'resolved' and vals.get('predicted_resolution_date') is not False:
+            vals = dict(vals, predicted_resolution_date=False)
+
         res = super().write(vals)
+
+        if leaving_unverified:
+            leaving_unverified._close_verify_activities()
 
         if note_history_vals:
             # sudo: history rows are only ever created by server code; no
@@ -752,6 +798,11 @@ class PatientInjury(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Review fixes 2026-10-18: an injury created already resolved carries
+        # no predicted resolution date (same rule as resolving one).
+        vals_list = [dict(vals, predicted_resolution_date=False)
+                     if vals.get('stage') == 'resolved' else vals
+                     for vals in vals_list]
         # Determine context before creating to avoid mail.followers writes
         # when portal/coach creates. "Treatment professional" covers BOTH
         # internal and portal TPs — the latter must also create injuries

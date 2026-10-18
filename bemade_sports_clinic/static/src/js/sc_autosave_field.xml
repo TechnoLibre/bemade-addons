@@ -82,9 +82,12 @@
                 <input t-if="props.name" type="hidden" t-att-name="props.name" t-att-value="state.value"/>
             </div>
             <!-- tags (owner review 2026-10-10): the value is the CSV of the
-                 chosen option keys — removable chips + a search box suggesting
-                 a few options (never the whole list); each add / remove saves. -->
-            <div t-elif="type === 'tags'" class="o_sc_tags_field">
+                 chosen option keys — removable chips + a search box; each add /
+                 remove saves (server) or fills the form's hidden input (form).
+                 Task 1608: focusing the box opens the FULL list (browse),
+                 grouped, scrollable, keyboard navigable; typing narrows it. -->
+            <div t-elif="type === 'tags'" class="o_sc_tags_field" t-att-data-sc-tags-open="state.open ? '1' : '0'"
+                 t-on-focusout="onTagsFocusout" t-on-keydown="onTagKeydown">
                 <ul class="o_sc_tags" t-att-aria-label="props.label">
                     <li t-foreach="chosenOptions" t-as="opt" t-key="opt[0]" class="o_sc_tag">
                         <span t-esc="opt[1]"/>
@@ -94,15 +97,27 @@
                     </li>
                 </ul>
                 <input t-ref="input" type="search" class="o_sc_input o_sc_tags_search" autocomplete="off"
+                       role="combobox" aria-autocomplete="list"
+                       t-att-aria-expanded="state.open ? 'true' : 'false'" t-att-aria-controls="tagsListId"
+                       t-att-aria-activedescendant="tagsActiveId"
                        t-att-id="props.inputId" t-att-placeholder="props.placeholder"
-                       t-att-disabled="props.disabled" t-model="state.query" t-on-keydown="onTagKeydown"
-                       t-on-focus="(ev) => ev.target.scrollIntoView({ block: 'center', behavior: 'smooth' })"/>
-                <ul t-if="tagMatches.length" class="o_sc_tags_options" role="listbox">
-                    <li t-foreach="tagMatches" t-as="opt" t-key="opt[0]" role="option">
-                        <button type="button" class="o_sc_tags_option" t-on-click="() => this.addTag(opt[0])" t-esc="opt[1]"/>
-                    </li>
+                       t-att-disabled="props.disabled" t-model="state.query" t-on-input="onTagsInput"
+                       t-on-focus="openTags" t-on-click="openTags"/>
+                <ul t-if="state.open and tagRows.length" t-ref="list" class="o_sc_tags_options" role="listbox"
+                    tabindex="-1" t-att-id="tagsListId" t-att-aria-label="props.label"
+                    t-on-mousedown.prevent="() => {}">
+                    <t t-foreach="tagRows" t-as="row" t-key="row.key">
+                        <li t-if="row.heading" role="presentation" class="o_sc_tags_group" t-esc="row.label"/>
+                        <li t-else="" role="option" t-att-id="tagsListId + '_' + row.index"
+                            t-att-data-sc-tags-index="row.index"
+                            t-att-aria-selected="row.index === state.active ? 'true' : 'false'">
+                            <button type="button" tabindex="-1" t-att-data-sc-value="row.value"
+                                    t-attf-class="o_sc_tags_option #{row.index === state.active ? 'o_sc_tags_option_active' : ''}"
+                                    t-on-click="(ev) => this.addTag(row.value, ev)" t-esc="row.label"/>
+                        </li>
+                    </t>
                 </ul>
-                <small t-elif="state.query.trim()" class="o_sc_hint" t-esc="noMatchLabel"/>
+                <small t-elif="state.open and state.query.trim()" class="o_sc_hint" t-esc="noMatchLabel"/>
             </div>
             <div t-elif="type === 'date_na'" class="o_sc_date_na">
                 <input t-ref="input" class="o_sc_input" type="date" t-att-id="props.inputId"

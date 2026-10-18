@@ -110,7 +110,10 @@ class TestClinicDossierInline1590(ClinicDossier1590Common):
         cards = section.xpath('.//details[@data-sc-edit-card="injury"]')
         self.assertEqual([c.get('id') for c in cards], ['clinic-injury-%s' % self.injury.id])
         card = cards[0]
-        self.assertEqual(card.get('data-sc-edit-reload'), '1')
+        # Task 1611: no reload on « Done » — the card is a read-fragment
+        # list item (its summary and read view refresh in place).
+        self.assertIsNone(card.get('data-sc-edit-reload'))
+        self.assertEqual(card.get('data-sc-fragment-item'), 'sports.patient.injury:%s:card' % self.injury.id)
         self.assertTrue(card.xpath('.//button[@data-sc-edit-toggle]'))
         props = self._props(card)
         for fname in ('external_notes', 'internal_notes'):
@@ -200,7 +203,7 @@ class TestClinicDossierInline1590(ClinicDossier1590Common):
         self.assertTrue(location.startswith('/my/clinic/%s?' % self.clinic.id), location)
         self.assertIn('error=undo_expired', location)
         text, _tree = self._follow(location)
-        self.assertIn('This injury can no longer be undone; delete it from its page.', text)
+        self.assertIn('This injury can no longer be undone; delete it from its card.', text)
 
     # -- UC-CD4 ----------------------------------------------------------
     def test_player_page_origin_unchanged(self):
@@ -329,6 +332,6 @@ class TestClinicDossierInlineFr1590(TestAppShellI18n1538):
             clinic.id, self.player.id)).replace('&#39;', "'")
         for term in ('Ajouter une blessure', 'Les entraîneurs peuvent-ils voir cette blessure ?',
                      'Non, la masquer', 'Consentement à compléter',
-                     'Notes de traitement, documents et historique',
+                     'Détails', 'Ajouter des documents',
                      'Masquée aux entraîneurs', 'Création de la blessure annulée.'):
             self.assertIn(term, text, term)
