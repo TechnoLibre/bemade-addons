@@ -197,7 +197,7 @@ class TestCloseDay(HomeschoolCase):
         with Form(wiz) as form:
             form.went_well_day = "the morning"
         action = wiz.action_finish()
-        self.assertEqual(action["type"], "ir.actions.act_window_close")
+        self.assertEqual((action["type"], action.get("tag")), ("ir.actions.client", "soft_reload"))
         entry = self.day.journal_ids
         self.assertEqual(len(entry), 1)
         self.assertEqual(entry.went_well, "the morning")

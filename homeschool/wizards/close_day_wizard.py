@@ -223,4 +223,5 @@ class CloseDayWizard(models.TransientModel):
                 raise UserError(self.env._("Write at least one line in the journal before finishing."))
             self.env["homeschool.journal"].create(dict(vals, day_id=day.id))
         day.block_ids.filtered(lambda b: b.kind in NO_HOURS_KINDS and b.status == "planned").write({"status": "done"})
-        return {"type": "ir.actions.act_window_close"}
+        # close the dialog and reload the screen behind it (the Days list showed the old state)
+        return {"type": "ir.actions.client", "tag": "soft_reload"}
