@@ -21,7 +21,7 @@ Acceptance criteria
    (``Ce qui a marché`` → ``went_well``, ``Ce qui a mal été`` → ``went_badly``, anything
    else → a ``- `` bullet in ``notes``) and is append-only: today's entry grows in place;
    on a past day the text lands in ``corrections`` as a dated line and the original text is
-   never rewritten. A text holding several ``- `` bullets is one call (a whole day logged
+   never rewritten — unless the field is still empty, which it fills. A text holding several ``- `` bullets is one call (a whole day logged
    late is created in one go, like an imported section).
 3. ``log_trace(student_id, date, trace_id, title, matieres, pda_ids, diffusion, notes="",
    attachment=None, artifact_path=None)`` does what one ``traces.csv`` row does; the
@@ -253,6 +253,11 @@ class TestJournalAPI(HomeschoolCase):
         self.api.log_note(self.student.id, past, "late remark")
         self.assertEqual(entry.notes, "- kept")
         self.assertIn("- late remark", entry.corrections)
+        # a past entry whose field is still empty: the note fills it, nothing corrected
+        r = self.api.log_note(self.student.id, past, "Ce qui a mal été : the end")
+        self.assertEqual(entry.went_badly, "the end")
+        self.assertNotIn("the end", entry.corrections)
+        self.assertFalse(r["corrected"])
         # a past day without any entry yet: the first text creates the entry (nothing to correct)
         older = past - timedelta(days=1)
         r = self.api.log_note(self.student.id, older, "- Ce qui a marché : logged late\n- Ce qui a mal été : nothing\n- R3 0")
@@ -451,3 +456,12 @@ class TestJournalAPI(HomeschoolCase):
         self.assertEqual(self.Trace.search_count([("code", "=", "TR-2026-02-02-a")]), 2)
         self.assertEqual(self.Exporter.export_traces(self.student_b).splitlines()[1:],
                          ["TR-2026-02-02-a,2026-02-02,Other trace,FLE,FLE-E-SYN-C-E,,INSTITUTIONAL,"])
+
+    def test_log_note_past_day_empty_notes_fills_in_place(self):
+        past = self.today - timedelta(days=4)
+        day = self.make_day(past)
+        entry = self.Journal.create({"day_id": day.id, "went_well": "original"})
+        r = self.api.log_note(self.student.id, past, "a late remark")
+        self.assertEqual(entry.notes, "- a late remark")
+        self.assertFalse(entry.corrections)
+        self.assertFalse(r["corrected"])
