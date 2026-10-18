@@ -250,9 +250,10 @@ class TestPlayerCountryReturnStatus1594(PlayerInlineCommon):
         self._login_tp()
         _text, tree = self._get(self._url())
         ret = self._hero_return(tree)
-        # The holder stays (a read fragment) but shows nothing while empty.
+        # The holder stays (a read fragment); no value line while empty,
+        # a muted « not set » line instead (review fixes 2026-10-18, 1018c).
         self.assertFalse(ret.xpath('.//*[contains(@class, "o_sc_field_static")]'))
-        self.assertEqual(ret.text_content().strip(), '')
+        self.assertEqual(ret.text_content().strip(), 'Actual return: not set')
 
     # -- UC-4 ------------------------------------------------------------
     def test_coach_reads_status_label(self):

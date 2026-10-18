@@ -3814,7 +3814,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_player_removal_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_team_role_mass_assign_wizard_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_security
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_account_card_actions
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_document_upload_form
 msgid "Cancel"
 msgstr "Annuler"
@@ -4267,7 +4266,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:bemade_sports_clinic.field_sports_patient__country_id
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_player_form_body
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Country"
 msgstr "Pays"
 
@@ -7761,11 +7759,6 @@ msgstr "Instantané du %(date)s%(tz)s — changements des dernières %(hours)s h
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid "State / Province"
-msgstr "Province / État"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
 msgid "Street and number"
 msgstr "Rue et numéro"
 
@@ -10374,7 +10367,6 @@ msgstr "Sam"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_contact_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_quick_note_card
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_timesheet_sheets
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_account_card_actions
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -14338,6 +14330,7 @@ msgstr "Brouillon restauré"
 
 #. module: bemade_sports_clinic
 #. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_account.js:0
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
 msgid "Error — not saved"
 msgstr "Erreur — non enregistré"
@@ -14479,12 +14472,14 @@ msgstr "Enregistré"
 
 #. module: bemade_sports_clinic
 #. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_account.js:0
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
 msgid "Saved · %s"
 msgstr "Enregistré · %s"
 
 #. module: bemade_sports_clinic
 #. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_account.js:0
 #: code:addons/bemade_sports_clinic/static/src/js/sc_autosave_field.js:0
 msgid "Saving…"
 msgstr "Enregistrement…"
@@ -15820,10 +15815,21 @@ msgid "Please choose a valid category."
 msgstr "Veuillez choisir une catégorie valide."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Predicted return: not set"
+msgstr "Retour prévu : non défini"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Actual return: not set"
+msgstr "Retour réel : non défini"
+
+#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
-msgid ""
-"<span hidden=\"hidden\" data-sc-account-msg=\"saved\">Your details have been saved.</span>\n"
-"                    <span hidden=\"hidden\" data-sc-account-msg=\"other\">Some of these fields are in the other card: complete it first.</span>"
-msgstr ""
-"<span hidden=\"hidden\" data-sc-account-msg=\"saved\">Vos coordonnées ont été enregistrées.</span>\n"
-"                    <span hidden=\"hidden\" data-sc-account-msg=\"other\">Certains de ces champs sont dans l'autre carte : complétez-la d'abord.</span>"
+msgid "<span>Country</span>"
+msgstr "<span>Pays</span>"
+
+#. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_account
+msgid "<span>State / Province</span>"
+msgstr "<span>Province / État</span>"

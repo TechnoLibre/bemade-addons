@@ -6,7 +6,8 @@
   shared category / description when added, its own changes stay on that
   file (and survive a re-render); « × » drops one; the phone layout stacks
   a row; one upload stores each file's own name / category / description,
-  linked to the chosen injury.
+  linked to the chosen injury. Round 2 (1018c): the shared fields show
+  only while no file is listed (hidden with a row, back once emptied).
 
 The « Mon compte » cards are covered by sc_1620_account (rewritten for the
 pencil cards). UI is UNVERIFIED until /dev-review clicks it.
@@ -26,7 +27,7 @@ class _Tours1018b:
         got = {d.file_name: (d.name, d.category, d.description, d.injury_id) for d in docs}
         self.assertEqual(got, {
             'Synthetic a.pdf': ('Synthetic A report', 'medical_imaging', 'Synthetic only a', self.injury),
-            'Synthetic b.pdf': ('Synthetic b.pdf', 'prescription', 'Synthetic shared two', self.injury),
+            'Synthetic b.pdf': ('Synthetic b.pdf', 'prescription', 'Synthetic shared one', self.injury),
         })
 
 

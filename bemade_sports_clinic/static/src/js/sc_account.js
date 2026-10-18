@@ -1,26 +1,32 @@
 /*
- * Review fixes 2026-10-18 b — « Mon compte » cards (views/sc_app_account.xml,
- * inert outside .o_sc_app): « Contact details » and « Address » are edit
- * cards (pencil → edit view, sc_app_ui.js) inside ONE core address form.
+ * « Mon compte » (views/sc_app_account.xml, inert outside .o_sc_app):
+ * « Contact details » and « Address » are edit cards (pencil → edit view,
+ * « Done » closes it — sc_app_ui.js) inside ONE core address form.
  *
- * - « Save » ([data-sc-account-save], or Enter in a field) of a card posts
- *   the form to the core /my/address/submit with the OTHER card's last
- *   saved values (never its unsaved edits), so the core validation — the
- *   whole address is mandatory — passes. Success: the card's values become
- *   its saved values, the card closes, its read view refreshes (read
- *   fragment, task 1611) and a toast confirms; the page stays. Refusal: the
- *   core messages show in the card's own error box ([data-sc-account-errors])
- *   and the core's invalid fields are flagged (.is-invalid); a flagged field
- *   in the other card adds a hint.
- * - « Cancel » (or the pencil while editing) puts the card's saved values
- *   back (the province list too) and closes it.
- * The core CustomerAddress interaction keeps the country → province reload
- * and the required-field marking; its own #save_address is not rendered.
+ * Review fixes 2026-10-18, round 2 (1018c) — like the rest of the app, each
+ * field saves ON ITS OWN (no « Save » / « Cancel »):
+ * - a field's change (blur for a text field, pick for a select, Enter)
+ *   posts the whole form — ALL current values — to the core
+ *   /my/address/submit (its validation; for app-shell users only the name
+ *   and the email are required, AppShellAccountPortal);
+ * - the field shows the app's save states next to its label
+ *   ([data-sc-account-state]: « Saving… », « Saved · 14:05 », « Error — not
+ *   saved »); typing again clears it;
+ * - success: the cards' read views refresh (read fragments, task 1611), the
+ *   page stays; refusal: the core messages show in the card's error box
+ *   ([data-sc-account-errors]) and the core's invalid fields are flagged
+ *   (.is-invalid);
+ * - saves never overlap: a change during a save is sent right after it,
+ *   with the values of that moment.
+ * A new country is saved without a province (the core address JS reloads
+ * the province list for that country; the user then picks one).
  */
+import { _t } from "@web/core/l10n/translation";
 import { requestRefresh } from "@bemade_sports_clinic/js/sc_fragments";
 import { scFetch } from "@bemade_sports_clinic/js/sc_fetch";
 
-const saved = new WeakMap(); // card → {name: value, __states: html, __statesShown}
+const lastSaved = new WeakMap(); // field → the value the server holds
+const queues = new WeakMap(); // form → { busy, pending: Set<field> }
 
 function accountForm(node) {
     const form = node && node.closest && node.closest("form[data-sc-account-form]");
@@ -31,31 +37,61 @@ function cards(form) {
     return [...form.querySelectorAll("[data-sc-edit-card^='account-']")];
 }
 
-function fieldsOf(card) {
-    return [...card.querySelectorAll('[data-sc-edit-view="edit"] [name]')];
+function cardOf(node) {
+    return (node && node.closest && node.closest("[data-sc-edit-card^='account-']")) || null;
 }
 
-function snapshot(card) {
-    const values = {};
-    for (const field of fieldsOf(card)) {
-        values[field.name] = field.value;
+/** A card's editable field (an input / select of its edit view), or null. */
+function accountField(node) {
+    if (!node || !node.matches || !node.matches("input[name], select[name], textarea[name]")) {
+        return null;
     }
-    const states = card.querySelector('select[name="state_id"]');
-    if (states) {
-        values.__states = states.innerHTML;
-        values.__statesShown = states.parentElement.style.display;
+    if (node.type === "hidden" || !node.closest('[data-sc-edit-view="edit"]')) {
+        return null;
     }
-    saved.set(card, values);
-    return values;
+    return accountForm(node) && cardOf(node) ? node : null;
 }
 
-function savedValues(card) {
-    return saved.get(card) || snapshot(card);
+function remember(form) {
+    for (const card of cards(form)) {
+        for (const field of card.querySelectorAll('[data-sc-edit-view="edit"] [name]')) {
+            if (!lastSaved.has(field)) {
+                lastSaved.set(field, field.value);
+            }
+        }
+    }
 }
 
-function message(form, key) {
-    const node = form.querySelector(`[data-sc-account-msg="${key}"]`);
-    return node ? node.textContent.trim() : "";
+function stateNode(field) {
+    const box = field.closest(".o_sc_field");
+    return box ? box.querySelector("[data-sc-account-state]") : null;
+}
+
+function setState(field, status) {
+    const node = stateNode(field);
+    const box = field.closest(".o_sc_field");
+    if (box) {
+        if (status) {
+            box.dataset.scState = status;
+        } else {
+            delete box.dataset.scState;
+        }
+    }
+    if (!node) {
+        return;
+    }
+    let text = "";
+    if (status === "saving") {
+        text = _t("Saving…");
+    } else if (status === "saved") {
+        const now = new Date();
+        text = _t("Saved · %s", `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`);
+    } else if (status === "error") {
+        text = _t("Error — not saved");
+    }
+    node.className = status ? `o_sc_save_state o_sc_save_state_${status}` : "o_sc_save_state";
+    node.textContent = text;
+    node.hidden = !text;
 }
 
 function showErrors(card, messages) {
@@ -88,107 +124,111 @@ function flag(form, invalid) {
     }
 }
 
-function closeCard(card) {
-    if (card.dataset.scEditOpen) {
-        const toggle = card.querySelector("[data-sc-edit-toggle]");
-        if (toggle) {
-            toggle.click();
-        }
+function queue(form) {
+    if (!queues.has(form)) {
+        queues.set(form, { busy: false, pending: new Set() });
     }
+    return queues.get(form);
 }
 
-function restore(card) {
-    const values = savedValues(card);
-    const states = card.querySelector('select[name="state_id"]');
-    if (states && values.__states !== undefined) {
-        states.innerHTML = values.__states;
-        states.parentElement.style.display = values.__statesShown;
-    }
-    for (const field of fieldsOf(card)) {
-        if (field.name in values) {
-            field.value = values[field.name];
-        }
-        field.classList.remove("is-invalid");
-        field.removeAttribute("aria-invalid");
-    }
-    showErrors(card, []);
-}
-
-export async function saveCard(card) {
-    const form = accountForm(card);
-    if (!form || card.dataset.scAccountBusy) {
+/** Save ``field`` (and whatever else changed meanwhile): the whole form. */
+export async function saveField(field) {
+    const form = accountForm(field);
+    if (!form) {
         return;
     }
-    for (const field of fieldsOf(card)) {
-        if (!field.checkValidity()) {
-            field.reportValidity();
-            return;
-        }
+    remember(form);
+    const q = queue(form);
+    q.pending.add(field);
+    if (q.busy) {
+        return; // sent right after the save in flight
     }
+    q.busy = true;
+    try {
+        while (q.pending.size) {
+            const fields = [...q.pending];
+            q.pending.clear();
+            await send(form, fields);
+        }
+    } finally {
+        q.busy = false;
+    }
+}
+
+async function send(form, fields) {
     const data = Object.fromEntries(new FormData(form).entries());
-    const own = new Set(fieldsOf(card).map((field) => field.name));
-    for (const other of cards(form)) {
-        if (other === card) {
-            continue;
-        }
-        const values = savedValues(other);
-        for (const field of fieldsOf(other)) {
-            if (!own.has(field.name) && field.name in values) {
-                data[field.name] = values[field.name];
-            }
-        }
+    if (fields.some((field) => field.name === "country_id")) {
+        // The province list is reloaded for the new country (core JS).
+        data.state_id = "";
     }
-    card.dataset.scAccountBusy = "1";
-    const button = card.querySelector("[data-sc-account-save]");
-    if (button) {
-        button.disabled = true;
+    const sent = new Map(fields.map((field) => [field, field.value]));
+    for (const field of fields) {
+        setState(field, "saving");
     }
     let result;
     try {
         result = await scFetch(form.dataset.submitUrl || form.action, { method: "POST", data });
     } catch {
-        return; // scFetch toasts network / server errors
-    } finally {
-        delete card.dataset.scAccountBusy;
-        if (button) {
-            button.disabled = false;
+        // scFetch toasts network / server errors.
+        for (const field of fields) {
+            setState(field, "error");
+            lastSaved.set(field, null);
         }
+        return;
     }
     if (result && result.redirectUrl) {
-        snapshot(card);
+        for (const [field, value] of sent) {
+            lastSaved.set(field, value);
+            setState(field, field.value === value ? "saved" : "");
+        }
+        if ("state_id" in data && form.elements.state_id) {
+            lastSaved.set(form.elements.state_id, data.state_id);
+        }
         flag(form, []);
-        showErrors(card, []);
-        closeCard(card);
-        const keys = [...card.querySelectorAll("[data-sc-fragment]")].map((n) => n.dataset.scFragment);
+        for (const card of cards(form)) {
+            showErrors(card, []);
+        }
+        const keys = [...form.querySelectorAll("[data-sc-fragment]")].map((n) => n.dataset.scFragment);
         if (keys.length) {
             requestRefresh(keys, { immediate: true });
         }
-        card.dataset.scAccountSaved = String(Date.now());
-        document.dispatchEvent(new CustomEvent("sc:toast", { detail: { message: message(form, "saved") } }));
+        form.dataset.scAccountSaved = String(Date.now());
         return;
     }
     const invalid = (result && result.invalid_fields) || [];
-    const messages = [...((result && result.messages) || [])];
-    if (invalid.some((name) => !own.has(name) && form.elements[name])) {
-        messages.push(message(form, "other"));
-    }
+    const messages = (result && result.messages) || [];
     flag(form, invalid);
-    showErrors(card, messages);
+    for (const field of fields) {
+        setState(field, "error");
+        // Not saved: any next change (even back to the old value) saves.
+        lastSaved.set(field, null);
+    }
+    // The messages in the card(s) of the changed field(s) and of every
+    // flagged field.
+    const concerned = new Set(fields.map(cardOf));
+    for (const name of invalid) {
+        const node = form.elements[name];
+        if (node && node.closest) {
+            concerned.add(cardOf(node));
+        }
+    }
+    for (const card of cards(form)) {
+        showErrors(card, concerned.has(card) ? messages : []);
+    }
 }
 
-function cardOf(node) {
-    const card = node && node.closest && node.closest("[data-sc-edit-card^='account-']");
-    return card && accountForm(card) ? card : null;
+function changed(field) {
+    const form = accountForm(field);
+    if (form) {
+        remember(form);
+    }
+    return lastSaved.get(field) !== field.value;
 }
 
-// The saved values: taken once the page (and the core JS) settled.
+// The values the page was rendered with = the saved ones.
 function init() {
     for (const form of document.querySelectorAll(".o_sc_app form[data-sc-account-form]")) {
-        for (const card of cards(form)) {
-            if (!saved.has(card)) {
-                snapshot(card);
-            }
-        }
+        remember(form);
     }
 }
 if (document.readyState === "loading") {
@@ -197,47 +237,31 @@ if (document.readyState === "loading") {
     init();
 }
 
-// Opening a card: take its saved values now (the core JS may have filled
-// the province list after load). The pencil of an OPEN card = « Cancel ».
-document.addEventListener(
-    "click",
-    (ev) => {
-        const toggle = ev.target.closest && ev.target.closest("[data-sc-edit-toggle]");
-        const card = toggle && cardOf(toggle);
-        if (!card) {
-            return;
-        }
-        if (card.dataset.scEditOpen) {
-            restore(card);
-        } else {
-            snapshot(card);
-        }
-    },
-    true
-);
-
-document.addEventListener("click", (ev) => {
-    const cancel = ev.target.closest && ev.target.closest("[data-sc-account-cancel]");
-    const card = cancel && cardOf(cancel);
-    if (!card) {
-        return;
+// A text field saves on blur (« change »), a select when picked.
+document.addEventListener("change", (ev) => {
+    const field = accountField(ev.target);
+    if (field && changed(field)) {
+        saveField(field);
     }
-    ev.preventDefault();
-    restore(card);
-    closeCard(card);
 });
 
+// Typing again: the last state no longer applies.
+document.addEventListener("input", (ev) => {
+    const field = accountField(ev.target);
+    if (field && field.tagName !== "SELECT") {
+        setState(field, "");
+    }
+});
+
+// Enter in a field saves it (never a page submit).
 document.addEventListener("submit", (ev) => {
     const form = accountForm(ev.target);
     if (!form) {
         return;
     }
     ev.preventDefault();
-    const card =
-        cardOf(ev.submitter) ||
-        cardOf(document.activeElement) ||
-        cards(form).find((c) => c.dataset.scEditOpen);
-    if (card) {
-        saveCard(card);
+    const field = accountField(document.activeElement);
+    if (field && changed(field)) {
+        saveField(field);
     }
 });

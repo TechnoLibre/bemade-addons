@@ -7,7 +7,8 @@ Acceptance criteria:
 * AC-1 Read view (everyone): the play status (label + Match / Practice
   chips, read-only), then (its very next block) the training recommendation,
   then ONE return date — « Retour prévu » while the player is not Play OK,
-  else « Retour réel », nothing while that date is empty — then the
+  else « Retour réel », a muted « not set » line while that date is empty
+  (review fixes 2026-10-18, 1018c) — then the
   allergies holder (banner for therapists, hidden when empty).
 * AC-2 Edit view (therapists, behind the header's one pencil): the
   play-status selector, the training recommendation (live), « Retour
@@ -103,7 +104,7 @@ class TestHeaderOrder1615(PlayerInlineCommon):
 
     def test_one_return_date(self):
         """Injured (not Play OK): « Retour prévu »; Play OK: « Retour réel »;
-        nothing when the date to show is empty."""
+        « not set » when the date to show is empty (1018c)."""
         self._login_coach()
         cases = (
             ({'match_status': 'no', 'practice_status': 'no'}, 'predicted', 'Predicted return', '2030'),
@@ -118,15 +119,15 @@ class TestHeaderOrder1615(PlayerInlineCommon):
             self.assertEqual(ret.get('data-sc-return-kind'), kind, vals)
             self.assertIn(label, ret.text_content(), vals)
             self.assertIn(year, ret.text_content(), vals)
-        # Empty: nothing shown (an empty « Retour prévu » no longer shows).
+        # Empty: a muted « not set » line (review fixes 2026-10-18, 1018c).
         self.player.sudo().write({'match_status': 'no', 'practice_status': 'no', 'predicted_return_date': False})
         _text, tree = self._get(self._url(tab='injuries'))
         _hero, read = self._assert_order(tree)
-        self.assertEqual(read['player.return'].text_content().strip(), '')
+        self.assertEqual(read['player.return'].text_content().strip(), 'Predicted return: not set')
         self.player.sudo().write({'match_status': 'yes', 'practice_status': 'yes', 'return_date': False})
         _text, tree = self._get(self._url(tab='injuries'))
         _hero, read = self._assert_order(tree)
-        self.assertEqual(read['player.return'].text_content().strip(), '')
+        self.assertEqual(read['player.return'].text_content().strip(), 'Actual return: not set')
 
     def test_fragment_keys_unchanged(self):
         pid = self.player.id

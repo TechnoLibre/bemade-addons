@@ -209,3 +209,4 @@ from . import test_account_security_shell_1620
 from . import test_account_security_tours_1620
 from . import test_review_fixes_1018b
 from . import test_review_fixes_tours_1018b
+from . import test_review_fixes_1018c

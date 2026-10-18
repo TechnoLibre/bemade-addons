@@ -16,7 +16,9 @@
  *   description (a clone of [data-sc-file-proto]), pre-filled from the
  *   shared « Category » / « Description » when the file is added; the rows
  *   post as parallel lists (doc_file / doc_name / doc_category /
- *   doc_description) in the input's file order.
+ *   doc_description) in the input's file order. Round 2 (1018c): the
+ *   shared fields ([data-sc-doc-shared-group]) show only while no file is
+ *   listed; hidden from the first row on, shown again when it is emptied.
  */
 import { _t } from "@web/core/l10n/translation";
 
@@ -199,6 +201,13 @@ function checkFiles(form) {
     }
     if (error) {
         error.hidden = ok;
+    }
+    // Review fixes 2026-10-18 (1018c): the shared « Category » /
+    // « Description » only while the list is empty (they pre-fill each file
+    // added); once a file is listed each row carries its own values.
+    const shared = form.querySelector("[data-sc-doc-shared-group]");
+    if (shared) {
+        shared.hidden = files.length > 0;
     }
     const text = form.querySelector(".o_sc_dropzone_text");
     if (text) {

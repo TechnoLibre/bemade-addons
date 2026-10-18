@@ -4,11 +4,13 @@ only.
 
 Acceptance criteria covered here (laptop 1366 px and phone 360 px):
 
-* UC-T1 Paramètres → Mon compte (review fixes 2026-10-18 b: pencil cards):
-  read cards; the province select as tall as the inputs; Cancel restores;
-  the core validation's error shows in the card being edited (field
-  flagged); a new phone, then a new city, save in place (read view, toast,
-  no reload); back → Paramètres; no horizontal overflow.
+* UC-T1 Paramètres → Mon compte (review fixes 2026-10-18 b: pencil cards;
+  round 2, 1018c: each field autosaves, « Done » closes): read cards; the
+  province select as tall as the inputs; a new city saves on blur
+  (« Saved » next to the field); clearing the street saves (only name and
+  email required); the core validation's error shows on the field and in
+  the card being edited; a new phone saves with Enter; read views refresh,
+  no reload; back → Paramètres; no horizontal overflow.
 * UC-T2 Paramètres → Sécurité: the core « show password » eye; a wrong
   current password comes back with its error; the right one changes it
   (success banner, the new password works); the delete-account sheet opens
@@ -33,8 +35,9 @@ class _Tours1620:
                         .endswith('5145550177'), self.coach.partner_id.phone)
         self.assertEqual(self.coach.partner_id.email, 'pc.coach@example.com')
         # Review fixes 2026-10-18 b: the address card saved too, the contact
-        # card's values kept.
+        # card's values kept; 1018c: the street cleared (optional).
         self.assertEqual(self.coach.partner_id.city, 'Synthetic City')
+        self.assertFalse(self.coach.partner_id.street)
 
     def test_security(self):
         self._switch(True)

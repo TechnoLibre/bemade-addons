@@ -9,6 +9,8 @@ own template and the app shell is active for the viewer, the same values are
 rendered with the shell template instead. Shell off (or a viewer without an
 app role) → the core response, untouched.
 """
+import re
+
 from odoo import _, http
 from odoo.http import request
 
@@ -23,6 +25,14 @@ SC_ACCOUNT_TEMPLATES = {
 SC_ACCOUNT_SAVED_URL = '/my/account?sc_saved=1'
 # The core headers these pages carry (no framing by other sites).
 _KEPT_HEADERS = ('X-Frame-Options', 'Content-Security-Policy')
+# Review fixes 2026-10-18 (1018c): for app-shell users, « Mon compte »
+# requires only these (street / city / zip / country / province / phone are
+# optional), on the routes that page uses; the classic portal pages and the
+# website checkout keep the core rules.
+SC_ACCOUNT_REQUIRED_FIELDS = frozenset({'name', 'email'})
+_RELAXED_PATHS = frozenset({'/my/account', '/my/address/submit'})
+_RELAXED_PREFIX = '/my/address/country_info/'
+_LANG_PREFIX = re.compile(r'^/[a-z]{2,3}(?:[_-][A-Za-z0-9@]{2,8})?(?=/my/)')
 
 
 class AppShellAccountPortal(AppShellPortal):
@@ -65,6 +75,38 @@ class AppShellAccountPortal(AppShellPortal):
                 'tone': 'success',
             }
         return self._sc_core_in_shell(super().account(**kwargs), extra)
+
+    # ------------------------------------------------------------------
+    # Mandatory address fields (review fixes 2026-10-18, 1018c)
+    # ------------------------------------------------------------------
+    def _sc_relaxed_address(self):
+        """True when « Mon compte »'s relaxed rules apply: an app-shell user
+        on one of the routes the page uses (render, autosave, country
+        info). Anyone else / any other route: the core rules."""
+        if not request:
+            return False
+        # A website language prefix (/fr_CA/my/...) does not matter.
+        path = _LANG_PREFIX.sub('', request.httprequest.path)
+        if path not in _RELAXED_PATHS and not path.startswith(_RELAXED_PREFIX):
+            return False
+        return self._sc_app_shell_active()
+
+    def _get_mandatory_billing_address_fields(self, country_sudo):
+        if self._sc_relaxed_address():
+            return set(SC_ACCOUNT_REQUIRED_FIELDS)
+        return super()._get_mandatory_billing_address_fields(country_sudo)
+
+    def _get_mandatory_delivery_address_fields(self, country_sudo):
+        if self._sc_relaxed_address():
+            return set(SC_ACCOUNT_REQUIRED_FIELDS)
+        return super()._get_mandatory_delivery_address_fields(country_sudo)
+
+    def _get_mandatory_address_fields(self, country_sudo):
+        # The core also requires the WHOLE address as soon as one part of
+        # it is given: not in the app (a city alone is fine).
+        if self._sc_relaxed_address():
+            return set()
+        return super()._get_mandatory_address_fields(country_sudo)
 
     # ------------------------------------------------------------------
     # /my/security — « Sécurité » (GET + the password POST)

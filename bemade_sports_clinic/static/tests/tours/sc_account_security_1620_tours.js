@@ -2,12 +2,14 @@
  * Task 1620 — « Mon compte » / « Sécurité » in the shell
  * (tests/test_account_security_tours_1620.py).
  *
- * sc_1620_account (review fixes 2026-10-18 b: pencil cards): Paramètres →
- * Mon compte; read cards, no company / page save; the province select as
- * tall as the inputs; Cancel restores; an email the core validation
- * refuses shows its error in the contact card (field flagged); a new phone
- * then a new city save in place (read view refreshed, toast, no reload);
- * back → Paramètres.
+ * sc_1620_account (review fixes 2026-10-18 b: pencil cards; round 2,
+ * 1018c: each field autosaves, « Done » closes): Paramètres → Mon compte;
+ * read cards, no company / page save / card save-cancel; the province
+ * select as tall as the inputs; a new city saves on blur (« Saved » next
+ * to the field); clearing the street saves (optional now); « Done » → the
+ * read view; an email the core validation refuses shows its error on the
+ * field and in the contact card, a good one clears it; a new phone saves
+ * with Enter; no reload; back → Paramètres.
  * sc_1620_security: Paramètres → Sécurité; the core « show password » eye;
  * a wrong current password comes back with its error; the right one shows
  * the success banner; the delete-account sheet opens and closes (nothing
@@ -72,7 +74,20 @@ function readText(card) {
     return document.querySelector(`${card} [data-sc-edit-view="read"]`).textContent;
 }
 
-// Review fixes 2026-10-18 b: two pencil cards, each saving itself in place.
+// Review fixes 2026-10-18 b: two pencil cards; round 2 (1018c): each field
+// autosaves on its own, « Done » closes the card.
+function fieldBox(card, name) {
+    return document.querySelector(`${card} [name="${name}"]`).closest(".o_sc_field");
+}
+
+function stateOf(card, name) {
+    return fieldBox(card, name).dataset.scState || "";
+}
+
+function waitState(card, name, state) {
+    return waitFor(() => stateOf(card, name) === state, `${name} ${state} (is ${stateOf(card, name)})`);
+}
+
 tours.add("sc_1620_account", {
     url: "/my/app/settings",
     steps: () => [
@@ -86,7 +101,7 @@ tours.add("sc_1620_account", {
             expectUnloadPage: true,
         },
         {
-            content: "The shell page: two read cards, no company, no page save",
+            content: "The shell page: two read cards, no company, no save / cancel",
             trigger: `.o_sc_app ${CONTACT} [data-sc-edit-view="read"]`,
             run() {
                 window.__sc1018bNoReload = "1";
@@ -96,6 +111,8 @@ tours.add("sc_1620_account", {
                 assert(readText(ADDRESS).includes("Testville"), "city not in the read view");
                 assert(!document.querySelector('[name="company_name"], [name="vat"], #save_address'),
                     "company fields or a page-level save");
+                assert(!document.querySelector("[data-sc-account-save], [data-sc-account-cancel]"),
+                    "a card save / cancel is left");
                 assert(document.querySelector(`${CONTACT} [data-sc-edit-view="edit"]`).hidden, "edit open");
                 noOverflow();
             },
@@ -114,22 +131,42 @@ tours.add("sc_1620_account", {
                 const state = h('select[name="state_id"]');
                 assert(Math.abs(state - country) <= 2, `province ${state}px vs country ${country}px`);
                 assert(Math.abs(state - city) <= 4, `province ${state}px vs input ${city}px`);
+                assert(document.querySelector(`${ADDRESS} button[data-sc-edit-done]`), "no Done");
                 noOverflow();
             },
         },
         {
-            content: "Change the city, then Cancel: the saved value comes back",
+            content: "A new city saves on its own (blur): « Saved » next to the field",
             trigger: `${ADDRESS} input[name="city"]`,
-            run() {
-                setValue(this.anchor, "Synthetic Cancelled");
-                document.querySelector(`${ADDRESS} button[data-sc-account-cancel]`).click();
+            async run() {
+                setValue(this.anchor, "Synthetic City");
+                await waitState(ADDRESS, "city", "saved");
+                const label = fieldBox(ADDRESS, "city").querySelector("label");
+                const state = label.querySelector("[data-sc-account-state]");
+                assert(state && !state.hidden && state.textContent.trim(), "no visible save state in the label");
+                noOverflow();
             },
         },
         {
+            content: "1018c: the street is optional now — clearing it saves",
+            trigger: `${ADDRESS} input[name="street"]`,
+            async run() {
+                setValue(this.anchor, "");
+                await waitState(ADDRESS, "street", "saved");
+                assert(!document.querySelector(`${ADDRESS} [data-sc-account-errors] h5`), "an address error");
+            },
+        },
+        {
+            content: "« Done » closes the card: the read view shows the new city, no reload",
+            trigger: `${ADDRESS} button[data-sc-edit-done]`,
+            run: "click",
+        },
+        {
             trigger: `${ADDRESS}:not([data-sc-edit-open]) [data-sc-edit-view="read"]:not([hidden])`,
-            run() {
-                assert(document.querySelector(`${ADDRESS} input[name="city"]`).value === "Testville",
-                    "cancel kept the edit");
+            async run() {
+                await waitFor(() => readText(ADDRESS).includes("Synthetic City"), "address read view");
+                assert(!readText(ADDRESS).includes("1 Synthetic Street"), "street still shown");
+                assert(window.__sc1018bNoReload === "1", "the page reloaded");
             },
         },
         {
@@ -138,11 +175,11 @@ tours.add("sc_1620_account", {
             run: "click",
         },
         {
-            content: "An email the server refuses (the browser accepts it), saved in the card",
+            content: "An email the server refuses (the browser accepts it): error on the field and in the card",
             trigger: `${CONTACT}[data-sc-edit-open] input[name="email"]`,
-            run() {
+            async run() {
                 setValue(this.anchor, "coach@localhost");
-                document.querySelector(`${CONTACT} button[data-sc-account-save]`).click();
+                await waitState(CONTACT, "email", "error");
             },
         },
         {
@@ -156,46 +193,38 @@ tours.add("sc_1620_account", {
             },
         },
         {
-            content: "Back to a good email and a new phone; Save (Enter in the field)",
-            trigger: `${CONTACT} input[name="phone"]`,
-            run() {
-                setValue(document.querySelector(`${CONTACT} input[name="email"]`), "pc.coach@example.com");
-                setValue(this.anchor, "+1 514-555-0177");
-                this.anchor.focus();
-                document.querySelector(FORM).requestSubmit();
+            content: "Back to a good email: saved, the error goes",
+            trigger: `${CONTACT} input[name="email"]`,
+            async run() {
+                setValue(this.anchor, "pc.coach@example.com");
+                await waitState(CONTACT, "email", "saved");
+                assert(!document.querySelector(`${CONTACT} [data-sc-account-errors] h5`), "error left");
+                assert(!this.anchor.classList.contains("is-invalid"), "email still flagged");
             },
         },
         {
-            content: "Saved in place: read view with the new phone, toast, no reload",
+            content: "A new phone, saved with Enter",
+            trigger: `${CONTACT} input[name="phone"]`,
+            async run() {
+                this.anchor.focus();
+                this.anchor.value = "+1 514-555-0177";
+                this.anchor.dispatchEvent(new Event("input", { bubbles: true }));
+                document.querySelector(FORM).requestSubmit();
+                await waitState(CONTACT, "phone", "saved");
+                assert(window.__sc1018bNoReload === "1", "the page reloaded");
+            },
+        },
+        {
+            content: "« Done »: the read view shows the new phone",
+            trigger: `${CONTACT} button[data-sc-edit-done]`,
+            run: "click",
+        },
+        {
             trigger: `${CONTACT}:not([data-sc-edit-open]) [data-sc-edit-view="read"]:not([hidden])`,
             async run() {
                 await waitFor(() => readText(CONTACT).replace(/\D/g, "").includes("5145550177"),
                     "read view refreshed");
-                await waitFor(() => {
-                    const toast = document.querySelector(".o_sc_app .o_sc_toast:not([hidden])");
-                    return toast && toast.textContent.trim().length > 0;
-                }, "toast");
-                assert(window.__sc1018bNoReload === "1", "the page reloaded");
-                assert(!document.querySelector(`${CONTACT} [data-sc-account-errors] h5`), "error left");
-            },
-        },
-        {
-            content: "Address: a new city, saved in place",
-            trigger: `${ADDRESS} button[data-sc-edit-toggle]`,
-            run: "click",
-        },
-        {
-            trigger: `${ADDRESS}[data-sc-edit-open] input[name="city"]`,
-            run() {
-                setValue(this.anchor, "Synthetic City");
-                document.querySelector(`${ADDRESS} button[data-sc-account-save]`).click();
-            },
-        },
-        {
-            trigger: `${ADDRESS}:not([data-sc-edit-open]) [data-sc-edit-view="read"]:not([hidden])`,
-            async run() {
-                await waitFor(() => readText(ADDRESS).includes("Synthetic City"), "address read view");
-                assert(readText(CONTACT).replace(/\D/g, "").includes("5145550177"), "contact lost");
+                assert(readText(ADDRESS).includes("Synthetic City"), "address lost");
                 assert(window.__sc1018bNoReload === "1", "the page reloaded");
             },
         },

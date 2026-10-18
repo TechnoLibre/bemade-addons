@@ -15,7 +15,8 @@ Acceptance criteria covered here:
   core hidden inputs (csrf, address_type, required_fields) and the core
   submit contract (``form.address_autoformat`` posting to
   ``/my/address/submit`` inside ``.o_customer_address_fill`` with
-  ``#errors``; each card has its own « Save », review fixes 2026-10-18 b),
+  ``#errors``; each card has its « Done » and each field autosaves,
+  review fixes 2026-10-18 b / 1018c),
   callback back to the page.
 * UC-A2 A valid save through the core route updates the partner and sends
   the browser back to ``/my/account?sc_saved=1``, which shows the
@@ -128,10 +129,11 @@ class TestAccountShell1620(AccountShellCommon):
             self.assertEqual(form[0].get('data-submit-url'), '/my/address/submit')
             self.assertEqual(form[0].get('action'), '/my/address/submit')
             self.assertEqual(form[0].get('method'), 'post')
-            # Review fixes 2026-10-18 b: each card saves itself (no core
-            # #save_address); no company name / VAT.
+            # Review fixes 2026-10-18 b: no core #save_address; no company
+            # name / VAT. Round 2 (1018c): each field autosaves, each card
+            # has the usual « Done ».
             self.assertFalse(form[0].xpath('.//button[@id="save_address"]'))
-            self.assertEqual(len(form[0].xpath('.//button[@data-sc-account-save]')), 2)
+            self.assertEqual(len(form[0].xpath('.//button[@data-sc-edit-done]')), 2)
             names = set(form[0].xpath('.//input/@name | .//select/@name'))
             self.assertFalse({'company_name', 'vat'} & names)
             for name in ('name', 'email', 'phone', 'street', 'street2',
@@ -382,11 +384,7 @@ class TestAccountSecurityFrench1620(AppShellCommon):
         text = self._fr('/my/account')
         for term in ('Mon compte', 'Paramètres', 'Coordonnées', 'Votre nom', 'Courriel',
                      'Téléphone', 'Adresse', 'Ville', 'Code postal', 'Pays',
-                     'Province / État', 'Enregistrer', 'Annuler',
-                     # Review fixes 2026-10-18 b: no « Entreprise » card; the
-                     # cards' own messages.
-                     'Vos coordonnées ont été enregistrées.',
-                     "Certains de ces champs sont dans l'autre carte : complétez-la d'abord."):
+                     'Province / État', 'Terminé'):
             self.assertIn(term, text, term)
         self.assertNotIn('Entreprise', text)
         text = self._fr('/my/security')

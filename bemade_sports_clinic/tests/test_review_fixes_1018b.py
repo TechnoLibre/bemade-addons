@@ -24,8 +24,9 @@ Acceptance criteria:
   single values keep working (backwards compatibility).
 * F4 « Mon compte »: no « Company » card and no company name / VAT field
   (a save keeps them as they were); « Contact details » and « Address » are
-  edit cards (read view + pencil) whose edit view holds its own
-  « Save » / « Cancel » and error box; no page-level save button; the read
+  edit cards (read view + pencil) whose edit view holds its own error box
+  (round 2, 1018c: « Done », no « Save » / « Cancel » — each field
+  autosaves, test_review_fixes_1018c); no page-level save button; the read
   views are read fragments.
 * F5 #1608 all teams (owner decision): every user who may create events
   gets every ACTIVE team (grouped by organization) on the create form and
@@ -280,8 +281,8 @@ class TestAccountCards1018b(AccountCards1018bCommon):
             edit = card.xpath('.//*[@data-sc-edit-view="edit"]')[0]
             self.assertEqual(edit.get('hidden'), 'hidden')
             self.assertEqual(set(edit.xpath('.//input/@name | .//select/@name')), field_names, key)
-            self.assertTrue(edit.xpath('.//button[@data-sc-account-save][@type="submit"]'), key)
-            self.assertTrue(edit.xpath('.//button[@data-sc-account-cancel]'), key)
+            # Round 2 (1018c): no « Save » / « Cancel », a « Done ».
+            self.assertTrue(edit.xpath('.//button[@data-sc-edit-done]'), key)
             self.assertTrue(edit.xpath('.//*[@data-sc-account-errors]'), key)
         # The read views show the state and country names.
         address = ' '.join(self._card(tree, 'account-address').xpath(

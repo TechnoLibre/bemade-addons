@@ -208,7 +208,7 @@
                  pencil (therapists) for the whole header group. Read: the play
                  status (chips), the training recommendation, ONE return date
                  (« Retour prévu » while the player is not « Play OK », else
-                 « Retour réel »; nothing while that date is empty) and the
+                 « Retour réel »; « not set » while that date is empty) and the
                  allergies banner. Edit: the status selector, the
                  recommendation (autosave + stamp + History), both return
                  dates (#1603 proposals intact), the allergies and « Remove
@@ -279,7 +279,8 @@
                     <!-- ONE return date (the #1611 « predicted-return » fragment
                          key is kept): « Retour prévu » while the play status is
                          not « Play OK » (the status chip's notion), else
-                         « Retour réel »; nothing when that date is empty. -->
+                         « Retour réel »; a muted « not set » line when that date is empty
+                         (review fixes 2026-10-18, 1018c). -->
                     <t t-set="sc_hero_injured" t-value="(player.stage or 'healthy') != 'healthy'"/>
                     <t t-set="sc_hero_return_field" t-value="'predicted_return_date' if sc_hero_injured else 'return_date'"/>
                     <div class="o_sc_hero_return" data-sc-section="player.return"
@@ -290,6 +291,14 @@
                             <t t-else=""><t t-set="label">Actual return</t></t>
                             <t t-set="value" t-value="sc_display(player, sc_hero_return_field)"/>
                         </t>
+                        <!-- Review fixes 2026-10-18 (1018c): an empty date shows a
+                             muted placeholder line, so users know where it is
+                             (therapists edit it behind the pencil). -->
+                        <p t-else="" class="o_sc_hero_return_empty o_sc_muted"
+                           t-att-data-sc-return-empty="'predicted' if sc_hero_injured else 'actual'">
+                            <t t-if="sc_hero_injured">Predicted return: not set</t>
+                            <t t-else="">Actual return: not set</t>
+                        </p>
                     </div>
                     <!-- Task 1611: the holder is always there (a read fragment), so
                          filling the allergies shows the banner and clearing them
@@ -873,20 +882,25 @@
                     </t>
                 </select>
             </div>
-            <div class="o_sc_field">
-                <label t-att-for="'%s_category' % upload_prefix" class="o_sc_field_label">Category</label>
-                <select t-att-id="'%s_category' % upload_prefix" name="category" class="o_sc_input o_sc_select"
-                        data-sc-doc-shared="category">
-                    <t t-foreach="upload_category_options" t-as="cat">
-                        <option t-att-value="cat[0]" t-att-selected="'selected' if cat[0] == 'other' else None" t-out="cat[1]"/>
-                    </t>
-                </select>
-            </div>
-            <div class="o_sc_field">
-                <label t-att-for="'%s_description' % upload_prefix" class="o_sc_field_label">Description</label>
-                <textarea t-att-id="'%s_description' % upload_prefix" name="description" class="o_sc_input o_sc_textarea"
-                          rows="2" data-sc-doc-shared="description"/>
-                <small class="o_sc_hint">Applied to each file you add; change a file below to change only that one.</small>
+            <!-- Review fixes 2026-10-18 (1018c): the shared values only while
+                 no file is listed (they pre-fill each file added); hidden once
+                 a file row exists, shown again when the list is emptied. -->
+            <div class="o_sc_doc_shared_group" data-sc-doc-shared-group="1">
+                <div class="o_sc_field">
+                    <label t-att-for="'%s_category' % upload_prefix" class="o_sc_field_label">Category</label>
+                    <select t-att-id="'%s_category' % upload_prefix" name="category" class="o_sc_input o_sc_select"
+                            data-sc-doc-shared="category">
+                        <t t-foreach="upload_category_options" t-as="cat">
+                            <option t-att-value="cat[0]" t-att-selected="'selected' if cat[0] == 'other' else None" t-out="cat[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="o_sc_field">
+                    <label t-att-for="'%s_description' % upload_prefix" class="o_sc_field_label">Description</label>
+                    <textarea t-att-id="'%s_description' % upload_prefix" name="description" class="o_sc_input o_sc_textarea"
+                              rows="2" data-sc-doc-shared="description"/>
+                    <small class="o_sc_hint">Applied to each file you add; change a file below to change only that one.</small>
+                </div>
             </div>
             <!-- One chosen file's own values (cloned by the JS). -->
             <div class="o_sc_file_fields" data-sc-file-proto="1" hidden="hidden">

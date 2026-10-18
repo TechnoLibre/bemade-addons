@@ -409,6 +409,12 @@ $sc-p2-laptop: 992px;
         display: none;
     }
 
+    // Review fixes 2026-10-18 (1018c): an empty date's placeholder line.
+    .o_sc_hero_return_empty {
+        margin: 0;
+        font-size: var(--sc-text-sm);
+    }
+
     .o_sc_hero_title {
         margin: 0;
         font-family: var(--sc-font-title);
@@ -867,6 +873,18 @@ $sc-p2-laptop: 992px;
         align-items: center;
         gap: var(--sc-space-2);
         min-width: 0;
+    }
+
+    // Review fixes 2026-10-18 (1018c): the shared « Category » /
+    // « Description » only while no file is listed (sc_injury_card.js).
+    .o_sc_doc_shared_group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-3);
+
+        &[hidden] {
+            display: none;
+        }
     }
 
     .o_sc_file_fields {

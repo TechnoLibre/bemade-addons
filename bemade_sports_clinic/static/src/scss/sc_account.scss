@@ -65,8 +65,9 @@
     }
 
     // Required marker, as the core form (its address JS toggles
-    // .label-optional with the country's rules).
-    .o_sc_account .o_sc_field_label:not(.label-optional)::after {
+    // .label-optional with the country's rules). 1018c: after the label's
+    // text, before the field's save state.
+    .o_sc_account .o_sc_field_label:not(.label-optional) > span:first-child::after {
         content: " *";
         font-weight: normal;
         color: var(--sc-fg-3);
@@ -99,6 +100,11 @@
                 margin-top: 4px;
             }
         }
+    }
+
+    // 1018c: a field's save state (hidden until its first save).
+    .o_sc_account .o_sc_save_state[hidden] {
+        display: none;
     }
 
     .o_sc_account_locked {
