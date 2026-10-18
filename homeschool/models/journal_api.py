@@ -97,8 +97,10 @@ class JournalAPI(models.AbstractModel):
         → what worked, ``Ce qui a mal été : …`` → what went badly, anything else → notes) or
         several ``- `` bullets at once (a whole day logged late). Today's entry grows in
         place; a past day's entry is never rewritten — the text goes to ``corrections`` as a
-        dated line. A day without an entry yet gets one holding the text (nothing to
-        correct). Returns ``{"journal_id", "day_id", "corrected"}``."""
+        dated line, unless that field is still empty (then it fills it). A day without an
+        entry yet gets one holding the text (nothing to correct). ``corrected`` is true when
+        at least one line went to ``corrections``. Returns
+        ``{"journal_id", "day_id", "corrected"}``."""
         student = self._student(student_id)
         d = self._date(date)
         text = (text or "").strip()
@@ -112,10 +114,11 @@ class JournalAPI(models.AbstractModel):
         entry = Journal.search([("day_id", "=", day.id)], limit=1)
         corrected = False
         if entry:
-            corrected = entry._is_past()
+            before = entry.corrections or ""
             for field_name, value in vals.items():
                 if value:
                     entry.append_note(field_name, value)
+            corrected = (entry.corrections or "") != before
         else:
             entry = Journal.create(dict(vals, day_id=day.id))
         return {"journal_id": entry.id, "day_id": day.id, "corrected": corrected}

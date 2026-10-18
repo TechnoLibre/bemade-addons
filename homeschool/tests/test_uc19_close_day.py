@@ -20,9 +20,9 @@ Acceptance criteria
    (``adult_missing_names``) and still lets the owner finish. With every block given its
    adult minutes and the entry written, ``journal_state`` is ``done`` and the journal API's
    ``status`` reports ``done``.
-5. A past day: the three texts and the entry's texts land under ``corrections`` (the
-   frozen mixin); minutes and status write in place; an unchanged pre-loaded text never
-   produces a correction line.
+5. A past day: a text that changes one already there lands under ``corrections`` (the
+   frozen mixin), a field still empty takes its text in place; minutes and status write
+   in place; an unchanged pre-loaded text never produces a correction line.
 6. Re-opening the wizard on a half-closed day shows the values already written.
 7. Managers only: a plain internal user gets ``AccessError``.
 8. Entry points: ``homeschool.day.action_open_close_wizard`` (the day form header) and
@@ -260,9 +260,9 @@ class TestCloseDay(HomeschoolCase):
             form.went_badly = "late"
         wiz.action_next()
         self.assertEqual((block.minutes_total, block.minutes_adult_present, block.status), (40, 40, "done"))
-        self.assertEqual((block.went_well, block.went_badly, block.note), ("original", False, "kept"))
-        self.assertEqual(block.corrections,
-                         "- **%s** (What worked): rewritten\n- **%s** (What went badly): late" % (self.today_str, self.today_str))
+        self.assertEqual((block.went_well, block.went_badly, block.note), ("original", "late", "kept"),
+                         "the empty field takes its text in place")
+        self.assertEqual(block.corrections, "- **%s** (What worked): rewritten" % self.today_str)
         self.assertEqual(wiz.step, "journal")
         self.assertEqual(wiz.went_well_day, "day original", "pre-loaded")
         with Form(wiz) as form:
@@ -270,9 +270,8 @@ class TestCloseDay(HomeschoolCase):
             form.notes_day = "- added later"
         wiz.action_finish()
         self.assertEqual(entry.went_well, "day original")
-        self.assertFalse(entry.notes)
-        self.assertEqual(entry.corrections,
-                         "- **%s** (What worked): day rewritten\n- **%s** (Notes): - added later" % (self.today_str, self.today_str))
+        self.assertEqual(entry.notes, "- added later", "the empty field takes its text in place")
+        self.assertEqual(entry.corrections, "- **%s** (What worked): day rewritten" % self.today_str)
 
     # ------------------------------------------------------------------
     # (f) abandon after two Next, (g) re-open shows what is there
@@ -387,3 +386,25 @@ class TestCloseDay(HomeschoolCase):
         with self.assertRaisesRegex(UserError, "Nothing to close"):
             self.Wizard.action_open_today()
         self.assertEqual(self.Day.search_count([]), before, "nothing created")
+
+    def test_e_past_day_closed_late_fills_empty_fields(self):
+        """A day closed days later with nothing written yet: every text lands in its field,
+        no correction line at all."""
+        past = self.make_day(self.today - timedelta(days=5))
+        block = self.make_block(past, "Late math", 45, 1, subject_id=self.math.id)
+        entry = self.Journal.create({"day_id": past.id, "notes": "- planned note"})
+        wiz = self._open(past)
+        with Form(wiz) as form:
+            form.minutes_total = "45"
+            form.minutes_adult_present = "45"
+            form.went_well = "the clocks"
+            form.note = "short"
+        wiz.action_next()
+        self.assertEqual((block.went_well, block.note), ("the clocks", "short"))
+        self.assertFalse(block.corrections)
+        with Form(wiz) as form:
+            form.went_well_day = "a good day"
+            form.went_badly_day = "the end"
+        wiz.action_finish()
+        self.assertEqual((entry.went_well, entry.went_badly, entry.notes), ("a good day", "the end", "- planned note"))
+        self.assertFalse(entry.corrections)
