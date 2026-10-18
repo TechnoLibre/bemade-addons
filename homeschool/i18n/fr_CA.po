@@ -76,6 +76,11 @@ msgid "A day of the week"
 msgstr "Un jour de la semaine"
 
 #. module: homeschool
+#: model:ir.model.constraint,message:homeschool.constraint_homeschool_deliverable_answer_lines_range
+msgid "A deliverable's answer lines must be between 0 and 12."
+msgstr "Les lignes de réponse d'un livrable doivent être entre 0 et 12."
+
+#. module: homeschool
 #: model:ir.model.fields,help:homeschool.field_homeschool_deliverable__when
 msgid ""
 "A moment of the day as written on the paper list: '9 h', 'after lunch', "
@@ -276,6 +281,11 @@ msgstr "Ancrages"
 #: model:ir.model.fields,field_description:homeschool.field_homeschool_reading_entry__answer
 msgid "Answer"
 msgstr "Réponse"
+
+#. module: homeschool
+#: model:ir.model.fields,field_description:homeschool.field_homeschool_deliverable__answer_lines
+msgid "Answer lines"
+msgstr "Lignes de réponse"
 
 #. module: homeschool
 #: model:ir.model.fields,help:homeschool.field_homeschool_week_wizard__date
@@ -2297,6 +2307,12 @@ msgid "Plan"
 msgstr "Planifier"
 
 #. module: homeschool
+#. odoo-python
+#: code:addons/homeschool/models/journal_api.py:0
+msgid "Plan %(date)s/%(key)s: answer_lines must be a whole number from 0 to %(max)s, not %(value)r."
+msgstr "Plan %(date)s/%(key)s : answer_lines doit être un nombre entier de 0 à %(max)s, pas %(value)r."
+
+#. module: homeschool
 #: model:ir.model.fields.selection,name:homeschool.selection__homeschool_block__status__planned
 #: model:ir.model.fields.selection,name:homeschool.selection__homeschool_item__coverage_computed__planned
 #: model:ir.model.fields.selection,name:homeschool.selection__homeschool_item__coverage_override__planned
@@ -2641,6 +2657,11 @@ msgstr ""
 #: model:ir.model.fields,help:homeschool.field_homeschool_project__csv_sequence
 msgid "Row order in the family CSV."
 msgstr "Ordre des lignes dans le CSV de la famille."
+
+#. module: homeschool
+#: model:ir.model.fields,help:homeschool.field_homeschool_deliverable__answer_lines
+msgid "Ruled lines printed under the deliverable for a written answer (0–12)."
+msgstr "Lignes tracées sous le livrable pour une réponse écrite (0 à 12)."
 
 #. module: homeschool
 #: model:ir.model.fields.selection,name:homeschool.selection__homeschool_block_template__weekday__5

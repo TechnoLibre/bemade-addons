@@ -20,6 +20,7 @@ from odoo.exceptions import AccessError, UserError
 from odoo.fields import Command
 
 from .block import BLOCK_KINDS
+from .deliverable import MAX_ANSWER_LINES
 
 PLAN_DAY_TEXTS = ("opening", "evening_before", "debrief", "note")
 
@@ -218,6 +219,12 @@ class JournalAPI(models.AbstractModel):
                 raise UserError(self.env._("Plan %(date)s/%(key)s: a name is required.", date=date_str, key=key))
             if kind == "blocks" and (row.get("kind") or "bloc") not in kinds:
                 raise UserError(self.env._("Plan %(date)s/%(key)s: unknown block kind %(kind)s.", date=date_str, key=key, kind=row.get("kind")))
+            if kind == "deliverables" and row.get("answer_lines") is not None:
+                lines = row["answer_lines"]
+                if isinstance(lines, bool) or not isinstance(lines, int) or not 0 <= lines <= MAX_ANSWER_LINES:
+                    raise UserError(self.env._(
+                        "Plan %(date)s/%(key)s: answer_lines must be a whole number from 0 to %(max)s, not %(value)r.",
+                        date=date_str, key=key, max=MAX_ANSWER_LINES, value=lines))
         return rows
 
     @api.model
@@ -285,7 +292,7 @@ class JournalAPI(models.AbstractModel):
 
     @api.model
     def _plan_deliverable_vals(self, row, index):
-        return {
+        vals = {
             "plan_key": str(row["key"]).strip(),
             "sequence": int(row.get("sequence", 10 * (index + 1))),
             "when": str(row["when"]).strip() if row.get("when") else False,
@@ -293,6 +300,11 @@ class JournalAPI(models.AbstractModel):
             "detail": str(row["detail"]) if row.get("detail") else False,
             "bonus": bool(row.get("bonus")),
         }
+        # unlike detail / bonus, an absent answer_lines leaves the record's value alone
+        # (the field default, 0, on create): the prep tool sets it on reading questions only
+        if row.get("answer_lines") is not None:
+            vals["answer_lines"] = row["answer_lines"]
+        return vals
 
     @api.model
     def _plan_sync(self, day, records, rows, is_closed, label, make_vals, date_str, log):
@@ -357,7 +369,9 @@ class JournalAPI(models.AbstractModel):
         planned lines are removed). A block: ``key, sequence, kind, subject`` (code or csv
         key), ``name, duration_planned, anchored, start_fixed, intention, steps, success,
         fallback, items`` (codes), ``materials`` (repository paths), ``project`` (code). A
-        deliverable: ``key, sequence, when, name, detail, bonus``. Replay rules: a block is
+        deliverable: ``key, sequence, when, name, detail, bonus, answer_lines`` (0–12 ruled
+        lines under it on the printed list; absent → 0 on create, unchanged on a replay).
+        Replay rules: a block is
         matched by ``plan_key`` (else by exact kind and name when it has no key, then it
         takes the key); a matched block that is still ``planned`` with no actuals is updated
         in place; a closed one (any other status, or actuals recorded) is never overwritten
