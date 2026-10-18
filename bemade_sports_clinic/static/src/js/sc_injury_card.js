@@ -6,7 +6,8 @@
  *   the card itself; the read fragments refresh at once (task 1611);
  * - form[data-sc-form="injury.documents.upload"] (the « Add documents »
  *   sheet): several files at once — the chosen files are listed with their
- *   size, a file over the limit (data-sc-max-bytes) is flagged and blocks
+ *   size and a « × » each; choosing / dropping again ADDS to the list
+ *   (review fixes 2026-10-18; duplicates ignored), a file over the limit (data-sc-max-bytes) is flagged and blocks
  *   the upload (the server refuses it too: all or nothing); on a laptop the
  *   drop zone ([data-sc-dropzone]) takes dropped files.
  */
@@ -39,6 +40,27 @@ document.addEventListener("click", (ev) => {
     card.scrollIntoView({ block: "nearest" });
 });
 
+// ------------------------------------- status-only fields (review 2026-10-18)
+// « Date prévue de résolution » until the injury is resolved, « Date de
+// résolution » once it is: a status save (the stage island, its undo, the
+// quick « Résoudre ») flips their holders ([data-sc-stage-of]) in place.
+document.addEventListener("sc:saved", (ev) => {
+    const detail = ev.detail || {};
+    if (detail.model !== "sports.patient.injury" || detail.field !== "stage" || !detail.result) {
+        return;
+    }
+    const result = detail.result;
+    const stage = result.also && result.also.stage ? result.also.stage.value : result.value;
+    if (!stage) {
+        return;
+    }
+    for (const holder of document.querySelectorAll(`.o_sc_app [data-sc-stage-of="${detail.recordId}"]`)) {
+        const show = holder.dataset.scStageShow;
+        const hide = holder.dataset.scStageHide;
+        holder.hidden = show ? stage !== show : hide ? stage === hide : holder.hidden;
+    }
+});
+
 // ------------------------------------------------------ « Add documents »
 function formatSize(bytes) {
     if (bytes >= 1024 * 1024) {
@@ -47,22 +69,80 @@ function formatSize(bytes) {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+// Review fixes 2026-10-18 (#1616): choosing files again (or dropping more)
+// ADDS them to the selection instead of replacing it. The form keeps its own
+// list (source of truth) and rebuilds the input's FileList from it
+// (DataTransfer), so « Upload » posts every chosen file in one request, as
+// before. The same file twice (name + size + last modified) is ignored; each
+// row has a « × » to drop that file.
+const selections = new WeakMap();
+
+function fileKey(file) {
+    return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
+}
+
+function selection(form) {
+    if (!selections.has(form)) {
+        selections.set(form, []);
+    }
+    return selections.get(form);
+}
+
+/** Write the form's list back into its file input (when the browser can). */
+function syncInput(form) {
+    const input = form.querySelector('input[type="file"]');
+    if (!input || typeof DataTransfer === "undefined") {
+        return;
+    }
+    try {
+        const transfer = new DataTransfer();
+        for (const file of selection(form)) {
+            transfer.items.add(file);
+        }
+        input.files = transfer.files;
+    } catch {
+        // No constructible DataTransfer: the input keeps the last choice.
+    }
+}
+
+/** Add ``files`` to the form's selection (duplicates ignored). */
+export function addFiles(form, files) {
+    const list = selection(form);
+    const known = new Set(list.map(fileKey));
+    for (const file of files) {
+        const key = fileKey(file);
+        if (!known.has(key)) {
+            known.add(key);
+            list.push(file);
+        }
+    }
+    syncInput(form);
+    return checkFiles(form);
+}
+
+function removeFile(form, index) {
+    selection(form).splice(index, 1);
+    syncInput(form);
+    checkFiles(form);
+}
+
 /** List the chosen files; true when every one fits under the limit. */
 function checkFiles(form) {
     const input = form.querySelector('input[type="file"]');
     const list = form.querySelector("[data-sc-file-list]");
     const error = form.querySelector("[data-sc-file-error]");
     const max = parseInt(form.dataset.scMaxBytes || "0", 10);
-    const files = [...(input?.files || [])];
+    const files = selections.has(form) ? selection(form) : [...(input?.files || [])];
     let ok = true;
     if (list) {
         list.replaceChildren(
-            ...files.map((file) => {
+            ...files.map((file, index) => {
                 const item = document.createElement("li");
                 const tooLarge = max && file.size > max;
                 ok = ok && !tooLarge;
                 item.className = tooLarge ? "o_sc_file o_sc_file_too_large" : "o_sc_file";
                 item.dataset.scFileTooLarge = tooLarge ? "1" : "0";
+                item.dataset.scFileIndex = String(index);
                 const name = document.createElement("span");
                 name.className = "o_sc_file_name";
                 name.textContent = file.name;
@@ -71,7 +151,15 @@ function checkFiles(form) {
                 size.textContent = tooLarge
                     ? _t("%(size)s — over 10 MB", { size: formatSize(file.size) })
                     : formatSize(file.size);
-                item.append(name, size);
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "o_sc_file_remove";
+                remove.dataset.scFileRemove = String(index);
+                const label = _t("Remove %(file)s", { file: file.name });
+                remove.setAttribute("aria-label", label);
+                remove.title = label;
+                remove.textContent = "×";
+                item.append(name, size, remove);
                 return item;
             })
         );
@@ -100,7 +188,26 @@ function uploadForm(node) {
 document.addEventListener("change", (ev) => {
     const form = uploadForm(ev.target);
     if (form && ev.target.matches('input[type="file"]')) {
-        checkFiles(form);
+        addFiles(form, [...(ev.target.files || [])]);
+    }
+});
+
+document.addEventListener("click", (ev) => {
+    const remove = ev.target.closest && ev.target.closest("[data-sc-file-remove]");
+    const form = remove && uploadForm(remove);
+    if (!form) {
+        return;
+    }
+    ev.preventDefault();
+    removeFile(form, parseInt(remove.dataset.scFileRemove, 10));
+});
+
+// A sheet reopened after « Cancel » / a reset form starts empty again.
+document.addEventListener("reset", (ev) => {
+    const form = uploadForm(ev.target);
+    if (form) {
+        selections.delete(form);
+        setTimeout(() => checkFiles(form), 0);
     }
 });
 
@@ -139,9 +246,9 @@ document.addEventListener("drop", (ev) => {
     }
     ev.preventDefault();
     zone.classList.remove("o_sc_dropzone_over");
-    const input = zone.querySelector('input[type="file"]');
-    if (input && ev.dataTransfer && ev.dataTransfer.files.length) {
-        input.files = ev.dataTransfer.files;
-        input.dispatchEvent(new Event("change", { bubbles: true }));
+    const form = uploadForm(zone);
+    if (form && ev.dataTransfer && ev.dataTransfer.files.length) {
+        // Review fixes 2026-10-18: dropped files are ADDED to the selection.
+        addFiles(form, [...ev.dataTransfer.files]);
     }
 });

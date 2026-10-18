@@ -1,18 +1,18 @@
-"""Task 1618 — laptop: the back arrow next to the breadcrumb only when it
-adds something (static/tests/tours/sc_back_arrow_1618_tours.js,
+"""Task 1618 — laptop: the back arrow next to the breadcrumb on every
+sub-page (owner review 2026-10-18 reversed the « only when it adds
+something » rule; static/tests/tours/sc_back_arrow_1618_tours.js,
 static/src/js/sc_app_nav.js). Synthetic fixtures only.
 
 Acceptance criteria:
 
-* UC-B1 (laptop) Normal drill-down — team page → one of its players (the
-  previous page IS the breadcrumb's direct parent): breadcrumb only, no back
-  arrow.
+* UC-B1 (laptop) Normal drill-down — team page → one of its players: the
+  breadcrumb AND the back arrow; the arrow returns to the team page.
 * UC-B2 (laptop) Sideways arrival — activities list (filtered) → an activity
   whose parent is the player: the back arrow shows next to the breadcrumb and
   returns to the activities list we came from, its filter kept.
 * UC-B3 (laptop) Installed app (``display-mode: standalone``, emulated with a
-  matchMedia stub): the back arrow shows next to the trail, even on a deep
-  link.
+  matchMedia stub) and a plain browser tab: the back arrow shows next to the
+  trail, even on a deep link (then it goes to the parent).
 * UC-B4 (phone) Unchanged: the back chevron after a drill-down, no trail.
 """
 from datetime import timedelta
@@ -49,7 +49,7 @@ class _Tours1618(Nav1579Common):
 class TestBackArrowLaptop1618(_Tours1618):
     browser_size = '1366x768'
 
-    def test_drill_down_keeps_the_trail_only(self):
+    def test_drill_down_shows_the_arrow_too(self):
         self.start_tour(self.players_url, 'sc_1618_laptop_drill_down', login='pc.tp@example.com')
 
     def test_sideways_arrival_shows_the_arrow(self):

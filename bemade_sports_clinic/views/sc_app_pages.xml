@@ -262,12 +262,8 @@
                         <t t-set="title">Security</t>
                         <t t-set="subtitle">Password and sign-in</t>
                     </t>
-                    <t t-call="bemade_sports_clinic.sc_entity_row">
-                        <t t-set="href" t-value="'/my/home?classic=1'"/>
-                        <t t-set="lead_icon" t-value="'documents'"/>
-                        <t t-set="title">Other portal documents</t>
-                        <t t-set="subtitle">Invoices, quotes and the classic portal</t>
-                    </t>
+                    <!-- Review fixes 2026-10-18 (#1606): no « Portail classique »
+                         row any more (owner). -->
                 </div>
             </section>
         </t>

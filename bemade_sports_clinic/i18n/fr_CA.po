@@ -2906,6 +2906,11 @@ msgid "Activity created successfully."
 msgstr "Activité créée avec succès."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
+msgid "Actual return"
+msgstr "Retour réel"
+
+#. module: bemade_sports_clinic
 #. odoo-python
 #: code:addons/bemade_sports_clinic/models/patient_return_proposal.py:0
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
@@ -4272,7 +4277,10 @@ msgid "Coverage end must be after coverage start."
 msgstr "La fin de la couverture doit être après son début."
 
 #. module: bemade_sports_clinic
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_add_card
+#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.view_sports_event_recurrence_wizard
 msgid "Create"
 msgstr "Créer"
@@ -4296,14 +4304,11 @@ msgstr "Créer une soumission client à partir des feuilles de temps"
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_breadcrumbs_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_event_create
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event_form
 msgid "Create Event"
 msgstr "Créer un événement"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_injury_create_form_body
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_injury_new
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_injury_new_form
 msgid "Create Injury"
 msgstr "Créer une blessure"
 
@@ -4324,7 +4329,6 @@ msgstr "Créer un nouveau joueur"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.portal_breadcrumbs_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player_create
 msgid "Create Player"
 msgstr "Créer un joueur"
 
@@ -13792,11 +13796,6 @@ msgid "Invoiced timesheets cannot be deleted."
 msgstr "Les feuilles de temps facturées ne peuvent pas être supprimées."
 
 #. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_settings
-msgid "Invoices, quotes and the classic portal"
-msgstr "Factures, devis et le portail classique"
-
-#. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.clinic_kiosk_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_layout
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_more
@@ -13887,11 +13886,6 @@ msgstr "Rien de prévu prochainement."
 
 msgid "Open the waiting list"
 msgstr "Ouvrir la file d'attente"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_settings
-msgid "Other portal documents"
-msgstr "Autres documents du portail"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_settings
@@ -14400,11 +14394,6 @@ msgid ""
 msgstr ""
 "<span class=\"o_sc_row_trailing\"><span class=\"o_sc_chip "
 "o_sc_chip_ghost\">Aucun accès</span></span>"
-
-#. module: bemade_sports_clinic
-#: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_player
-msgid "<span>Actual return:</span>"
-msgstr "<span>Retour réel :</span>"
 
 #. module: bemade_sports_clinic
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_activity_add_sheet
@@ -14997,6 +14986,12 @@ msgstr "Équipes modifiées"
 #: model_terms:ir.ui.view,arch_db:bemade_sports_clinic.sc_app_event
 msgid "Add a team…"
 msgstr "Ajouter une équipe…"
+
+#. module: bemade_sports_clinic
+#. odoo-javascript
+#: code:addons/bemade_sports_clinic/static/src/js/sc_injury_card.js:0
+msgid "Remove %(file)s"
+msgstr "Retirer %(file)s"
 
 #. module: bemade_sports_clinic
 #. odoo-javascript

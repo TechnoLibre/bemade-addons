@@ -283,18 +283,12 @@ $sc-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
             padding-right: var(--sc-space-5);
         }
 
-        // Laptop: the trail replaces the back chevron and the context line.
-        .o_sc_back,
+        // Laptop: the trail replaces the context line. Task 1618 (owner
+        // review 2026-10-18): the back chevron ALWAYS shows on a laptop
+        // sub-page, left of the title next to the trail (back = the
+        // previous in-app page, like the phone, else the parent).
         .o_sc_appbar_context {
             display: none;
-        }
-
-        // Task 1618: …unless the chevron adds something (sc_app_nav.js sets
-        // the class): a sideways arrival (the previous page is not the
-        // trail's parent) or the installed app (no browser back button).
-        // Left of the title, aligned with the trail below.
-        &.o_sc_back_useful .o_sc_back {
-            display: inline-grid;
         }
 
         .o_sc_rail {

@@ -1,7 +1,7 @@
 /*
- * Task 1618 — laptop: the back chevron shows next to the breadcrumb only when
- * it adds something (tests/test_back_arrow_tours_1618.py, laptop 1366 px and
- * phone 390 px). Language-independent triggers only (data attributes, URLs).
+ * Task 1618 — laptop: the back chevron shows next to the breadcrumb on EVERY
+ * sub-page (owner review 2026-10-18; tests/test_back_arrow_tours_1618.py,
+ * laptop 1366 px and phone 390 px). Language-independent triggers only.
  */
 import { registry } from "@web/core/registry";
 
@@ -28,26 +28,34 @@ function reloadIfRestored() {
     });
 }
 
-// ------------------------------------------- laptop: drill-down = trail only
+// --------------------------------- laptop: drill-down = arrow AND trail too
 tours.add("sc_1618_laptop_drill_down", {
     steps: () => [
         {
             content: "Team page (players tab): open a player of the roster",
             trigger: '.o_sc_app section[data-sc-tab-panel="players"] a.o_sc_link_row_main[href*="/my/player?player_id="]',
-            run: "click",
+            run(helpers) {
+                reloadIfRestored();
+                return helpers.click();
+            },
             expectUnloadPage: true,
         },
         {
-            content: "Player page: came from its parent — breadcrumb, no back arrow",
+            content: "Player page after a drill-down: breadcrumb AND back arrow",
             trigger: 'nav.o_sc_crumbs ol li[aria-current="page"]',
             run() {
                 assert(window.location.pathname === "/my/player", window.location.href);
                 assert(visible("nav.o_sc_crumbs"), "laptop: no trail");
-                assert(
-                    !document.querySelector(".o_sc_app").classList.contains("o_sc_back_useful"),
-                    "drill-down: the shell is marked back-useful"
-                );
-                assert(!visible(".o_sc_back"), "drill-down: back arrow visible on a laptop");
+                assert(visible(".o_sc_back"), "drill-down: back arrow hidden on a laptop");
+                document.querySelector("a.o_sc_back").click();
+            },
+            expectUnloadPage: true,
+        },
+        {
+            content: "Back on the team's players tab",
+            trigger: '.o_sc_app section[data-sc-tab-panel="players"]',
+            run() {
+                assert(window.location.pathname === "/my/team", window.location.href);
             },
         },
     ],
@@ -93,10 +101,10 @@ tours.add("sc_1618_laptop_sideways", {
 tours.add("sc_1618_laptop_standalone", {
     steps: () => [
         {
-            content: "Deep link in a browser tab: trail only",
+            content: "Deep link in a browser tab: arrow (to the parent) + trail",
             trigger: 'nav.o_sc_crumbs ol li[aria-current="page"]',
             run() {
-                assert(!visible(".o_sc_back"), "browser tab deep link: back arrow visible");
+                assert(visible(".o_sc_back"), "browser tab deep link: back arrow hidden");
                 // Emulate the installed app (display-mode: standalone).
                 const original = window.matchMedia.bind(window);
                 window.matchMedia = (query) =>

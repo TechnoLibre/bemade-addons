@@ -91,6 +91,12 @@ $sc-p2-laptop: 992px;
         gap: var(--sc-space-3);
     }
 
+    // Review fixes 2026-10-18: a field shown for one injury status only
+    // (sc_injury_card.js); the holder does not add a box of its own.
+    .o_sc_stage_only:not([hidden]) {
+        display: contents;
+    }
+
     // ------------------------------------------- inline-edit cards (2026-10-10)
     // One pencil per card; read view by default (sc_app_ui.js toggles).
     .o_sc_edit_card {
@@ -374,6 +380,33 @@ $sc-p2-laptop: 992px;
         align-items: center;
         gap: var(--sc-space-3);
         min-width: 0;
+    }
+
+    // Review fixes 2026-10-18 (#1603 / #1615): the header is a read view
+    // with ONE pencil (therapists), top right, next to the name.
+    .o_sc_hero_editable {
+        position: relative;
+
+        .o_sc_hero_head {
+            padding-right: calc(var(--sc-tap) + var(--sc-space-1, 4px));
+        }
+    }
+
+    .o_sc_hero_edit_toggle {
+        position: absolute;
+        top: var(--sc-space-2);
+        right: var(--sc-space-2);
+    }
+
+    .o_sc_hero_read {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sc-space-3);
+        min-width: 0;
+    }
+
+    .o_sc_hero_return:empty {
+        display: none;
     }
 
     .o_sc_hero_title {
@@ -773,6 +806,35 @@ $sc-p2-laptop: 992px;
     .o_sc_file_size {
         flex: none;
         color: var(--sc-fg-2);
+    }
+
+    // Review fixes 2026-10-18 (#1616): one « × » per chosen file.
+    .o_sc_file {
+        align-items: center;
+    }
+
+    .o_sc_file_name {
+        flex: 1 1 auto;
+    }
+
+    .o_sc_file_remove {
+        appearance: none;
+        flex: none;
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--sc-fg-2);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            background: var(--sc-hover);
+            color: var(--sc-bad);
+        }
     }
 
     .o_sc_file_too_large .o_sc_file_size {

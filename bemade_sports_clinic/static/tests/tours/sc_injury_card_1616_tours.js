@@ -157,17 +157,38 @@ tours.add("sc_1616_documents_upload", {
             },
         },
         {
-            content: "Nothing was sent (no reload); choose two small files",
-            trigger: `${ADD_SHEET}[open] .o_sc_dropzone`,
+            content: "Nothing was sent (no reload); « × » drops the big file",
+            trigger: `${ADD_SHEET}[open] [data-sc-file-too-large="1"] button[data-sc-file-remove]`,
             run() {
                 assert(window.__sc1616NoReload === "1", "the oversized upload was posted");
-                setFiles(this.anchor.querySelector('input[type="file"]'), [
-                    new File(["synthetic a"], "Synthetic a.pdf", { type: "application/pdf" }),
-                    new File(["synthetic b"], "Synthetic b.pdf", { type: "application/pdf" }),
+                this.anchor.click();
+                const sheet = el(`${ADD_SHEET}[open]`);
+                assert(sheet.querySelector("[data-sc-file-error]").hidden, "error still shown");
+                const names = [...sheet.querySelectorAll("[data-sc-file-list] .o_sc_file_name")].map((n) => n.textContent);
+                assert(JSON.stringify(names) === JSON.stringify(["Synthetic small.pdf"]), `left: ${names}`);
+                assert(sheet.querySelector('input[type="file"]').files.length === 1, "input not rebuilt");
+            },
+        },
+        {
+            content: "Review fixes 2026-10-18: choosing again ADDS (a, then b + a duplicate)",
+            trigger: `${ADD_SHEET}[open] .o_sc_dropzone`,
+            run() {
+                const input = this.anchor.querySelector('input[type="file"]');
+                const a = new File(["synthetic a"], "Synthetic a.pdf", { type: "application/pdf", lastModified: 1 });
+                setFiles(input, [a]);
+                setFiles(input, [
+                    new File(["synthetic b"], "Synthetic b.pdf", { type: "application/pdf", lastModified: 2 }),
+                    new File(["synthetic a"], "Synthetic a.pdf", { type: "application/pdf", lastModified: 1 }),
                 ]);
                 const sheet = el(`${ADD_SHEET}[open]`);
                 assert(sheet.querySelector("[data-sc-file-error]").hidden, "error still shown");
-                assert(sheet.querySelectorAll("[data-sc-file-list] li").length === 2, "two files listed");
+                const names = [...sheet.querySelectorAll("[data-sc-file-list] .o_sc_file_name")].map((n) => n.textContent);
+                assert(
+                    JSON.stringify(names) === JSON.stringify(["Synthetic small.pdf", "Synthetic a.pdf", "Synthetic b.pdf"]),
+                    `accumulated list: ${names}`
+                );
+                assert(input.files.length === 3, `input holds ${input.files.length} files`);
+                assert(sheet.querySelectorAll("[data-sc-file-list] li button[data-sc-file-remove]").length === 3, "×");
                 const category = sheet.querySelector('select[name="category"]');
                 category.value = "medical_imaging";
                 category.dispatchEvent(new Event("change", { bubbles: true }));
@@ -187,7 +208,9 @@ tours.add("sc_1616_documents_upload", {
                 const names = [...document.querySelectorAll(`${DOCS} .o_sc_doc_row .o_sc_row_title`)].map(
                     (node) => node.textContent.trim()
                 );
-                assert(names.includes("Synthetic a.pdf") && names.includes("Synthetic b.pdf"), names.join(","));
+                for (const name of ["Synthetic small.pdf", "Synthetic a.pdf", "Synthetic b.pdf"]) {
+                    assert(names.includes(name), `${name} missing: ${names.join(",")}`);
+                }
             },
         },
         {

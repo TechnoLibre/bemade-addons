@@ -46,6 +46,13 @@ const CARD = ".o_sc_injury_item[open]";
 const SHEET = "dialog#sc_proposal_sheet";
 const HEADER_FIELD = '[data-sc-section="player.predicted_return"] .o_sc_autosave[data-sc-field="predicted_return_date"]';
 
+// Review fixes 2026-10-18: the header's fields are behind its one pencil.
+const HEADER_PENCIL = {
+    content: "Open the header's pencil",
+    trigger: '[data-sc-section="player.hero"] > button[data-sc-edit-toggle][aria-expanded="false"]',
+    run: "click",
+};
+
 function sheetOpen(kind) {
     return `${SHEET}[open][data-sc-proposal-kind="${kind}"]`;
 }
@@ -126,6 +133,7 @@ function kneeRead() {
 
 tours.add("sc_1603_player_to_injuries", {
     steps: () => [
+        HEADER_PENCIL,
         {
             content: "Change Retour prévu in the header and leave it",
             trigger: `${HEADER_FIELD} input`,
@@ -202,14 +210,18 @@ tours.add("sc_1603_last_resolved", {
             run: "click",
         },
         {
-            content: "Header: Retour prévu cleared, « Actual return » shown — no reload",
+            content: "Header: Retour prévu cleared, the actual return date set — no reload",
             trigger: ".o_sc_app",
             async run() {
                 await waitFor(() => !document.querySelector(`${SHEET}[open]`), "sheet closed");
                 await waitFor(() => document.querySelector(`${HEADER_FIELD} input`).value === "", "cleared");
+                // Review fixes 2026-10-18: the header's edit view holds the
+                // actual return date (its read view shows ONE date).
                 await waitFor(
-                    () => !document.querySelector('[data-sc-section="player.return_date"]').hidden,
-                    "actual return chip"
+                    () => document.querySelector(
+                        '[data-sc-section="player.return_date.edit"] .o_sc_autosave[data-sc-field="return_date"] input'
+                    ).value === "2030-01-31",
+                    "actual return date in the header"
                 );
                 assertNoReload();
             },
@@ -220,6 +232,7 @@ tours.add("sc_1603_last_resolved", {
 // ------------------------------------------------ dismiss changes nothing
 tours.add("sc_1603_dismiss", {
     steps: () => [
+        HEADER_PENCIL,
         {
             content: "Change Retour prévu in the header and leave it",
             trigger: `${HEADER_FIELD} input`,

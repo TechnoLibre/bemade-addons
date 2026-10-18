@@ -293,6 +293,11 @@ tours.add("sc_1611_back_roster", {
             expectUnloadPage: true,
         },
         {
+            content: "Player page: the header's pencil (review fixes 2026-10-18)",
+            trigger: '[data-sc-section="player.hero"] > button[data-sc-edit-toggle]',
+            run: "click",
+        },
+        {
             content: "Player page: « No play »",
             trigger: '.o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="no:no"]',
             run: "click",

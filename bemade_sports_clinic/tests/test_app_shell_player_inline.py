@@ -159,9 +159,13 @@ class TestPlayerInline(PlayerInlineCommon):
         live = ' '.join(self._fields_in(panel))
         self.assertIn('"sc_status"', live)
         self.assertIn('"training_recommendation"', live)
+        # Review fixes 2026-10-18: both behind the HEADER's one pencil (its
+        # edit view), still autosaving fields.
         for node in panel.xpath('.//owl-component[contains(@props, \'"sc_status"\') '
                                 'or contains(@props, \'"training_recommendation"\')]'):
-            self.assertFalse(node.xpath('ancestor::*[@data-sc-edit-card]'))
+            self.assertEqual(node.xpath('ancestor::*[@data-sc-edit-card][1]/@data-sc-edit-card'),
+                             ['player-header'])
+            self.assertTrue(node.xpath('ancestor::*[@data-sc-edit-view="edit"]'))
 
     # -- UC-5 ------------------------------------------------------------
     def test_teams_checklist_only_touches_assignable_teams(self):

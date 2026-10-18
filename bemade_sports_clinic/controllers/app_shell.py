@@ -670,7 +670,14 @@ def _injury_write(ctrl, injury, field, value):
             # button does — log it and close the « Verify injury » To-Do.
             injury._after_verify()
         # Owner review 2026-10-11: the page shows the date at once.
-        return {'also_fields': ['resolution_date']} if 'resolution_date' in vals else {}
+        # Review fixes 2026-10-18: resolving also clears the predicted date
+        # (model write) — the card's field follows.
+        also = []
+        if 'resolution_date' in vals:
+            also.append('resolution_date')
+        if stage == 'resolved':
+            also.append('predicted_resolution_date')
+        return {'also_fields': also} if also else {}
     if field == 'hidden_from_coaches':
         injury.write({field: str(value).lower() in _TRUTHY})
         return {}
@@ -2213,7 +2220,7 @@ class AppShellPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             'also': {name: {
                 'value': self._sc_save_value(injury, name),
                 'display': self._sc_save_display(injury, name),
-            } for name in ('stage', 'resolution_date')},
+            } for name in ('stage', 'resolution_date', 'predicted_resolution_date')},
             'refresh': sc_refresh_patterns(model, injury, 'stage'),
             'saved_at': sc_now_ms(),
             'live_counts': True,

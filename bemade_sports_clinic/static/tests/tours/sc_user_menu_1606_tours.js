@@ -136,7 +136,7 @@ function menuSteps(where) {
                     "« Paramètres » not marked current");
                 assert(document.querySelector('main a[href="/my/account"]'), "« Mon compte » missing");
                 assert(document.querySelector('main a[href="/my/security"]'), "« Sécurité » missing");
-                assert(document.querySelector('main a[href="/my/home?classic=1"]'), "classic portal missing");
+                assert(!document.querySelector('main a[href="/my/home?classic=1"]'), "classic portal link still shown");
             },
         },
         {

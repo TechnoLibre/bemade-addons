@@ -85,10 +85,16 @@ tours.add("sc_1014_date_complete", {
     ],
 });
 
-const TRAINING = '[data-sc-section="player.training"] .o_sc_autosave[data-sc-field="training_recommendation"]';
+// Review fixes 2026-10-18: the island is in the header's edit view.
+const TRAINING = '[data-sc-section="player.training.edit"] .o_sc_autosave[data-sc-field="training_recommendation"]';
 
 tours.add("sc_1014_serialized_saves", {
     steps: () => [
+        {
+            content: "Open the header's pencil",
+            trigger: '[data-sc-section="player.hero"] > button[data-sc-edit-toggle]',
+            run: "click",
+        },
         {
             content: "Save twice in a row: the second while the first is in flight",
             trigger: `${TRAINING} textarea`,

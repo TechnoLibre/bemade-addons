@@ -203,3 +203,5 @@ from . import test_header_order_1615
 from . import test_timesheet_filters_open_1617
 from . import test_timesheet_filters_open_tours_1617
 from . import test_back_arrow_tours_1618
+from . import test_review_fixes_1018
+from . import test_review_fixes_tours_1018

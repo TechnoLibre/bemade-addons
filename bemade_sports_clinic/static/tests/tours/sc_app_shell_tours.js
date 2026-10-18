@@ -122,11 +122,13 @@ tours.add("sc_1542_prefs", {
             expectUnloadPage: true,
         },
         {
-            content: "Laptop: the crumb trail shows, the back chevron does not",
+            // Task 1618 (owner review 2026-10-18): the chevron always shows
+            // next to the trail on a laptop sub-page.
+            content: "Laptop: the crumb trail shows, and the back chevron too",
             trigger: 'nav.o_sc_crumbs a[href="/my/teams"]',
             run() {
                 const back = document.querySelector(".o_sc_back");
-                assert(back && !back.offsetParent, "back chevron visible on a laptop");
+                assert(back && back.offsetParent, "back chevron hidden on a laptop");
             },
         },
     ],

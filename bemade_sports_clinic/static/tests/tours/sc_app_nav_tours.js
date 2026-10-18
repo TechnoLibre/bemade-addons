@@ -187,7 +187,9 @@ tours.add("sc_1579_laptop_trail", {
             content: "Laptop: the full trail, the current page last",
             trigger: 'nav.o_sc_crumbs[aria-label] ol li[aria-current="page"]',
             run() {
-                assert(!visible(".o_sc_back"), "laptop: back chevron visible");
+                // Task 1618 (owner review 2026-10-18): the chevron always
+                // shows next to the trail on a laptop sub-page.
+                assert(visible(".o_sc_back"), "laptop: back chevron hidden");
                 assert(!visible(".o_sc_appbar_context"), "laptop: context line visible");
                 const links = [...document.querySelectorAll("nav.o_sc_crumbs ol li a")].map(
                     (a) => a.getAttribute("href")

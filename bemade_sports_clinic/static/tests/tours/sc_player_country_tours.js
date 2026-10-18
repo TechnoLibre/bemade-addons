@@ -89,9 +89,11 @@ tours.add("sc_1594_country_province", {
 tours.add("sc_1594_return_date", {
     steps: () => [
         {
-            content: "The hero's « Actual return » chip is hidden while empty",
-            trigger: '[data-sc-section="player.return_date"]:not(:visible)',
+            content: "Review fixes 2026-10-18: no return date shown in the header while empty",
+            trigger: '[data-sc-section="player.hero"] [data-sc-edit-view="read"]',
             run() {
+                const holder = this.anchor.querySelector('[data-sc-section="player.return"][data-sc-return-kind="actual"]');
+                assert(holder && !holder.querySelector(".o_sc_field_static"), "an empty « Retour réel » is shown");
                 window.__sc1594NoReload = true;
             },
         },
@@ -114,13 +116,12 @@ tours.add("sc_1594_return_date", {
             trigger: '[data-sc-edit-card="medical"] .o_sc_autosave[data-sc-field="return_date"][data-sc-state="saved"]',
         },
         {
-            content: "The hero shows it at once",
-            trigger: '[data-sc-section="player.return_date"]:visible',
+            content: "The header's read view shows it (read fragment, no reload)",
+            trigger: '[data-sc-section="player.hero"] [data-sc-section="player.return"][data-sc-return-kind="actual"] .o_sc_field_value',
             run() {
                 assert(window.__sc1594NoReload, "the page reloaded");
-                const shown = this.anchor.querySelector("[data-sc-display]");
-                assert(shown && shown.textContent.trim() && shown.textContent.trim() !== "—",
-                    `the chip reads « ${shown && shown.textContent} »`);
+                const shown = this.anchor.textContent.trim();
+                assert(shown && shown !== "—" && !shown.includes("2026-11-02"), `the header reads « ${shown} »`);
             },
         },
     ],

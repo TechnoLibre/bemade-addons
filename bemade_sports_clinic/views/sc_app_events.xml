@@ -677,7 +677,7 @@
                     <a t-att-href="sc_form['cancel_url']" class="o_sc_btn o_sc_btn_ghost">Cancel</a>
                     <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="event.save">
                         <t t-if="sc_form_mode == 'edit'">Save Changes</t>
-                        <t t-else="">Create Event</t>
+                        <t t-else="">Create</t>
                     </button>
                 </div>
             </form>

@@ -40,7 +40,13 @@ class CardTours:
     def test_documents_upload(self):
         self.start_tour(self._card_url(), 'sc_1616_documents_upload', login='pc.tp@example.com')
         docs = self.env['sports.injury.document'].search([('injury_id', '=', self.injury.id)])
-        self.assertEqual(sorted(docs.mapped('name')), ['Synthetic X-ray report', 'Synthetic a.pdf'])
+        # Review fixes 2026-10-18: three files chosen in three goes (the big
+        # one removed, a duplicate ignored), uploaded together; one renamed.
+        names = docs.mapped('name')
+        self.assertEqual(len(docs), 3, names)
+        self.assertIn('Synthetic X-ray report', names)
+        self.assertLessEqual(set(names) - {'Synthetic X-ray report'},
+                             {'Synthetic small.pdf', 'Synthetic a.pdf', 'Synthetic b.pdf'})
         self.assertEqual(set(docs.mapped('category')), {'medical_imaging'})
         self.assertEqual(set(docs.mapped('description')), {'Synthetic batch'})
         self.assertNotIn('Synthetic big.pdf', docs.mapped('file_name'))

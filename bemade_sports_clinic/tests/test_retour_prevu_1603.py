@@ -196,7 +196,9 @@ class TestRetourPrevuApp1603(RetourPrevuFixtures, FragmentsCommon):
     def test_therapist_edits_retour_prevu_in_the_header(self):
         self._login_tp()
         _text, tree = self._get(self._url())
-        section = tree.xpath('//*[@data-sc-section="player.hero"]//*[@data-sc-section="player.predicted_return"]')
+        # Review fixes 2026-10-18: in the header's edit view (its pencil).
+        section = tree.xpath('//*[@data-sc-section="player.hero"]/*[@data-sc-edit-view="edit"]'
+                             '/*[@data-sc-section="player.predicted_return"]')
         self.assertEqual(len(section), 1)
         props = [json.loads(node.get('props')) for node in section[0].xpath('.//owl-component')]
         self.assertEqual([(p['field'], p['inputType']) for p in props], [('predicted_return_date', 'date')])
@@ -217,11 +219,15 @@ class TestRetourPrevuApp1603(RetourPrevuFixtures, FragmentsCommon):
 
     @mute_logger('odoo.http')
     def test_coach_reads_and_cannot_save(self):
-        self.player.write({'predicted_return_date': '2030-03-01'})
+        # Review fixes 2026-10-18: the header's read view shows « Retour
+        # prévu » while the player is not Play OK (the coach has no edit view).
+        self.player.write({'predicted_return_date': '2030-03-01', 'match_status': 'no', 'practice_status': 'no'})
         self._login_coach()
         _text, tree = self._get(self._url())
-        section = tree.xpath('//*[@data-sc-section="player.predicted_return"]')[0]
+        self.assertFalse(tree.xpath('//*[@data-sc-section="player.predicted_return"]'))
+        section = tree.xpath('//*[@data-sc-section="player.return"]')[0]
         self.assertFalse(section.xpath('.//owl-component'))
+        self.assertEqual(section.get('data-sc-return-kind'), 'predicted')
         read = self._node(tree, 'sports.patient:%s:predicted-return' % self.player.id)
         self.assertIsNotNone(read)
         self.assertIn('2030', self._text(read))

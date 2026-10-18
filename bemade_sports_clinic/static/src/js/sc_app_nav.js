@@ -14,14 +14,11 @@
  * POST that redirects back to the same page adds one more history entry for
  * it (counted, so back skips them all). Inert outside .o_sc_app.
  *
- * Task 1618: on a laptop the breadcrumb is the navigation and the chevron is
- * hidden — unless it adds something: the shell gets ``o_sc_back_useful``
- * (the CSS then shows the chevron left of the title) when the app runs
- * installed (display-mode: standalone — no browser back button), or when the
- * previous in-app page of this tab is NOT the breadcrumb's direct parent (a
- * sideways arrival: activities → player, calendar → event, …). A normal
- * drill-down (previous page = parent) keeps the breadcrumb only. Phones
- * always show the chevron (unchanged).
+ * Task 1618 (owner review 2026-10-18, « always »): on a laptop the back
+ * chevron shows on every sub-page next to the breadcrumb, exactly as on a
+ * phone (previous in-app page, else the parent). The shell still gets
+ * ``o_sc_back_useful`` whenever there is a chevron (kept for styling hooks);
+ * ``isStandalone()`` stays exported for the installed-app checks.
  */
 
 const STORE_KEY = "sc_nav_stack:v1";
@@ -210,24 +207,12 @@ export function isStandalone() {
 }
 
 /**
- * The back chevron adds something next to the breadcrumb: installed app, or
- * the previous in-app page of this tab is not the declared parent (the
- * chevron's href).
+ * Task 1618 (owner review 2026-10-18): the chevron is always useful on a
+ * sub-page — it shows whenever the page has one (no « only when it adds
+ * something » rule any more).
  */
 export function backIsUseful() {
-    const back = document.querySelector(".o_sc_app a[data-sc-back]");
-    if (!back) {
-        return false;
-    }
-    if (isStandalone()) {
-        return true;
-    }
-    if (backDistance() <= 0) {
-        return false;
-    }
-    const stack = load();
-    const previous = stack[stack.length - 2];
-    return Boolean(previous && previous.k !== pageKey(back.getAttribute("href") || ""));
+    return Boolean(document.querySelector(".o_sc_app a[data-sc-back]"));
 }
 
 /** Toggle ``o_sc_back_useful`` on the shell root (task 1618). */

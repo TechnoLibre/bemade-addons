@@ -55,6 +55,10 @@ class TestRetourPrevuI18n1603(TestAppShellI18n1538):
         field = lxml_html.fromstring(text).xpath(
             '//*[@data-sc-section="player.predicted_return"]//owl-component')[0]
         self.assertEqual(json.loads(field.get('props'))['label'], 'Retour prévu')
+        # Review fixes 2026-10-18: the read view shows « Retour prévu » while
+        # the player is not Play OK and the date is set.
+        self.player.sudo().write({'predicted_return_date': '2030-03-01', 'match_status': 'no',
+                                  'practice_status': 'no'})
         self._login_coach()
         self.assertIn('Retour prévu', self._fr(self._url()))
 

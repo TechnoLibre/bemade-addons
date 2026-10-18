@@ -1445,13 +1445,15 @@ class EventsPortal(CustomerPortal, AccessControlMixin, AppShellMixin):
             groups = [{'key': str(group['key']), 'label': group['label'],
                        'rows': [_row(event) for event in group['events']]}
                       for group in values['grouped_events']]
-        filters_open = any(values.get(key) for key in (
-            'organization_id', 'team_id', 'assigned_user_id', 'date_from', 'show_cancelled', 'group_by',
-            'search'))
+        # Review fixes 2026-10-18 (#1617): the list's filter panel is
+        # collapsed on every visit, even with a filter active (« À venir » /
+        # « Mes événements » are one tap away outside it); it only stays
+        # open across the reload of a change the user made in it
+        # (sc_forms.js). The calendar keeps its own rule.
         return dict(
             bar,
             sc_event_groups=groups,
-            sc_event_filters_open=filters_open,
+            sc_event_filters_open=False,
             sc_event_filter_action='/my/events',
             sc_event_filter_reset='/my/events?view_type=all&no_default_dates=1',
             sc_event_filter_list=True,

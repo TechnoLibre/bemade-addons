@@ -77,7 +77,7 @@
             <div t-attf-class="#{'o_sc_actionbar' if cancel_url else 'o_sc_form_actions'}">
                 <a t-if="cancel_url" t-att-href="cancel_url" class="o_sc_btn o_sc_btn_ghost">Cancel</a>
                 <button type="submit" class="o_sc_btn o_sc_btn_primary" data-sc-action="injury.create">
-                    <span t-if="is_treatment_prof">Create Injury</span>
+                    <span t-if="is_treatment_prof">Create</span>
                     <span t-else="">Submit Report</span>
                 </button>
             </div>

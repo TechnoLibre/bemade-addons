@@ -338,6 +338,24 @@ class PatientInjury(models.Model):
             ('summary', 'ilike', VERIFY_INJURY_SUMMARY),
         ]
         
+    @api.model
+    def _sc_clear_resolved_predicted_dates(self):
+        """Review fixes 2026-10-18 (post-migrate 19.0.1.86.0): null the
+        predicted resolution date of every already-RESOLVED injury, in SQL —
+        no tracking, no chatter, no digest bump (a data cleanup, not a
+        change anyone made). Unresolved injuries are left alone (even those
+        carrying a resolution date). Returns the number of rows cleared."""
+        self.env.flush_all()
+        self.env.cr.execute("""
+            UPDATE sports_patient_injury
+               SET predicted_resolution_date = NULL
+             WHERE stage = 'resolved'
+               AND predicted_resolution_date IS NOT NULL
+        """)
+        count = self.env.cr.rowcount
+        self.invalidate_model(['predicted_resolution_date'])
+        return count
+
     def action_resolve_injury(self, resolution_date=None):
         """Mark an injury as resolved, on ``resolution_date`` (task 1604: the
         app's « Résoudre » confirms a date) or today."""
@@ -459,6 +477,13 @@ class PatientInjury(models.Model):
         leaving_unverified = self.browse()
         if vals.get('stage') and vals['stage'] != 'unverified':
             leaving_unverified = self.filtered(lambda i: i.stage == 'unverified')
+
+        # Review fixes 2026-10-18 (injury dates rule): resolving an injury —
+        # whatever the path (app stage save, quick « Résoudre »,
+        # action_resolve_injury, the backend) — clears its predicted
+        # resolution date: once resolved only the real date matters.
+        if vals.get('stage') == 'resolved' and vals.get('predicted_resolution_date') is not False:
+            vals = dict(vals, predicted_resolution_date=False)
 
         res = super().write(vals)
 
@@ -773,6 +798,11 @@ class PatientInjury(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Review fixes 2026-10-18: an injury created already resolved carries
+        # no predicted resolution date (same rule as resolving one).
+        vals_list = [dict(vals, predicted_resolution_date=False)
+                     if vals.get('stage') == 'resolved' else vals
+                     for vals in vals_list]
         # Determine context before creating to avoid mail.followers writes
         # when portal/coach creates. "Treatment professional" covers BOTH
         # internal and portal TPs — the latter must also create injuries

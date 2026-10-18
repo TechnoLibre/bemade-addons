@@ -55,7 +55,7 @@
  * - tags BROWSE: focusing the search box with an empty query opens the FULL
  *   scrollable list of the options left to pick (no cap), typing narrows it
  *   (the words match the option or its group), arrows + Enter pick, Escape
- *   closes; options may carry a group ([key, label, groupLabel, groupKey]):
+ *   closes; a pick closes the list (review fixes 2026-10-18); options may carry a group ([key, label, groupLabel, groupKey]):
  *   headings separate the groups when more than one is shown;
  * - ``groupSelect`` (the id of a <select>): its value narrows the options to
  *   that group (« » = all) and drops the chosen ones of another group (the
@@ -187,6 +187,29 @@ export class ScAutosaveField extends Component {
         // it under « also », e.g. « Resolved » → the resolution date).
         this.onSiblingSaved = (ev) => {
             const detail = ev.detail || {};
+            // Review fixes 2026-10-18: a TWIN island of the same field (the
+            // player header's edit mode and the Medical card both edit the
+            // allergies / the actual return date) follows the other's save.
+            if (
+                detail.source &&
+                detail.source !== this &&
+                detail.field === this.props.field &&
+                detail.model === this.props.model &&
+                detail.recordId === this.props.recordId &&
+                detail.result &&
+                detail.result.value !== undefined &&
+                !this.isReplace &&
+                !["dirty", "saving"].includes(this.state.status)
+            ) {
+                const twin = asText(detail.result.value);
+                this.state.value = twin;
+                this.lastSaved = twin;
+                this.writeDate = detail.result.write_date;
+                if (detail.result.hint !== undefined) {
+                    this.state.hint = detail.result.hint || "";
+                }
+                return;
+            }
             const also = detail.result && detail.result.also;
             if (
                 !also ||
@@ -611,21 +634,27 @@ export class ScAutosaveField extends Component {
     }
 
     /**
-     * Pick an option. A tap / click keeps the list open for the next pick
-     * (the focus goes to the list: the phone keyboard closes); the keyboard
-     * keeps the focus in the search box.
+     * Pick an option. Review fixes 2026-10-18 (#1608): the list CLOSES right
+     * after a pick, whatever picked it; focusing / clicking the search box
+     * again (or ArrowDown / typing) reopens it. A tap / click leaves the box
+     * (the phone keyboard closes; focusing it again reopens the list); the
+     * keyboard (Enter) keeps the focus in the search box.
      */
     addTag(key, ev) {
         this.state.query = "";
         this.onCheck(key, true);
+        this.closeTags();
         const pointer = Boolean(ev && ev.detail > 0);
-        const count = this.tagMatches.length;
-        if (this.state.active >= count) {
-            this.state.active = count - 1;
+        const input = this.inputRef.el;
+        if (!input) {
+            return;
         }
-        const target = pointer && count && this.listRef.el ? this.listRef.el : this.inputRef.el;
-        if (target && document.activeElement !== target) {
-            target.focus();
+        if (pointer) {
+            if (document.activeElement === input) {
+                input.blur();
+            }
+        } else if (document.activeElement !== input) {
+            input.focus();
         }
     }
 
@@ -878,6 +907,7 @@ export class ScAutosaveField extends Component {
                         recordId: this.props.recordId,
                         field: this.props.field,
                         result,
+                        source: this,
                     },
                 })
             );

@@ -9,7 +9,8 @@ Acceptance criteria covered here:
   selector saves in place).
 * UC-PS2 Owner review 2026-10-11: the page header carries the play-status
   selector in place of the status pill; it shows the player's current
-  status (the pressed choice).
+  status (the pressed choice). Review fixes 2026-10-18: behind the header's
+  pencil (edit view); the read view shows the status label.
 * UC-PS3 The « no match, practice » choice reads « Contact practice »
   (fr: « Pratique contact »), not « Practice only ».
 * UC-PS5 Training recommendation history (like the team announcement's):
@@ -60,9 +61,12 @@ class TestAppShellPlayerStatus(PlayerStatusCommon):
 
     def _hero_status(self):
         _text, tree = self._get('/my/player?player_id=%s' % self.player.id)
-        self.assertFalse(tree.xpath('//*[@data-sc-stage-chip]'))
+        # Review fixes 2026-10-18: the header reads the status label (chip)
+        # and the selector sits in its edit view (behind the pencil).
+        self.assertEqual(len(tree.xpath('//*[@data-sc-section="player.hero"]'
+                                        '/*[@data-sc-edit-view="read"]//*[@data-sc-stage-chip]')), 1)
         props = [json.loads(p) for p in tree.xpath(
-            '//*[@data-sc-section="player.hero"]//owl-component/@props')]
+            '//*[@data-sc-section="player.hero"]/*[@data-sc-edit-view="edit"]//owl-component/@props')]
         status = [p for p in props if p.get('field') == 'sc_status']
         self.assertEqual(len(status), 1)
         return status[0]

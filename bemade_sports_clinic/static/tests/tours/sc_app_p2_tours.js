@@ -213,14 +213,20 @@ tours.add("sc_1539_activity_complete", {
 // ------------------- player status: the hero pill follows the save (2026-10-10)
 tours.add("sc_status_pill_refresh", {
     // Owner review 2026-10-11: the status selector lives in the page header
-    // (in place of the status pill) and saves in place.
+    // (in place of the status pill) and saves in place. Review fixes
+    // 2026-10-18: the header is a read view; its pencil opens the selector.
     steps: () => [
         {
-            content: "Available: « Match + practice » pressed in the header; mark the page to detect a reload",
-            trigger: '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="yes:yes"][aria-pressed="true"]',
+            content: "Read view: the status label; mark the page to detect a reload, open the pencil",
+            trigger: '[data-sc-section="player.hero"] [data-sc-edit-view="read"] [data-sc-stage-chip]',
             run() {
                 window.__scPillNoReload = true;
+                document.querySelector('[data-sc-section="player.hero"] > button[data-sc-edit-toggle]').click();
             },
+        },
+        {
+            content: "Available: « Match + practice » pressed in the header's edit view",
+            trigger: '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"] button[data-sc-value="yes:yes"][aria-pressed="true"]',
         },
         {
             content: "Pick « No play »",
@@ -231,6 +237,20 @@ tours.add("sc_status_pill_refresh", {
             content: "Saved in place (no reload)",
             trigger:
                 '[data-sc-section="player.hero"] .o_sc_autosave[data-sc-field="sc_status"][data-sc-state="saved"] button[data-sc-value="no:no"][aria-pressed="true"]',
+            run() {
+                if (!window.__scPillNoReload) {
+                    throw new Error("the page reloaded");
+                }
+            },
+        },
+        {
+            content: "« Done » closes the header's edit view",
+            trigger: '[data-sc-section="player.hero"] [data-sc-edit-view="edit"] button[data-sc-edit-done]',
+            run: "click",
+        },
+        {
+            content: "The read view shows the new status (read fragment, no reload)",
+            trigger: '[data-sc-section="player.hero"] [data-sc-edit-view="read"] [data-sc-stage-chip].o_sc_chip_red',
             run() {
                 if (!window.__scPillNoReload) {
                     throw new Error("the page reloaded");
@@ -308,11 +328,19 @@ tours.add("sc_injury_resolve_date", {
             },
         },
         {
-            content: "No resolution date yet",
-            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input',
+            // Review fixes 2026-10-18: the resolution date field is hidden
+            // until the injury is resolved.
+            content: "No resolution date yet (its field hidden while active)",
+            trigger: '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="predicted_resolution_date"] input',
             run() {
-                if (this.anchor.value) {
-                    throw new Error(`resolution date already set: ${this.anchor.value}`);
+                const input = document.querySelector(
+                    '.o_sc_injury_item[open] .o_sc_autosave[data-sc-field="resolution_date"] input'
+                );
+                if (input.value) {
+                    throw new Error(`resolution date already set: ${input.value}`);
+                }
+                if (input.offsetParent) {
+                    throw new Error("the resolution date shows on an active injury");
                 }
             },
         },
@@ -390,6 +418,11 @@ tours.add("sc_training_history_refresh", {
             run: "click",
         },
         {
+            content: "Review fixes 2026-10-18: the header's pencil opens its edit view",
+            trigger: '[data-sc-section="player.hero"] > button[data-sc-edit-toggle]',
+            run: "click",
+        },
+        {
             content: "Type a recommendation",
             trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] textarea',
             run: "edit Synthetic bike only",
@@ -411,8 +444,8 @@ tours.add("sc_training_history_refresh", {
             trigger: '.o_sc_autosave[data-sc-field="training_recommendation"] .o_sc_hint:contains(Updated on):contains(PC TP)',
         },
         {
-            content: "Open the history again",
-            trigger: '[data-sc-section="player.training"] .o_sc_field_label [data-sc-sheet-open="sc_training_history_sheet"]',
+            content: "Open the history again (the edit view's link)",
+            trigger: '[data-sc-section="player.training.edit"] [data-sc-sheet-open="sc_training_history_sheet"]',
             run: "click",
         },
         {

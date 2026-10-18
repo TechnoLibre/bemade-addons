@@ -11,8 +11,9 @@ Acceptance criteria covered here:
   (the existing logout route). For a coach, a therapist and an internal
   therapist.
 * UC-M2 ``/my/app/settings`` holds Langue, Apparence (only when the theme
-  choice is enabled, task 1602), Mon compte, Sécurité and the classic
-  portal; its preference forms come back to it. It is a sub-page of the
+  choice is enabled, task 1602), Mon compte and Sécurité (review fixes
+  2026-10-18: no classic-portal row any more); its preference forms come
+  back to it. It is a sub-page of the
   home (back + crumb, history.back() when the user came from another app
   page — task 1579), never a dead end.
 * UC-M3 « Plus » keeps only the app sections: no language / appearance /
@@ -156,8 +157,11 @@ class TestUserMenu1606(UserMenuCommon):
             self.assertIsNotNone(self._shell(tree))
             main = tree.xpath('//main[@id="sc_content"]')[0]
             hrefs = set(main.xpath('.//a/@href'))
-            for href in ('/my/account', '/my/security', '/my/home?classic=1'):
+            for href in ('/my/account', '/my/security'):
                 self.assertIn(href, hrefs)
+            # Review fixes 2026-10-18 (#1606): the « Portail classique »
+            # row is gone from Settings.
+            self.assertFalse([h for h in hrefs if 'classic=1' in h])
             # Logging out is the menu's job (no duplicate row here).
             self.assertFalse([h for h in hrefs if h.startswith(LOGOUT)])
             lang = main.xpath('.//section[@id="sc_language"]//form')
@@ -280,6 +284,7 @@ class TestUserMenuFrench1606(UserMenuCommon):
                     self.assertEqual(trigger.get('aria-label'), 'Menu utilisateur')
             text = self._fr('/my/app/settings')
             for term in ('Paramètres', 'Langue', 'Apparence', 'Sombre', 'Clair',
-                         'Mon compte', 'Sécurité', 'Autres documents du portail',
-                         'Accueil'):
+                         'Mon compte', 'Sécurité', 'Accueil'):
                 self.assertIn(term, text, term)
+            # Review fixes 2026-10-18: no « Portail classique » row.
+            self.assertNotIn('Autres documents du portail', text)

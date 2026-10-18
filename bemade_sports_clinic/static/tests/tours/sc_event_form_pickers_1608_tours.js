@@ -75,12 +75,26 @@ tours.add("sc_1608_event_form_pickers", {
             run: "click",
         },
         {
-            content: "A chip, the hidden field holds it, the list stays open for the next pick",
+            content: "A chip, the hidden field holds it, the list CLOSED after the pick",
             trigger: `${TEAMS} .o_sc_tag:contains("PC Team A")`,
             async run() {
                 await waitFor(() => value('input[name="team_ids"]') !== "", "team_ids filled");
                 assert(value('input[name="team_ids"]').split(",").length === 1, "one team");
+                await waitFor(() => document.querySelector(`${TEAMS} [data-sc-tags-open="0"]`), "the list closes");
+                assert(!document.querySelector(`${TEAMS} ul.o_sc_tags_options`), "no option list after a pick");
+            },
+        },
+        {
+            content: "Clicking the box again reopens the list, without the picked team",
+            trigger: `${TEAMS} input.o_sc_tags_search`,
+            run: "click",
+        },
+        {
+            content: "Reopened: the picked team left the list",
+            trigger: `${TEAMS} [data-sc-tags-open="1"] ul.o_sc_tags_options .o_sc_tags_option`,
+            run() {
                 assert(!optionLabels(TEAMS).includes("PC Team A"), "a picked team leaves the list");
+                assert(optionLabels(TEAMS).includes("PC Team B"), "the others are still offered");
             },
         },
         {
@@ -110,10 +124,18 @@ tours.add("sc_1608_event_form_pickers", {
             },
         },
         {
-            content: "Two teams in the hidden field",
+            content: "Two teams in the hidden field; Enter closed the list too",
             trigger: `${TEAMS} .o_sc_tag:contains("PC Team B")`,
             async run() {
                 await waitFor(() => value('input[name="team_ids"]').split(",").length === 2, "two teams");
+                await waitFor(() => document.querySelector(`${TEAMS} [data-sc-tags-open="0"]`), "Enter closes the list");
+                const input = document.querySelector(`${TEAMS} input.o_sc_tags_search`);
+                assert(document.activeElement === input, "the keyboard keeps the focus in the box");
+                // ArrowDown reopens it, Escape closes it again.
+                input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
+                await waitFor(() => document.querySelector(`${TEAMS} [data-sc-tags-open="1"]`), "ArrowDown reopens");
+                input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+                await waitFor(() => document.querySelector(`${TEAMS} [data-sc-tags-open="0"]`), "Escape closes");
             },
         },
         {
@@ -127,10 +149,11 @@ tours.add("sc_1608_event_form_pickers", {
             run: "click",
         },
         {
-            content: "The staff hidden field holds them",
+            content: "The staff hidden field holds them; that list closed too",
             trigger: `${STAFF} .o_sc_tag:contains("PC TP")`,
             async run() {
                 await waitFor(() => value('input[name="assigned_staff_ids"]') !== "", "staff filled");
+                await waitFor(() => document.querySelector(`${STAFF} [data-sc-tags-open="0"]`), "the staff list closes");
             },
         },
         {
