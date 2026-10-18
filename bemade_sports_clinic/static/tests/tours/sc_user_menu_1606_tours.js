@@ -20,7 +20,7 @@ function assert(condition, message) {
 function menuSteps(where) {
     const toggle = `button[data-sc-user-menu-toggle][aria-controls="sc_user_menu_${where}"]`;
     const popup = `#sc_user_menu_${where}`;
-    const settings = `${popup}:not([hidden]) a[role="menuitem"][href="/my/app/settings"]`;
+    const settings = `${popup}:not([hidden]) a[role="menuitem"][href$="/my/app/settings"]`;
     const signOut = `${popup}:not([hidden]) a[role="menuitem"][href^="/web/session/logout"]`;
     return [
         {
@@ -132,7 +132,7 @@ function menuSteps(where) {
             content: "The settings page, in French, its menu item current",
             trigger: `html[lang="fr-CA"] main #sc_language button[value="fr_CA"][aria-pressed="true"]`,
             run() {
-                assert(document.querySelector(`${popup} a[href="/my/app/settings"][aria-current="page"]`),
+                assert(document.querySelector(`${popup} a[href$="/my/app/settings"][aria-current="page"]`),
                     "« Paramètres » not marked current");
                 assert(document.querySelector('main a[href="/my/account"]'), "« Mon compte » missing");
                 assert(document.querySelector('main a[href="/my/security"]'), "« Sécurité » missing");
