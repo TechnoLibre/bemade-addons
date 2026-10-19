@@ -29,7 +29,7 @@ Features:
     'data': [
         'views/mail_finance_triage_wizard_views.xml',
     ],
-    'auto_install': True,
+    'auto_install': False,
     'installable': True,
     'application': False,
 }
